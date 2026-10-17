@@ -20,6 +20,7 @@ export default defineConfig({
         display: 'standalone',
         start_url: '/',
         scope: '/',
+        lang: 'en-GB',
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2,webmanifest}'],
