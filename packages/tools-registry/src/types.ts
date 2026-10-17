@@ -26,6 +26,10 @@ export interface Tool {
   readonly description: string;
   readonly category: CategoryId;
   readonly categoryName: string;
+  /** Lucide icon name, derived from the category in the registry. */
+  readonly icon: string;
+  /** Canonical in-app route, derived from the id. */
+  readonly href: string;
   readonly flags: readonly ToolFlag[];
   /** MIME types and file extensions this tool takes. */
   readonly accepts: readonly string[];

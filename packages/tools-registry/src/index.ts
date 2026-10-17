@@ -7,6 +7,21 @@ import { CATEGORY_IDS, type Category, type CategoryId, type Tool, type ToolFlag 
 export type { Category, CategoryId, Tool, ToolFlag };
 export { CATEGORY_IDS, CATEGORY_LABELS };
 
+const CATEGORY_ICONS: Readonly<Record<CategoryId, string>> = {
+  colour: 'palette',
+  'img-assets': 'image',
+  'social-media': 'share-2',
+  'audio-video': 'music',
+  pdf: 'file-text',
+  'print-production': 'printer',
+  'typo-text': 'type',
+  'dev-tools': 'code',
+  'other-tools': 'wrench',
+  calculators: 'calculator',
+  'turbo-nerd': 'terminal',
+  experiments: 'flask-conical',
+};
+
 const CATEGORY_ORDER: readonly CategoryId[] = [
   'colour',
   'img-assets',
@@ -46,6 +61,8 @@ if (!parsed.success) {
 export const TOOLS: readonly Tool[] = parsed.output.map((tool) => ({
   ...tool,
   categoryName: CATEGORY_LABELS[tool.category],
+  icon: CATEGORY_ICONS[tool.category],
+  href: `/tools/${tool.id}`,
 }));
 
 export const TOOLS_BY_ID: ReadonlyMap<string, Tool> = new Map(

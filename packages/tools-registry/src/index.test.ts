@@ -20,6 +20,8 @@ describe('registry', () => {
     for (const tool of TOOLS) {
       expect(tool.id).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
       expect(tool.name.length).toBeGreaterThan(0);
+      expect(tool.href).toBe(`/tools/${tool.id}`);
+      expect(tool.icon.length).toBeGreaterThan(0);
       expect(Array.isArray(tool.accepts)).toBe(true);
       expect(Array.isArray(tool.produces)).toBe(true);
     }
