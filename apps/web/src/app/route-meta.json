@@ -1,0 +1,18 @@
+{
+  "home": {
+    "title": "Omnitool — small tools, entirely in your browser",
+    "description": "A local-only toolkit of small browser tools for colour, images, PDF, media, text and code. No accounts, no uploads."
+  },
+  "privacy": {
+    "title": "Privacy — Omnitool",
+    "description": "Omnitool runs in your browser. No accounts, no analytics, no telemetry and no server receives your files."
+  },
+  "about": {
+    "title": "Acknowledgements — Omnitool",
+    "description": "The open-source projects and licences that make Omnitool possible."
+  },
+  "not-found": {
+    "title": "Page not found — Omnitool",
+    "description": "That page does not exist. Search the tool index instead."
+  }
+}

@@ -1,0 +1,16 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@omnitool/ui/tokens.css";
+@import "@fontsource-variable/schibsted-grotesk/index.css";
+@import "@fontsource-variable/geist-mono/index.css";
+
+@layer base {
+  #root {
+    min-height: 100dvh;
+  }
+
+  /* Long-form content keeps a readable measure. */
+  .prose-measure {
+    max-width: 70ch;
+  }
+}

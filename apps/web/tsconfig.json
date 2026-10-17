@@ -1,0 +1,10 @@
+{
+  "extends": "@omnitool/config/tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["vite/client", "vite-plugin-pwa/client", "node"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "vite.config.ts", "../../vitest.config.ts"]
+}
