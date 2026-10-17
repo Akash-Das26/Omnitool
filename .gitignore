@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.vite/
+coverage/
+playwright-report/
+test-results/
+.lighthouseci/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+# Read-only reference copy of the original project (never committed).
+delphitools-main/
+# Personal agent configs are not committed; AGENTS.md is the shared source of truth.
+CLAUDE.local.md
+.claude/settings.local.json
