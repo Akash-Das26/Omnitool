@@ -28,8 +28,8 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | PF-06 | Theme toggle (light/dark) | Class-based dark mode with no-flash bootstrap; persists choice | P1 | ✅ | External pre-paint bootstrap, localStorage, system default |
 | PF-07 | 404 page | Not-found route | P1 | ✅ | Root not-found route plus static `404.html` |
 | PF-08 | Privacy page | States: no accounts, no data collection, runs locally | P1 | ✅ | `/privacy` written in British English |
-| PF-09 | Offline / PWA | Works with no internet after first load (service worker + cached assets) | P1 | ✅ | Workbox precache 780 kB, SW update prompt; offline E2E passes |
-| PF-10 | Static prerender / SEO | Per-route HTML + meta + OG image for discoverability | P1 | ✅ | Postbuild HTML for home/privacy/about/three tools/404; OG image awaits brand asset |
+| PF-09 | Offline / PWA | Works with no internet after first load (service worker + cached assets) | P1 | ✅ | Workbox precache 781 kB, SW update prompt; offline E2E passes |
+| PF-10 | Static prerender / SEO | Per-route HTML + meta + OG image for discoverability | P1 | 🟨 | Postbuild HTML and meta for home/privacy/about/three tools/404; OG image awaits brand asset |
 | PF-11 | Changelog popup | "What's new" with versioned entries | P7 | ⬜ |  |
 | PF-12 | Colour notation selector | Header-level preference (hex/rgb/hsl/oklch…) read by every colour tool | P3 | ⬜ |  |
 | PF-13 | Carry colour across tools | `?color=` query handoff between colour tools | P3 | ⬜ |  |

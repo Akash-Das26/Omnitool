@@ -69,4 +69,4 @@ Sourced from the original's published acknowledgements as a starting point, not 
 | `vite-plugin-pwa` default `maximumFileSizeToCacheInBytes` is 2 MiB, larger files are not precached | Confirmed in the plugin FAQ |
 | nuqs supports TanStack Router | Yes, but documented as experimental, with advice to use the router's own search-param APIs |
 | TanStack Router validates search params with Zod, Valibot or a custom function | Confirmed in TanStack docs |
-| `vite-plugin-pwa` works with the latest Vite major | **Not verified**; check at ignition |
+| `vite-plugin-pwa` works with the latest Vite major | Confirmed at ignition (Session 004): 2.0.0 declares Vite `^8.0.0` and built successfully with Vite 8.3.4 |

@@ -121,7 +121,7 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 - Postbuild `scripts/prerender.mjs` writes title/description/OG meta HTML for home, privacy, about, three tool routes and `404.html`.
 - Tooling/CI: Biome, Vitest projects (node + jsdom), Testing Library, Playwright + axe, GitHub Actions (lint, typecheck, coverage, build, budgets, E2E, Lighthouse). shadcn MCP config in `.mcp.json`.
 
-**Features touched:** PF-01 ✅, PF-02 ✅, PF-03 ✅, PF-04 ✅, PF-05 ✅, PF-06 ✅, PF-07 ✅, PF-08 ✅, PF-09 ✅, PF-10 ✅, PF-20 ✅, PF-21 ✅, PF-22 ✅, PF-23 ✅, PF-25 ✅, PF-24 🟨. Tools: `uuid-genny` ✅ (P1 sample), `qr-genny` 🟨 (sample; styling/logos P2), `image-converter` 🟨 (stub; codecs P4).
+**Features touched:** PF-01 ✅, PF-02 ✅, PF-03 ✅, PF-04 ✅, PF-05 ✅, PF-06 ✅, PF-07 ✅, PF-08 ✅, PF-09 ✅, PF-10 🟨, PF-20 ✅, PF-21 ✅, PF-22 ✅, PF-23 ✅, PF-25 ✅, PF-24 🟨. Tools: `uuid-genny` ✅ (P1 sample), `qr-genny` 🟨 (sample; styling/logos P2), `image-converter` 🟨 (stub; codecs P4).
 
 **Decisions:** DEC-01, DEC-02, DEC-03 and DEC-06 confirmed; DEC-05 deferred to P8. `@axe-core/playwright`/`axe-core` are MPL-2.0 development-only; recorded in `docs/legal/ATTRIBUTION.md`. Category labels for "Turbo-nerd Shit" and "Alien Delphi's Experiments" replaced with neutral "Turbo-nerd" and "Experiments". QR uses `qrcode` (MIT) rather than qr-code-styling.
 
