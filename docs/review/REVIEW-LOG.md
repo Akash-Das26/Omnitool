@@ -126,7 +126,7 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 **Decisions:** DEC-01, DEC-02, DEC-03 and DEC-06 confirmed; DEC-05 deferred to P8. `@axe-core/playwright`/`axe-core` are MPL-2.0 development-only; recorded in `docs/legal/ATTRIBUTION.md`. Category labels for "Turbo-nerd Shit" and "Alien Delphi's Experiments" replaced with neutral "Turbo-nerd" and "Experiments". QR uses `qrcode` (MIT) rather than qr-code-styling.
 
 **Verification:**
-- `pnpm lint`: pass (Biome 99 files, 0 errors).
+- `pnpm lint`: pass (Biome, 0 errors).
 - `pnpm typecheck`: pass (root E2E config + 4 packages).
 - `pnpm test`: **69 tests / 10 files pass**; coverage **98.6% lines, 86% branches** (tool-core + registry), thresholds 90/85 pass.
 - `pnpm build`: pass. **Shell JS 147.1 kB gzip** (budget 200 kB). Precache **30 files / 781.1 kB** (budget 8 MiB). **34 build files**; no file > 20 MiB.
