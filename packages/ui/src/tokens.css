@@ -1,0 +1,176 @@
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+
+  /* DESIGN.md — Paper, Panel, Ink */
+  --background: #edf0f3;
+  --surface: #ffffff;
+  --foreground: #101828;
+  --muted-foreground: #4a5565;
+  --border: #bcc5d0;
+  --primary: #2447f5;
+  --primary-foreground: #ffffff;
+  --highlight: #ffd84d;
+  --highlight-foreground: #101828;
+  --destructive: #c42b1c;
+  --ring: #2447f5;
+
+  /* Supporting surfaces derived from the same palette */
+  --muted: #e3e8ed;
+  --accent: #e3e8ed;
+  --accent-foreground: #101828;
+  --secondary: #e2e7ec;
+  --secondary-foreground: #101828;
+  --input: #bcc5d0;
+  --card: #ffffff;
+  --card-foreground: #101828;
+  --popover: #ffffff;
+  --popover-foreground: #101828;
+
+  --radius: 6px;
+  --radius-control: 6px;
+  --radius-panel: 10px;
+  --radius-pill: 9999px;
+
+  --shadow-popover: 0 8px 24px rgb(16 24 40 / 0.16);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: #12161d;
+  --surface: #1a2029;
+  --foreground: #e6eaf0;
+  --muted-foreground: #9aa6b8;
+  --border: #2c3441;
+  --primary: #7f98ff;
+  --primary-foreground: #0b1020;
+  --highlight: #ffd84d;
+  --highlight-foreground: #101828;
+  --destructive: #ff8a7a;
+  --ring: #7f98ff;
+
+  --muted: #202833;
+  --accent: #202833;
+  --accent-foreground: #e6eaf0;
+  --secondary: #232b37;
+  --secondary-foreground: #e6eaf0;
+  --input: #2c3441;
+  --card: #1a2029;
+  --card-foreground: #e6eaf0;
+  --popover: #1a2029;
+  --popover-foreground: #e6eaf0;
+
+  --shadow-popover: 0 8px 24px rgb(0 0 0 / 0.48);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-destructive: var(--destructive);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --font-sans: "Schibsted Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius-panel);
+  --radius-xl: var(--radius-panel);
+  --radius-control: 6px;
+  --radius-panel: 10px;
+  --radius-pill: 9999px;
+
+  --shadow-popover: var(--shadow-popover);
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.4375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.125rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-size: 1rem;
+    line-height: 1.55;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--highlight);
+    color: var(--highlight-foreground);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion must beat component transitions */
+      animation-duration: 0.01ms !important;
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion must beat component transitions */
+      animation-iteration-count: 1 !important;
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion must beat component transitions */
+      transition-duration: 0.01ms !important;
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion must beat component transitions */
+      scroll-behavior: auto !important;
+    }
+  }
+}
