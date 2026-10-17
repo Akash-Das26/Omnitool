@@ -38,8 +38,8 @@ Scaffold, SRS, design brief, tooling, legal, prompts, features ledger. No applic
 Built pnpm workspace, React 19/Vite 8 SPA, Tailwind v4 tokens, shadcn primitives, TanStack Router dynamic tool route, registry + Valibot search params, Comlink worker harness, FileIntake/download helpers, home index and omnibox, Cloudflare `_headers`/`_redirects`, postbuild per-route HTML, and three sample tools (`uuid-genny`, `qr-genny`, `image-converter` stub).
 
 **Measured budgets (local production build, 2026-10-17):**
-- Shell JS: **147.1 kB gzip** (entry + static imports; budget 200 kB).
-- Precache candidates: **30 files / 781.1 kB** (budget 8 MiB); largest well under the 2 MiB per-file limit.
+- Shell JS: **147.2 kB gzip** (entry + static imports; budget 200 kB).
+- Precache candidates: **30 files / 781.4 kB** (budget 8 MiB); largest well under the 2 MiB per-file limit.
 - Build files: **34** (limit 20,000); no file over 20 MiB.
 - Lighthouse mobile: home **93** performance (first run 95), **100** accessibility, **100** best practices, **100** SEO. Tool pages 93–95 performance.
 - axe: **0 serious/critical** on home, privacy, about and the three tools (light and dark).

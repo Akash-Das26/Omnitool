@@ -129,7 +129,7 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 - `pnpm lint`: pass (Biome, 0 errors).
 - `pnpm typecheck`: pass (root E2E config + 4 packages).
 - `pnpm test`: **69 tests / 10 files pass**; coverage **98.6% lines, 86% branches** (tool-core + registry), thresholds 90/85 pass.
-- `pnpm build`: pass. **Shell JS 147.1 kB gzip** (budget 200 kB). Precache **30 files / 781.1 kB** (budget 8 MiB). **34 build files**; no file > 20 MiB.
+- `pnpm build`: pass. **Shell JS 147.2 kB gzip** (budget 200 kB). Precache **30 files / 781.4 kB** (budget 8 MiB). **34 build files**; no file > 20 MiB.
 - `pnpm e2e`: **17 tests pass** — home/omnibox, three tools, offline reload + offline conversion, no third-party requests, axe on six routes + omnibox + dark mode (0 serious/critical).
 - `pnpm lighthouse`: home **93 performance**, 100 accessibility, 100 best practices, 100 SEO (mobile). About/privacy/tools 93–95. 404 SEO 60 warning is expected from `noindex`.
 - Responsive check: no horizontal overflow at 320/390/768/1440 after fixing the About heading.
