@@ -15,6 +15,11 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] DEC-10 No production domain yet: no canonical URLs or absolute OG tags for now (human)
 - [x] DEC-11 Artwork deferred to Phase 9; keep the plain wordmark placeholder and make no brand assets (human)
 - [x] DEC-12 The agent drafts each registry description; the owner reviews them afterwards (human)
+- [ ] DEC-13 Stitch review accepted as a layout reference with the fixes in `docs/design/STITCH-REVIEW.md` (awaiting the owner's explicit confirmation; the prompt arrived with the placeholder unedited)
+- [x] DEC-14 Workflow short links, "Save pipeline" and a History tab stay out of scope (human)
+- [x] DEC-15 Fonts stay Schibsted Grotesk (sans) and Geist Mono (values only) (human)
+- [x] DEC-16 Corner radius follows `DESIGN.md` (6 px controls, 10 px panels, pill toggles), not the square corners in the Stitch screens (human)
+- [x] DEC-17 Mock tool names, counts, categories and features in the Stitch screens are not specs; everything comes from the registry (human)
 
 ## P0 Planning (done in Sessions 000-001)
 - [x] P0-01 Analyse zip: structure, registry (97 tools), design doc, licence (agent)
@@ -44,6 +49,7 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] P1-13 Prerender/SEO per route (agent)
 - [x] P1-13b Brand assets moved to Phase 9 under DEC-11; the wordmark placeholder and Lucide icons stay (human)
 - [x] P1-14 Audit A1 recorded: PASS, no open Must findings; F-013 and F-014 carry to A2 (human+agent)
+- [x] P1-16 Align the Phase 1 shell with the accepted Stitch layout reference (DEC-13..DEC-17): tokens, 12 px floor check, home, omnibox, tool frame, image-converter states, removals, dark screenshots and axe in both themes (agent, Session 008)
 - [ ] P1-15 Decide the `_redirects` SPA fallback: Wrangler rejects `/* /index.html 200` as an infinite loop. Remove the file or choose another hosting mode before the first deploy (human; see `docs/deployment/CLOUDFLARE-PAGES.md` section 3)
 
 ## P2 Text, dev & calculators — Batch 1 (eight tools; stop at the batch gate)

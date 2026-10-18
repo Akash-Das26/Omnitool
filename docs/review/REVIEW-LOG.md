@@ -302,3 +302,53 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 **Next session should:** get approval for the descriptions and the batch gate, decide P1-15, then either write the descriptions into the registry or continue the remaining P2 tools.
 
 **Human review:** [ ] diff read  [ ] approved
+
+### Session 008 — 2026-10-18 — Phase 1 shell: Stitch alignment — Buffy
+**Goal:** Align the existing Phase 1 shell with the reviewed Stitch layout reference in one bounded change: tokens, typography floor, home, omnibox, tool frame, heavy-tool states, removals, dark screenshots and axe in both themes. No new tools, no artwork.
+
+**Done:**
+- **Tokens** (`packages/ui/src/tokens.css`): added `--border-strong` (light `#6b7686`, dark `#6c7a90`), `--success`, `--warning`, `--surface-inset`, `--surface-hover`, and pointed `--input` at `--border-strong`; exposed `--color-border-strong`, `--color-success`, `--color-warning`, `--color-surface-inset`, `--color-surface-hover` through `@theme inline`. `--border` stays for decorative hairlines.
+- **Contrast test** (`packages/ui/src/contrast.test.ts`, 64 tests): parses `tokens.css` at run time and computes WCAG ratios in code, asserting foreground, muted-foreground, primary, destructive, success and warning at ≥ 4.5:1 on all four surfaces, primary-on-primary and highlight-foreground-on-Marker at ≥ 4.5:1, `--border-strong` at ≥ 3:1 on all four surfaces, and that the decorative `--border` stays below 3:1. It also asserts that light and dark define the same token set. No token value needed changing: every pair in `DESIGN.md` was confirmed accurate (success light 4.69 paper / 5.37 panel, warning light 5.18 / 5.93, border-strong light 4.03–4.60, dark 3.45–4.17).
+- **Design-rule guard** (`scripts/check-design-rules.mjs`, wired into `pnpm lint` as `pnpm check:design`): fails on sub-12 px text (`text-[…]`, `font-size`), all-caps class labels, any shadow other than `shadow-popover`, gradients, icon fonts and ` · ` meta strings. Fixed the four hits it found (an 11 px kbd in the header, `shadow-md` on the select popover, two meta strings in the image converter).
+- **Home** (`apps/web/src/pages/home.tsx`, `components/tool-row.tsx`): omnibox hero on `--border-strong` with the `Ctrl K` key shown as a real key cap and a real tool count from the registry; category sections got `--surface-inset` headers with per-category counts; rows keep name, purpose and accepts → produces chips, whole-row link with the focus ring on the row; unbuilt rows read "Not built yet — phase N" and sit on `--surface-inset`. The tagline paragraph was replaced by one factual line ("97 tools. Drop a file here to see which ones can open it.").
+- **Omnibox** (`components/omnibox.tsx`, `components/ui/command.tsx`): matching text underlined (never coloured), selected row on Marker with `--highlight-foreground` forced for descendants (muted text on Marker would be 1.79:1 in dark), a dropped-file chip showing name, size and type with a remove button, a first group "Tools that accept this file (n)" that de-duplicates out of the category groups, footer key hints as key caps (no dot separators) and a live result count. Radix Dialog keeps the combobox/listbox roles, focus trap and Escape handling; cmdk keeps arrow navigation and `loop`.
+- **Tool frame** (`components/tool-frame.tsx`, new `components/output-row.tsx`): header with name, Share and Reset, then unnumbered stages (Input, Options, Output) separated by 1 px rules with `--surface-inset` stage headers; one action row holding Copy all / Download that is inline on desktop and fixed to the bottom on mobile at 44 px targets; `OutputRow`/`OutputList` give each value its own row (sentence-case label, mono value that wraps or scrolls, per-row Copy) with no ellipsis truncation. Applied to `uuid-genny` (one row per value, per-row copy), `qr-genny` (PNG row, SVG row with "Copy SVG markup", downloads in the action bar) and `image-converter`. Reset is implemented on those three tools; "Send to" is hidden until handoff exists (P7).
+- **Heavy-tool states** (`tools/image-converter/*`): the worker now reports a phase (`prepare` / `convert`) with real byte progress through the job helper (`lib/worker/job.ts` grew an optional `phase` argument); the UI shows the codec name and size, a "Fetching" state with a determinate bar and a Cancel that is visible for the whole run, "Ready — cached for this session" after the first successful conversion (module-scope session flag), cancellation returning to "missing", and before/after size rows with a real percentage change computed from the input file and the produced blob. The mock-state control warning does not apply: there is no state switch, only real transitions, and the copy states plainly that this build simulates the fetch.
+- **Removals:** no gradients, no icon fonts, no heavy shadows (only `--shadow-popover`), no Marker used as a status colour (the insecure-context banner now uses `--warning` on `--surface`, 5.18:1 light / 10.26:1 dark), no version/engine/benchmark badges, no uppercase section tags, no `//` prefixes, no row IDs, no "Recommended", no status text that is not real state, and no ` · ` meta strings. Nothing in `docs/design/stitch/` was copied: no HTML, class names, Material Symbols, CDN links, fonts, images or copy.
+- **Tests:** `tests/e2e/a11y.spec.ts` now runs axe on all fourteen routes in both themes plus the omnibox, empty and with a dropped file (32 runs). New `tests/e2e/visual.spec.ts` adds four dark screenshot baselines (home, `qr-genny`, image-converter first-use, omnibox), asserts the computed dark background and that the selected omnibox row is Marker with ink text, and measures the rendered 12 px floor on three routes plus the omnibox in both themes.
+
+**Features touched:** PF-01, PF-02, PF-05 notes updated; PF-09 precache figure updated to 882 kB. No statuses changed.
+
+**Decisions:** DEC-14 to DEC-17 recorded as settled (fonts, radius from `DESIGN.md`, registry as the only source of truth, workflow links out of scope). DEC-13 is left open: the prompt arrived with the placeholder text unedited, so the session proceeded on the objective ("align the shell with the reviewed Stitch design"), and `DESIGN.md` was treated as the source of truth wherever a screen disagreed. No dependency was added or changed, so no licence decision was needed.
+
+**Verification:**
+- `pnpm install --frozen-lockfile`: unchanged lockfile, no new packages.
+- `pnpm lint`: pass (biome over 133 files + design rules, 0 problems).
+- `pnpm typecheck`: pass across all four packages.
+- `pnpm test`: **246 tests in 20 files** pass.
+- `pnpm test:coverage`: **96.73% statements, 90.2% branches, 100% functions, 98.03% lines**; thresholds unchanged.
+- `pnpm build`: pass; 14 prerendered routes plus 404.
+- `pnpm check:budgets`: shell JS **151.3 kB gzip** (was 150.8 kB, budget 200 kB); precache **53 files / 881.9 kB** (was 53 / 873.2 kB, budget 8 MiB); 58 build files, none over 20 MiB.
+- `pnpm e2e`: **63 pass** (was 34). Two consecutive runs pass with the same baselines.
+- axe: 0 serious/critical in light and dark on all fourteen routes and the omnibox (including with a dropped file).
+- `pnpm lighthouse`: home **96** performance, **100** accessibility, best practices and SEO; tool pages **91–93** performance; LCP 2.26–2.95 s, CLS ≤ 0.001.
+
+**Not done / uncertain:**
+- The Stitch `screen.png` files were not visually inspected: this agent has no image-viewing tool. Structure was read from the review documents and from the HTML layout (classes and element order), which is exactly the material the reviews describe. Anything that depends on the screenshots' fine appearance (spacing rhythm, exact column split) is unverified.
+- The three stages stay one column, matching the wording in `DESIGN.md` ("three stages: Input | Options | Output separated by 1 px rules") rather than the two-column split in the desktop screens; on mobile the action bar is fixed to the viewport bottom, not inside the output stage.
+- "Send to" is hidden rather than shown disabled, because `DESIGN.md` says it appears "when handoff is available".
+- Reset is implemented on the three sample tools only; the eight Batch 1 tools share the new frame but have no Reset button yet.
+- The QR tool's rows describe the two images and offer "Copy SVG markup" instead of per-row Copy of binary data.
+- The codec download in the image converter is still simulated (2.0 MB, labelled as a sample); only the state transitions are real.
+- Screenshot baselines are Chromium on Linux; a different platform or font stack will need `--update-snapshots`.
+- `docs/design/stitch_developer_tool_directory.zip` remains untracked and unused.
+- Nothing was pushed; `_redirects` (P1-15) is still unchanged.
+
+**Problems and risks found:**
+- Contrast in dark mode would have failed on the Marker row if the item's muted text had been kept: muted on Marker is 1.79:1 in dark. The item now forces `--highlight-foreground` on its descendants.
+- `packages/ui` had no Node types, so the new contrast test could not read `tokens.css`; `packages/ui/tsconfig.json` now sets `types: ["node"]`, matching the root and `apps/web` configs.
+- A uuid-genny screenshot baseline was not viable (random values); the tool-page baseline uses `qr-genny`, which is deterministic.
+
+**Next session should:** continue the remaining P2 tools, decide P1-15 and DEC-13, finish the per-tool Reset work, and keep the new design checks in mind when adding UI.
+
+**Human review:** [ ] diff read  [ ] approved

@@ -68,3 +68,18 @@ Eight text and dev tools: `json-formatter`, `jwt-decoder`, `encoder`, `base-conv
 - E2E: **34 passing**, including the 1 MB JSON worker path, offline formatting and 14 axe routes.
 
 **Known gaps:** the remaining P2 tools are unbuilt; the diff caps each side at 20,000 units and 2,000 edits; JSON above 1 MB reports four progress stages rather than byte-level progress; only Chromium is exercised.
+
+### P2 — design alignment (2026-10-18)
+The Phase 1 shell was aligned with the accepted Stitch layout reference (`docs/design/STITCH-REVIEW.md`, `STITCH-REVIEW-2.md`). Tokens gained `--border-strong`, `--success`, `--warning`, `--surface-inset` and `--surface-hover`; `packages/ui/src/contrast.test.ts` parses `tokens.css` and asserts every text pair at 4.5:1 and every control border at 3:1 in both themes, and that the decorative hairline stays below 3:1. `scripts/check-design-rules.mjs` (part of `pnpm lint`) enforces the 12 px floor, no all-caps labels, one popover shadow, no gradients, no icon fonts and no "A · B · C" meta strings, and `tests/e2e/visual.spec.ts` measures the rendered 12 px floor in both themes. The omnibox gained underlined matches, the Marker selected row, a dropped-file chip and a "Tools that accept this file" group; the tool frame has unnumbered stages, per-value copy rows and one action bar that is sticky on mobile; the image converter's first-use codec download, cancel and cached states now come from worker progress phases plus a session flag.
+
+**Measured budgets (local production build, 2026-10-18):**
+- Shell JS: **151.3 kB gzip** (budget 200 kB), up 0.5 kB on P2 Batch 1.
+- Precache: **53 files / 881.9 kB** (budget 8 MiB), up 8.7 kB.
+- Build files: **58**; no file over 20 MiB.
+- Lighthouse mobile: home **96** performance, **100** accessibility, best practices and SEO; tool pages 91–93 performance.
+- Unit tests: **246 passing in 20 files**; coverage **96.73% statements / 90.2% branches** (thresholds unchanged).
+- E2E: **63 passing**, including axe in light and dark on every route and four dark screenshot baselines.
+
+**Deviations:** the tool stages stay a single column (DESIGN.md wording) rather than the two-column split in the Stitch screens; "Send to" is hidden until handoff exists (P7) rather than shown disabled; Reset is wired on the three sample tools only. The image converter's codec download is still simulated, with the size labelled as a sample.
+
+**Known gaps:** the eight Batch 1 tools keep the shared frame but have no Reset; per-value copy rows are used where the value is text (QR rows are downloads plus SVG markup copy); the screenshot baselines are Chromium on Linux only.

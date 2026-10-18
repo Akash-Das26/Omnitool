@@ -20,15 +20,15 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 
 | ID | Feature | What the original does | Phase | Status | Notes |
 |----|---------|------------------------|-------|--------|-------|
-| PF-01 | App shell & layout | Header, collapsible category sidebar, content area; responsive | P1 | ✅ | Header, collapsible rail, responsive to 320 px; skip link |
-| PF-02 | Home page | Hero, featured tools (Substrata, QR, Auto Subtitle, Background Remover), suites, tool grid by category | P1 | ✅ | Omnibox hero and category index of rows (not cards); all 97 rows, unbuilt tools marked by phase |
+| PF-01 | App shell & layout | Header, collapsible category sidebar, content area; responsive | P1 | ✅ | Header, collapsible rail, responsive to 320 px; skip link; Stitch-aligned in Session 008 (border-strong controls, 12 px floor) |
+| PF-02 | Home page | Hero, featured tools (Substrata, QR, Auto Subtitle, Background Remover), suites, tool grid by category | P1 | ✅ | Omnibox hero and category index of rows (not cards); section headers on `--surface-inset`, rows with accepts → produces chips; all 97 rows, unbuilt tools marked by phase |
 | PF-03 | Tool registry | Single typed registry (id, name, description, icon, href, flags, accepts/produces) drives nav, grid, search and routing | P1 | ✅ | Valibot-validated seed; `produces` and some missing `accepts` added as provisional metadata |
 | PF-04 | Per-tool routes, lazy-loaded | `/tools/<id>` routes; each tool code-split | P1 | ✅ | Loader import map, `defaultPreload: 'intent'`; eleven tools implemented |
-| PF-05 | Omnibox / command search | Keyboard-driven search over tools (and accepted file types) | P1 | ✅ | Ctrl/Cmd+K, grouped results, file filter, planned tools disabled |
+| PF-05 | Omnibox / command search | Keyboard-driven search over tools (and accepted file types) | P1 | ✅ | Ctrl/Cmd+K, grouped results, underlined matches, Marker selected row, dropped-file chip with a "Tools that accept this file" group, key hints; planned tools disabled |
 | PF-06 | Theme toggle (light/dark) | Class-based dark mode with no-flash bootstrap; persists choice | P1 | ✅ | External pre-paint bootstrap, localStorage, system default |
 | PF-07 | 404 page | Not-found route | P1 | ✅ | Root not-found route plus static `404.html` |
 | PF-08 | Privacy page | States: no accounts, no data collection, runs locally | P1 | ✅ | `/privacy` written in British English |
-| PF-09 | Offline / PWA | Works with no internet after first load (service worker + cached assets) | P1 | ✅ | Workbox precache 873 kB, SW update prompt; offline E2E passes |
+| PF-09 | Offline / PWA | Works with no internet after first load (service worker + cached assets) | P1 | ✅ | Workbox precache 882 kB, SW update prompt; offline E2E passes |
 | PF-10 | Static prerender / SEO | Per-route HTML + meta + OG image for discoverability | P1 | 🟨 | Postbuild HTML and meta for home/privacy/about/every built tool/404; no OG image or canonical URLs until Phase 9 (DEC-10, DEC-11) |
 | PF-11 | Changelog popup | "What's new" with versioned entries | P7 | ⬜ |  |
 | PF-12 | Colour notation selector | Header-level preference (hex/rgb/hsl/oklch…) read by every colour tool | P3 | ⬜ |  |
