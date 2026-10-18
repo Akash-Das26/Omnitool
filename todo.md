@@ -44,6 +44,7 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] P1-13 Prerender/SEO per route (agent)
 - [x] P1-13b Brand assets moved to Phase 9 under DEC-11; the wordmark placeholder and Lucide icons stay (human)
 - [x] P1-14 Audit A1 recorded: PASS, no open Must findings; F-013 and F-014 carry to A2 (human+agent)
+- [ ] P1-15 Decide the `_redirects` SPA fallback: Wrangler rejects `/* /index.html 200` as an infinite loop. Remove the file or choose another hosting mode before the first deploy (human; see `docs/deployment/CLOUDFLARE-PAGES.md` section 3)
 
 ## P2 Text, dev & calculators — Batch 1 (eight tools; stop at the batch gate)
 - [x] P2-01 `json-formatter`: format, minify, validate with line/column errors; worker with progress and cancel above about 1 MB (agent)
@@ -55,6 +56,7 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] P2-07 `px-to-rem`: configurable root size and a table of common values (agent)
 - [x] P2-08 `text-diff`: line, word and character modes with inline and side-by-side views (agent)
 - [ ] P2-09 Batch gate: checks recorded and descriptions drafted; awaiting owner review (human)
+- [ ] P2-10 Approve the 97 drafted descriptions in `docs/review/DESCRIPTIONS-DRAFT.md`; the registry stays unchanged until then (human)
 
 ## Later (do not start early)
 - [ ] P2 (rest) Text, dev & calculators — remaining `features.md` rows tagged P2

@@ -261,3 +261,44 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 **Next session should:** wait for the owner's review of the batch and descriptions, then continue the remaining P2 tools; book the screen-reader and cross-browser checks for A2.
 
 **Human review:** [ ] diff read  [ ] approved
+
+### Session 007 — 2026-10-18 — Review preparation — Buffy
+**Goal:** Prepare the project for the owner's review and first deployment without changing any tool: a review guide, a Cloudflare Pages runbook, production-like local verification, and drafts for all 97 descriptions.
+
+**Done:**
+- Wrote `docs/review/HUMAN-REVIEW-GUIDE.md`: prerequisites and commands with expected numbers, a click-through checklist, the local commit list, the files worth reading and why, and commands that prove there is no attribution text or secret material in history.
+- Wrote `docs/deployment/CLOUDFLARE-PAGES.md`: project settings, the Node and pnpm overrides the v3 build image needs, first-deploy checks, CSP/offline/update-prompt checks, rollback and troubleshooting. Cloudflare claims were checked against current Pages docs on 2026-10-18, not memory.
+- Verified the production output locally with `wrangler@4.151.1 pages dev apps/web/dist`:
+  - 5 header rules parsed; CSP, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` and `Permissions-Policy` present; COOP and COEP absent.
+  - Hashed assets `immutable`; `/sw.js` `no-cache`.
+  - 0 CSP violations and 0 page errors in Chromium; service worker active and controlling; 38 Workbox precache manifest entries; offline reload and tool use worked.
+  - Unknown path returned `404.html` with status 404; `/tools/text-diff` returned a 308 to the prerendered trailing-slash URL.
+- Found a real deployment defect: `_redirects` (`/* /index.html 200`) is rejected as an infinite loop, so Pages ignores it. Alternatives were tested and rejected: `/* / 200` rewrites assets to HTML, and `/tools/* / 200` rewrites prerendered tool URLs to home. All current routes are prerendered, so the site works without the rule; the runbook recommends removing it.
+- Drafted 97 descriptions in `docs/review/DESCRIPTIONS-DRAFT.md`, all one sentence, at most 100 characters (longest 90), en-GB. Automated four-word overlap check against the "Original description" column flagged **1** draft (`image-to-pdf`); a second, independently written checker then caught one the first regex had missed (`nato-phonetic`). Both were rewritten; final runs by both checkers flag **0**. The eight Batch 1 drafts match the copy already in the registry so the review table and the live site agree. The registry itself was not edited.
+- Recorded P1-15 (`_redirects` decision) and P2-10 (description approval) in `todo.md`.
+
+**Features touched:** none; no tool, UI, dependency or registry change.
+
+**Decisions:** no new decisions. P1-15 and P2-10 are follow-ups for the owner.
+
+**Verification:**
+- `pnpm build`: pass; 14 prerendered routes plus 404.
+- `pnpm lint`, `pnpm typecheck`, `pnpm test`: pass (182 tests, 19 files).
+- Wrangler local run as above. `wrangler` was invoked through `pnpm dlx` and was not added to the project.
+- Re-ran the Wrangler checks after the final document edits: 5 header rules parsed, 0 valid redirect rules, all five security headers present, COOP/COEP absent, `/assets/*` immutable, `/sw.js` `no-cache`, unknown path `404 text/html`, `/tools/text-diff` `308`, `/tools/text-diff/` `200 text/html`, `robots.txt` `text/plain`. A headless Chromium pass over seven routes produced 0 console errors, 0 page errors, 0 failed requests and 0 CSP violations, with the service worker controlling the page.
+
+**Not done / uncertain:**
+- The `_redirects` file is unchanged because this session was documents-only; the owner must remove it or accept the deploy warning.
+- Descriptions are drafts; nothing has been written into the registry and no owner approval exists yet.
+- The 86 unbuilt tools' descriptions describe intended behaviour, which is based on the feature ledger, not on implemented code.
+- No real Cloudflare deployment was made: the runbook's post-deploy checks are written but unexecuted.
+- `docs/design/stitch_developer_tool_directory.zip` remains untracked and unused.
+- Nothing was pushed.
+
+**Problems and risks found:**
+- The SPA fallback in `_redirects` has never worked on Pages; it is silently ignored. This would have surfaced only after the first deploy.
+- Cloudflare's v3 build image defaults to Node 22.16.0, below the repository's `>=22.19` engine, and does not detect the pnpm version from the lockfile. Both need explicit environment variables.
+
+**Next session should:** get approval for the descriptions and the batch gate, decide P1-15, then either write the descriptions into the registry or continue the remaining P2 tools.
+
+**Human review:** [ ] diff read  [ ] approved
