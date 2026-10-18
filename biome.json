@@ -8,7 +8,7 @@
       "!**/coverage",
       "!**/playwright-report",
       "!**/test-results",
-      "!**/.lighthouseci",
+      "!**/reports/lighthouse",
       "!delphitools-main",
       "!docs/design/stitch"
     ]

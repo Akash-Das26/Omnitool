@@ -4,7 +4,7 @@ dist/
 coverage/
 playwright-report/
 test-results/
-.lighthouseci/
+reports/lighthouse/
 .DS_Store
 *.log
 .env
