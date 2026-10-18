@@ -1138,7 +1138,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Say letters aloud using the NATO and DIN 5009 spelling alphabets.",
       "produces": ["text/plain"]
     },
     {

@@ -19,6 +19,7 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   'px-to-rem': () => import('@/tools/px-to-rem'),
   'text-diff': () => import('@/tools/text-diff'),
   'morse-code': () => import('@/tools/morse-code'),
+  'nato-phonetic': () => import('@/tools/nato-phonetic'),
 };
 
 export function isToolImplemented(id: string): boolean {

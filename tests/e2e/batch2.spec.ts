@@ -38,3 +38,19 @@ test.describe('morse-code', () => {
     await expect(page.getByRole('button', { name: 'Play' })).toBeDisabled();
   });
 });
+
+test.describe('nato-phonetic', () => {
+  test('spells letters and digits, and flags the rest', async ({ page }) => {
+    await page.goto('/tools/nato-phonetic');
+
+    await page.getByLabel('Text to spell out').fill('SOS 1895');
+    await expect(page.getByLabel('Spelled-out text')).toHaveValue(
+      'Sierra Oscar Sierra / Wun Ait Niner Fife',
+    );
+
+    // Punctuation has no ICAO word: passed through and flagged.
+    await page.getByLabel('Text to spell out').fill('A-B!');
+    await expect(page.getByRole('alert')).toContainText('No ICAO word for: -, !');
+    await expect(page.getByLabel('Spelled-out text')).toHaveValue('Alfa - Bravo !');
+  });
+});

@@ -17,6 +17,7 @@ const TOOL_ROUTES = [
   '/tools/px-to-rem',
   '/tools/text-diff',
   '/tools/morse-code',
+  '/tools/nato-phonetic',
 ];
 
 for (const route of TOOL_ROUTES) {

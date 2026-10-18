@@ -67,7 +67,7 @@ Format: `- [ ] ID task (owner: human|agent)`
 
 ## P2 Text, dev & calculators — Batch 2 (eight tools; stop at the batch gate)
 - [x] P2-11 `morse-code`: ITU letters, digits and punctuation both ways, unknown-character and word-separator handling; Web Audio playback at a chosen words per minute with a visible Stop (agent, Session 010)
-- [ ] P2-12 `nato-phonetic`: ICAO spelling alphabet including digit pronunciations, unknown characters passed through and flagged (agent)
+- [x] P2-12 `nato-phonetic`: ICAO spelling alphabet including digit pronunciations, unknown characters passed through and flagged (agent, Session 010)
 - [ ] P2-13 `braille-converter`: Unicode braille patterns, English grade 1 both ways, with the contracted-braille limitation stated in the UI (agent)
 - [ ] P2-14 `unit-converter`: eleven categories with exact factors and offset temperature handling, precision setting, round-trip tests (agent)
 - [ ] P2-15 `time-calc`: duration arithmetic, date-time difference, seconds to days/hours/minutes/seconds, documented DST behaviour with a DST test (agent)

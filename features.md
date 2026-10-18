@@ -196,7 +196,7 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | `morse-code` | Morse Code | Encode, decode and play Morse code | new | T1 | P2 | tool-core | ✅ | Session 010 |
 | `braille-converter` | Braille Converter | Turn text into Braille cells | new | T1 | P2 | tool-core | ⬜ | |
 | `ipa-transcriber` | IPA Transcription | Transcribe English text into IPA | new | T2 | P2 | tool-core + data | ⬜ | |
-| `nato-phonetic` | NATO Phonetic | Translate text to NATO or DIN-5009 calls | new | T1 | P2 | tool-core | ⬜ | |
+| `nato-phonetic` | NATO Phonetic | Translate text to NATO or DIN-5009 calls | new | T1 | P2 | tool-core | ✅ | Session 010; DIN-5009 not implemented, ICAO only |
 
 ### Elsewhere (2)
 
