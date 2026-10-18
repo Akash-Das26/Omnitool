@@ -8,6 +8,14 @@ const routes = [
   '/tools/uuid-genny',
   '/tools/qr-genny',
   '/tools/image-converter',
+  '/tools/json-formatter',
+  '/tools/jwt-decoder',
+  '/tools/encoder',
+  '/tools/base-converter',
+  '/tools/password-genny',
+  '/tools/word-counter',
+  '/tools/px-to-rem',
+  '/tools/text-diff',
 ];
 
 for (const route of routes) {

@@ -694,8 +694,8 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
-      "produces": ["text/css", "text/plain"]
+      "description": "Convert pixel values to rem and back against a root font size you choose.",
+      "produces": ["text/plain"]
     },
     {
       "id": "text-diff",
@@ -706,8 +706,8 @@
       "accepts": ["text/*", ".txt", ".md"],
       "tier": 1,
       "phase": 2,
-      "description": "",
-      "produces": ["text/html", "text/plain"]
+      "description": "Compare two pieces of text by line, word or character, with inline and side-by-side views.",
+      "produces": ["text/plain"]
     },
     {
       "id": "typo-calc",
@@ -730,8 +730,8 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
-      "produces": ["application/json", "text/plain"]
+      "description": "Count words, sentences and characters, and estimate reading and speaking time.",
+      "produces": ["text/plain"]
     },
     {
       "id": "pdf-preflight",
@@ -862,7 +862,7 @@
       "accepts": [".json"],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Tidy, minify and check JSON, with the line and column of any syntax error.",
       "produces": ["application/json", "text/plain"]
     },
     {
@@ -874,7 +874,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Read a JSON Web Token's header and claims in the browser, without checking the signature.",
       "produces": ["application/json", "text/plain"]
     },
     {
@@ -970,7 +970,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Make random passwords or passphrases in the browser with the Web Crypto API.",
       "produces": ["text/plain"]
     },
     {
@@ -1018,7 +1018,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Convert whole numbers between any two bases from 2 to 36 without losing precision.",
       "produces": ["text/plain"]
     },
     {
@@ -1030,8 +1030,8 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
-      "produces": ["text/plain", "application/json"]
+      "description": "Convert text to and from Base64, URL, HTML entity and hexadecimal forms.",
+      "produces": ["text/plain"]
     },
     {
       "id": "graph-calc",

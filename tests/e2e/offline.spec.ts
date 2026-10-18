@@ -35,5 +35,14 @@ test('the shell and sample tools work offline after first load', async ({ page, 
     timeout: 20_000,
   });
 
+  await page.goto('/tools/json-formatter');
+  await page.getByLabel('JSON input').fill('{"offline":true}');
+  await page.getByRole('button', { name: 'Format' }).click();
+  await expect(page.getByLabel('Formatted JSON')).toHaveValue('{\n  "offline": true\n}\n');
+
+  await page.goto('/tools/word-counter');
+  await page.getByLabel('Text to count').fill('Offline words still count.');
+  await expect(page.locator('dd').first()).toHaveText('4');
+
   await context.setOffline(false);
 });

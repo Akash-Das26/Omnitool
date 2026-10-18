@@ -10,6 +10,14 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   'uuid-genny': () => import('@/tools/uuid-genny'),
   'qr-genny': () => import('@/tools/qr-genny'),
   'image-converter': () => import('@/tools/image-converter'),
+  'json-formatter': () => import('@/tools/json-formatter'),
+  'jwt-decoder': () => import('@/tools/jwt-decoder'),
+  encoder: () => import('@/tools/encoder'),
+  'base-converter': () => import('@/tools/base-converter'),
+  'password-genny': () => import('@/tools/password-genny'),
+  'word-counter': () => import('@/tools/word-counter'),
+  'px-to-rem': () => import('@/tools/px-to-rem'),
+  'text-diff': () => import('@/tools/text-diff'),
 };
 
 export function isToolImplemented(id: string): boolean {
