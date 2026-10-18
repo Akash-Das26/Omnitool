@@ -49,4 +49,9 @@ Built pnpm workspace, React 19/Vite 8 SPA, Tailwind v4 tokens, shadcn primitives
 
 Lighthouse runs from `scripts/lighthouse.mjs` (direct `lighthouse` + `chrome-launcher`, serving `dist` with Brotli/gzip) rather than `@lhci/cli`, whose pinned transitive dependencies carried four high advisories with no upstream fix. A `robots.txt` was added so crawlers are not served the SPA shell. Coarse-pointer rules in `apps/web/src/styles/app.css` raise touch targets to 44 px.
 
-**Known gaps:** 94 tools unbuilt; all 97 descriptions blank; brand/OG assets absent; real WASM codecs and JXL deferred to P4; service-worker update prompt not exercised against a real second deployment.
+- No OG image and no PWA install icons. The app works offline after first load but is not installable until the icons exist.
+- No canonical URLs or absolute OG tags: no production domain has been chosen (DEC-10).
+- The service-worker update prompt and Cloudflare Pages serving have not been tested on a real deployment.
+- Real WASM codecs and JXL are deferred to P4.
+
+**Known gaps:** 94 tools unbuilt at the end of P1 (eight more arrive in P2 Batch 1); the remaining tool descriptions are still blank; brand/OG assets deferred to Phase 9 under DEC-11.

@@ -29,7 +29,7 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | PF-07 | 404 page | Not-found route | P1 | ✅ | Root not-found route plus static `404.html` |
 | PF-08 | Privacy page | States: no accounts, no data collection, runs locally | P1 | ✅ | `/privacy` written in British English |
 | PF-09 | Offline / PWA | Works with no internet after first load (service worker + cached assets) | P1 | ✅ | Workbox precache 781 kB, SW update prompt; offline E2E passes |
-| PF-10 | Static prerender / SEO | Per-route HTML + meta + OG image for discoverability | P1 | 🟨 | Postbuild HTML and meta for home/privacy/about/three tools/404; OG image awaits brand asset |
+| PF-10 | Static prerender / SEO | Per-route HTML + meta + OG image for discoverability | P1 | 🟨 | Postbuild HTML and meta for home/privacy/about/every built tool/404; no OG image or canonical URLs until Phase 9 (DEC-10, DEC-11) |
 | PF-11 | Changelog popup | "What's new" with versioned entries | P7 | ⬜ |  |
 | PF-12 | Colour notation selector | Header-level preference (hex/rgb/hsl/oklch…) read by every colour tool | P3 | ⬜ |  |
 | PF-13 | Carry colour across tools | `?color=` query handoff between colour tools | P3 | ⬜ |  |
@@ -44,7 +44,7 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | PF-22 | Keyboard shortcuts & a11y baseline | Shortcut sheet in editors; focus-visible; reduced motion | P1 | ✅ | Skip link, Ctrl/Cmd+K, focus-visible ring, reduced-motion override; editor shortcut sheet is P8 |
 | PF-23 | Acknowledgements / About | Credits for open-source dependencies and licences | P1 | ✅ | `/about` lists runtime, dev-only and font licences |
 | PF-25 | Typed, shareable URL state | Original uses `?color=` and shareable workflow links; Omnitool validates all search params with one approach (FR-015) | P1 | ✅ | Valibot `validateSearch`; unknown and file-like keys dropped; tests |
-| PF-24 | Branding & artwork | Original uses commissioned hero art, stickers, tiles. **Not reusable.** Omnitool needs its own identity | P1 | 🟨 | Plain text wordmark and Lucide placeholders; assets requested from owner |
+| PF-24 | Branding & artwork | Original uses commissioned hero art, stickers, tiles. **Not reusable.** Omnitool needs its own identity | P1 | 🟨 | Deferred to Phase 9 under DEC-11; plain text wordmark and Lucide placeholders only |
 
 ## 2. Tools by category
 

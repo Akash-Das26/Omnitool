@@ -3,12 +3,18 @@
 Rule: only work on the **current phase**. Tick items as done and mirror status in `features.md`.
 Format: `- [ ] ID task (owner: human|agent)`
 
-## Decisions needed from the human (blocks P1)
+## Decisions needed from the human (resolved)
 - [x] DEC-01 Approve D-01..D-19 in `plan.md` (or amend via ADR); note D-07 TanStack Router and D-13 Cloudflare limits (human)
 - [x] DEC-02 Confirm licence and copyright holder name (default MIT, "Omnitool contributors") (human)
 - [x] DEC-03 Confirm hosting target (Cloudflare Pages proposed) (human)
-- [x] DEC-06 Confirm art approach: identity set only (logo, icon, OG image, empty-state spots), made with an image generator or by hand (see `docs/design/ART-PROMPTS.md`) (human)
 - [x] DEC-05 Decide image-editor canvas library (Fabric.js vs Konva) via ADR before P8 (human; deferred to P8)
+- [x] DEC-06 Approve the identity art set in `docs/design/ART-PROMPTS.md` (human; deferred to Phase 9 under DEC-11)
+- [x] DEC-07 Accept the neutral category labels and provisional `accepts`/`produces` metadata; revisit in Phase 7 (human)
+- [x] DEC-08 Accept `qrcode` (MIT) and `axe-core`/`@axe-core/playwright` (MPL-2.0, development only, never shipped) (human)
+- [x] DEC-09 Stitch gate accepted for now: `docs/design/stitch/` stays empty and the `DESIGN.md` tokens stand (human)
+- [x] DEC-10 No production domain yet: no canonical URLs or absolute OG tags for now (human)
+- [x] DEC-11 Artwork deferred to Phase 9; keep the plain wordmark placeholder and make no brand assets (human)
+- [x] DEC-12 The agent drafts each registry description; the owner reviews them afterwards (human)
 
 ## P0 Planning (done in Sessions 000-001)
 - [x] P0-01 Analyse zip: structure, registry (97 tools), design doc, licence (agent)
@@ -18,14 +24,14 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] P0-06 Merge and verify external decision logs; publish decision log v2 (agent, Session 001)
 - [ ] P0-05 Human review of plan (human)
 
-## P1 Foundations (implementation complete; awaiting Audit A1)
-- [ ] P1-00 Design gate: run Stitch prompts in `docs/design/STITCH-PROMPTS.md`; save exports to `docs/design/stitch/`; update `docs/design/DESIGN.md` (human)
+## P1 Foundations (complete; Audit A1 PASS)
+- [x] P1-00 Design gate: accepted for now under DEC-09; build uses `docs/design/DESIGN.md` tokens (human)
 - [x] P1-01 Pin versions (`pnpm view`), set `packageManager`, install (agent)
 - [x] P1-02 Scaffold `apps/web` with Vite + React + TS strict (agent)
 - [x] P1-03 Tailwind v4 + `shadcn init --template vite`; connect shadcn MCP (agent; MCP config in `.mcp.json`, client not in CLI's built-in list)
 - [x] P1-04 Biome, Vitest, Playwright + axe, CI workflow (agent)
 - [x] P1-05 Tokens from `DESIGN.md` into `packages/ui` (agent)
-- [x] P1-06 `tools-registry` typed from seed (agent; all 97 descriptions remain empty, awaiting owner copy)
+- [x] P1-06 `tools-registry` typed from seed (agent; descriptions are being drafted from Session 006)
 - [x] P1-07 Shell: header, sidebar, theme (no-flash), TanStack Router with registry-generated routes, `defaultPreload: 'intent'`, thin `lib/navigation` wrapper, 404, privacy (agent)
 - [x] P1-07b Typed shared search params (`color`, handoff run id) with Valibot `validateSearch`; test that no file data can enter the URL (agent)
 - [x] P1-07c Worker harness: Comlink wrapper, progress via proxy callback, cancel by terminate; unit test with a fake slow worker (agent)
@@ -36,9 +42,24 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] P1-11b Hosting config: `_headers` (CSP, cache headers; COOP/COEP off), `_redirects` SPA fallback; CI check for any file > 25 MiB or > 20,000 files (agent; enforced at 20 MiB)
 - [x] P1-12 Three sample tools proving the contract: `uuid-genny` (T1), `qr-genny` (T2), `image-converter` shell (T3 stub) (agent)
 - [x] P1-13 Prerender/SEO per route (agent)
-- [ ] P1-13b Brand assets supplied by the owner into `apps/web/public/brand/`; agent wires favicon, manifest icons, OG tags (human, then agent)
-- [ ] P1-14 Audit A1 recorded (human+agent; requested in Session 004, not self-approved)
+- [x] P1-13b Brand assets moved to Phase 9 under DEC-11; the wordmark placeholder and Lucide icons stay (human)
+- [x] P1-14 Audit A1 recorded: PASS, no open Must findings; F-013 and F-014 carry to A2 (human+agent)
+
+## P2 Text, dev & calculators — Batch 1 (eight tools; stop at the batch gate)
+- [ ] P2-01 `json-formatter`: format, minify, validate with line/column errors; worker with progress and cancel above about 1 MB (agent)
+- [ ] P2-02 `jwt-decoder`: decode header and claims only; never send, persist or store keys (agent)
+- [ ] P2-03 `encoder`: Base64, URL, HTML entities and hex with correct Unicode (agent)
+- [ ] P2-04 `base-converter`: BigInt, bases 2–36, clear invalid-digit errors (agent)
+- [ ] P2-05 `password-genny`: `crypto.getRandomValues`, no modulo bias, nothing logged or persisted (agent)
+- [ ] P2-06 `word-counter`: `Intl.Segmenter` words and sentences, characters with and without spaces, reading time (agent)
+- [ ] P2-07 `px-to-rem`: configurable root size and a table of common values (agent)
+- [ ] P2-08 `text-diff`: line, word and character modes with inline and side-by-side views (agent)
+- [ ] P2-09 Batch gate: full checks recorded, descriptions drafted for owner review (human+agent)
 
 ## Later (do not start early)
-- [ ] P2 Text, dev & calculators — see `features.md` rows tagged P2
+- [ ] P2 (rest) Text, dev & calculators — remaining `features.md` rows tagged P2
 - [ ] P3 Colour · P4 Images · P5 PDF/print · P6 Audio/video · P7 Platform extras · P8 Flagships · P9 Hardening
+
+## Phase 9: brand assets (deferred, DEC-11)
+- [ ] P9-01 Owner supplies `apps/web/public/brand/{logo,logo-dark,favicon,icon-512,icon-192,apple-touch-icon,og}.svg|png` and `apps/web/src/assets/spots/{drop,empty,offline}.svg` (human)
+- [ ] P9-02 Agent wires favicon, manifest icons, OG image and canonical/OG URLs (agent, needs DEC-10)

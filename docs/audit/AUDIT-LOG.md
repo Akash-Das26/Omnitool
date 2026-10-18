@@ -16,6 +16,8 @@ Audits happen at each phase gate (A1..A9) using `CHECKLISTS.md`. Findings have a
 | F-010 | A0.1 | Should (P1) | COOP/COEP can break cross-origin model/WASM fetches; only needed for SharedArrayBuffer | Closed in Session 004: headers deliberately absent, CSP in `_headers`, policy in ADR 0003 | agent |
 | F-011 | A0.1 | Info | nuqs + TanStack Router duplicates URL-state handling; nuqs marks its TanStack adapter experimental | Closed: nuqs rejected | agent |
 | F-012 | A1 pre-check | Should | `pnpm audit` reported 4 high, 2 moderate and 1 low advisories, all from `@lhci/cli` transitive dependencies (`tmp`, `extract-zip`, `basic-ftp`, `uuid`, `sprintf-js`) | Closed in Session 005: Lighthouse runs from `scripts/lighthouse.mjs` using `lighthouse` + `chrome-launcher`; `pnpm audit` reports 0 vulnerabilities | agent |
+| F-013 | A1 | Should | Browser matrix limited to Chromium; Firefox, WebKit, Safari, iOS Safari and Android Chrome have not been exercised | Open: A2/Phase 9 | agent |
+| F-014 | A1 | Should | No screen-reader spot check (NVDA or VoiceOver) has been done | Open: A2 | human+agent |
 
 ## Pre-audit evidence for A1 — collected 2026-10-18 — not a verdict
 
@@ -69,3 +71,13 @@ Evidence only; A1 itself is still unrun and unapproved. Re-run these commands at
 **Verdict:** PASS WITH CONDITIONS: F-008 and F-009 must be closed in P1.
 **Conditions / next actions:** implement CI budget checks in P1; re-verify tooling at ignition.
 
+
+### Audit A1 — 2026-10-18 — Phase 1 gate — independent session (verdict reported by the owner)
+**Scope / commit:** Phase 1 as delivered at commit `da0d381`, working tree clean.
+**Checklists run:** sections 1–7 against the evidence pack below; section 8 (browser matrix) only partially.
+**Results (owner-reported):** lint, typecheck, 69/69 tests and 17/17 E2E pass; Lighthouse mobile home 96 with 100 accessibility/best practices/SEO; axe 0 serious/critical; `pnpm audit` 0 vulnerabilities; shell 147.2 kB gzip, precache 30 files / 781.7 kB, 35 build files.
+**New findings:** F-013 (browser matrix, Should), F-014 (screen reader, Should).
+**Closed findings:** F-004, F-005, F-008, F-009, F-010, F-012.
+**Verdict:** PASS — no open Must findings.
+**Conditions / next actions:** F-013 and F-014 carry forward to A2. P1-00 (Stitch gate) accepted for now under DEC-09; P1-13b and artwork moved to Phase 9 under DEC-11.
+**Transcription note:** the verdict was supplied by the project owner from an audit run independently of the session that built the code. This entry records that verdict; it was not produced by the implementing session.
