@@ -112,26 +112,26 @@ export default function UuidGennyTool() {
 
         <ToolStage title="Options">
           <div className="flex flex-wrap gap-x-6 gap-y-3">
-            <label className="flex min-h-10 items-center gap-2 text-sm">
+            <label className="flex min-h-11 items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={uppercase}
                 disabled={version === 'nanoid'}
                 onChange={(event) => setUppercase(event.target.checked)}
-                className="size-4 accent-[var(--primary)]"
+                className="size-5 accent-[var(--primary)]"
               />
               Upper case
               {version === 'nanoid' ? (
                 <span className="text-muted-foreground">(Nano IDs are case-sensitive)</span>
               ) : null}
             </label>
-            <label className="flex min-h-10 items-center gap-2 text-sm">
+            <label className="flex min-h-11 items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={hyphens}
                 disabled={version === 'nanoid'}
                 onChange={(event) => setHyphens(event.target.checked)}
-                className="size-4 accent-[var(--primary)]"
+                className="size-5 accent-[var(--primary)]"
               />
               Hyphens
             </label>
