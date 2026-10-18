@@ -57,8 +57,14 @@ export default function PxToRemTool() {
     ? pxConversion.error
     : remConversion.error;
 
+  function reset() {
+    setRoot(String(DEFAULT_ROOT_FONT_SIZE));
+    setPx('16');
+    setRem('1');
+  }
+
   return (
-    <ToolFrame tool={tool}>
+    <ToolFrame tool={tool} onReset={reset}>
       <ToolStage title="Root size">
         <div className="max-w-xs space-y-2">
           <Label htmlFor="root-size">Root font size in pixels</Label>

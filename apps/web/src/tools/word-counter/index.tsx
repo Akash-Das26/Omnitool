@@ -38,8 +38,12 @@ export default function WordCounterTool() {
     ['Speaking time', minutes(stats.speakingMinutes)],
   ] as const;
 
+  function reset() {
+    setText('');
+  }
+
   return (
-    <ToolFrame tool={tool}>
+    <ToolFrame tool={tool} onReset={reset}>
       <ToolStage title="Text">
         <Label htmlFor="word-counter-input">Text to count</Label>
         <TextArea

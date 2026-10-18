@@ -63,8 +63,25 @@ export default function PasswordGennyTool() {
 
   const entropy = mode === 'password' ? passwordEntropyBits(options) : passphraseEntropyBits(words);
 
+  function reset() {
+    setMode('password');
+    setOptions({
+      length: 20,
+      lowercase: true,
+      uppercase: true,
+      digits: true,
+      symbols: true,
+      excludeAmbiguous: true,
+    });
+    setWords(4);
+    setSeparator('-');
+    setCapitalise(false);
+    setValue('');
+    setError(null);
+  }
+
   return (
-    <ToolFrame tool={tool}>
+    <ToolFrame tool={tool} onReset={reset}>
       <ToolStage title="Kind">
         <div className="max-w-xs space-y-2">
           <Label htmlFor="password-mode">Generate</Label>

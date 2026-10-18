@@ -69,8 +69,17 @@ export default function TextDiffTool() {
     return { part, key };
   });
 
+  function reset() {
+    setBefore('');
+    setAfter('');
+    setMode('line');
+    setView('inline');
+    setResult(null);
+    setError(null);
+  }
+
   return (
-    <ToolFrame tool={tool}>
+    <ToolFrame tool={tool} onReset={reset}>
       <ToolStage title="Texts">
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="space-y-2">

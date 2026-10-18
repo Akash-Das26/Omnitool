@@ -83,8 +83,16 @@ export default function EncoderTool() {
     setError(null);
   }
 
+  function reset() {
+    setMode('base64');
+    setDirection('encode');
+    setInput(EXAMPLES.base64);
+    setOutput('');
+    setError(null);
+  }
+
   return (
-    <ToolFrame tool={tool}>
+    <ToolFrame tool={tool} onReset={reset}>
       <ToolStage title="Input">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">

@@ -56,7 +56,7 @@ export default function JwtDecoderTool() {
     : '';
 
   return (
-    <ToolFrame tool={tool}>
+    <ToolFrame tool={tool} onReset={clear}>
       <ToolStage title="Token">
         <Label htmlFor="jwt-input">JSON Web Token</Label>
         <TextArea

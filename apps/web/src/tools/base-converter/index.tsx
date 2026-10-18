@@ -34,8 +34,14 @@ export default function BaseConverterTool() {
     }
   }, [value, fromBase, toBase]);
 
+  function reset() {
+    setValue('255');
+    setFromBase('10');
+    setToBase('16');
+  }
+
   return (
-    <ToolFrame tool={tool}>
+    <ToolFrame tool={tool} onReset={reset}>
       <ToolStage title="Number">
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2 sm:col-span-1">

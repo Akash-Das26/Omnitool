@@ -116,6 +116,18 @@ export default function JsonFormatterTool() {
     }
   }
 
+  function reset() {
+    jobRef.current?.cancel();
+    setText('');
+    setIndent(2);
+    setOutput('');
+    setError(null);
+    setValid(false);
+    setStatus('idle');
+    setProgress(0);
+    setLabel('');
+  }
+
   function validate() {
     const result = validateJson(text);
     if (result.ok) {
@@ -130,7 +142,7 @@ export default function JsonFormatterTool() {
   const running = status === 'running';
 
   return (
-    <ToolFrame tool={tool}>
+    <ToolFrame tool={tool} onReset={reset}>
       <ToolStage title="Input">
         <Label htmlFor="json-input">JSON input</Label>
         <TextArea
