@@ -13,7 +13,7 @@ Verified in a web check on 2026-10-17. Tool versions and features move quickly: 
 | Implementation | Claude Code, or any agent reading `AGENTS.md` | Follows repository rules and session protocol | Human reviews every session |
 | Design polish (optional) | Figma (Figma MCP available in this workspace) | Pixel-level edits if Stitch output needs it | Optional step |
 | Alternatives not evaluated | v0, Bolt, Lovable | Other prompt-to-UI tools | Bolt integration with Stitch exists per Bolt's May 2026 post; not evaluated for this project |
-| Verification | Vitest, Testing Library, Playwright, axe-core, Lighthouse CI, bundle analyser | Agents must not self-certify quality | – |
+| Verification | Vitest, Testing Library, Playwright, axe-core, Lighthouse, budget script | Agents must not self-certify quality | `pnpm lighthouse` runs `lighthouse` + `chrome-launcher` via `scripts/lighthouse.mjs`; `@lhci/cli` was dropped because of unfixable high advisories in its transitive dependencies |
 
 ## 2. Package manager and runtime
 
@@ -23,7 +23,7 @@ Verified in a web check on 2026-10-17. Tool versions and features move quickly: 
 | npm | Simplest, ubiquitous; slower, hoists loosely. Acceptable fallback |
 | bun | Fast and used by the original; less proven for CI/monorepo edge cases. Not chosen |
 
-Runtime: Node LTS (>= 22, see `.nvmrc`). Pin `packageManager` in root `package.json` at ignition.
+Runtime: Node LTS (>= 22.19, required by `lighthouse` 13; see `.nvmrc`). Pin `packageManager` in root `package.json` at ignition.
 
 ## 3. Stack (see `plan.md` section 2)
 Vite, React 19, TypeScript strict, Tailwind v4, shadcn/ui, TanStack Router, Zustand, Valibot, Dexie, Comlink, vite-plugin-pwa (Workbox), Lucide React, Vitest, Playwright + axe, Biome. Canonical table: `plan.md` section 2.
@@ -70,3 +70,10 @@ Sourced from the original's published acknowledgements as a starting point, not 
 | nuqs supports TanStack Router | Yes, but documented as experimental, with advice to use the router's own search-param APIs |
 | TanStack Router validates search params with Zod, Valibot or a custom function | Confirmed in TanStack docs |
 | `vite-plugin-pwa` works with the latest Vite major | Confirmed at ignition (Session 004): 2.0.0 declares Vite `^8.0.0` and built successfully with Vite 8.3.4 |
+
+## 7. Verified in Session 005 (2026-10-18)
+| Claim | Result |
+|-------|--------|
+| `@lhci/cli` 0.15.1 is the newest release | Confirmed with `pnpm view`; still pins `lighthouse` 12.6.1 and vulnerable `tmp`/`uuid`/`extract-zip` chains |
+| `lighthouse` 13.5.0 no longer pulls `extract-zip` | Confirmed: it depends on `puppeteer-core` 25, whose `@puppeteer/browsers` 3.2.5 uses `modern-tar` instead |
+| `pnpm audit` after the swap | 0 vulnerabilities (previously 4 high, 2 moderate, 1 low, all dev-only via `@lhci/cli`) |

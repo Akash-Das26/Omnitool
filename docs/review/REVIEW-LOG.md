@@ -173,3 +173,46 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 **Next session should:** close the copy and brand-asset items, review the provisional registry metadata, run Audit A1, then start P2 only after A1 passes.
 
 **Human review:** [ ] diff read  [ ] approved
+
+### Session 005 — 2026-10-18 — P1 Foundations (hardening) — Buffy
+**Goal:** Finish the verification the Session 004 completion check had skipped, and fix what it exposed. No new features, no Phase 2 work.
+
+**Done:**
+- Ran `pnpm audit` for the first time (audit checklist section 2). It reported **4 high, 2 moderate, 1 low**, all dev-only through `@lhci/cli@0.15.1`: `tmp`, `uuid`, `extract-zip` (no patched release), `basic-ftp` and `sprintf-js`. `@lhci/cli` is already the newest release and pins `lighthouse` 12.6.1.
+- Replaced `@lhci/cli` with `lighthouse@13.5.0` + `chrome-launcher@1.2.2` (both Apache-2.0) and a new runner, `scripts/lighthouse.mjs`. It serves `apps/web/dist` from an in-process static server (SPA fallback, Brotli/gzip like Cloudflare), audits six prerendered routes, asserts performance/accessibility ≥ 90 (errors) and best practices/SEO ≥ 90 (warnings), and writes HTML + JSON reports to `reports/lighthouse/`.
+- Deleted `lighthouserc.json`; updated `package.json`, `.gitignore`, `biome.json` and the CI workflow artifact path. `pnpm audit` now reports **0 vulnerabilities**.
+- Added `apps/web/public/robots.txt` (crawlers were being served the SPA shell, costing 9 SEO points) and a coarse-pointer block in `apps/web/src/styles/app.css` giving 44 px touch targets, plus 44 px icon buttons and 44 px checkbox rows (`size-5` boxes).
+- Recorded pre-audit evidence for A1 in `docs/audit/AUDIT-LOG.md` and closed F-004, F-005, F-008, F-009, F-010 and the new F-012.
+
+**Features touched:** none changed status. PF-23 (performance budgets) and PF-24 (identity) stay as recorded; PF-24 is still amber pending brand assets.
+
+**Decisions:** none new. Dependency swap within the approved stack; the licence note for `lighthouse`/`chrome-launcher` (Apache-2.0, development only) is recorded in `docs/legal/ATTRIBUTION.md`.
+
+**Verification:**
+- `pnpm lint`: pass.
+- `pnpm typecheck`: pass.
+- `pnpm test`: 69/69 tests, 10 files.
+- `pnpm build`: pass.
+- `pnpm check:budgets`: shell JS 147.2 kB gzip (budget 200 kB); precache 30 files / 781.7 kB (budget 8 MiB); 35 build files, none over 20 MiB.
+- `pnpm e2e`: 17/17 pass, including offline reload/conversion, zero third-party requests and axe (0 serious/critical).
+- `pnpm lighthouse`: home **96** performance, tool pages **92–95**, 100 accessibility/best practices/SEO on all six routes. LCP 2.3–2.8 s, TBT 1–69 ms, CLS 0.
+- `pnpm audit`: 0 vulnerabilities (was 7).
+- Touch targets at 390×844: all ≥ 44 px except the skip link (1×1 until focused) and 20×20 checkboxes inside 44 px label rows.
+- Overflow: none at 320/390/768/1440 px on home, about and both sample tools.
+
+**Not done / uncertain:**
+- Audit A1 still not run and not self-approved; the evidence pack is preparation only.
+- Screen-reader spot check (NVDA/VoiceOver) not done.
+- Browser matrix is Chromium only; Firefox, WebKit, Safari, iOS Safari and Android Chrome untested.
+- Lighthouse before this session ran through LHCI without compression, which is why it reported 93; the new runner reports 96 because it matches production compression. The older 93 figure should not be compared directly.
+- `reports/lighthouse/` is ignored; CI uploads it as an artifact.
+- No long-task trace and no heavy-file stress test (no heavy tool exists in P1).
+
+**Problems and risks found:**
+- The Session 004 "all checks pass" claim did not cover `pnpm audit`, and `@lhci/cli` had been chosen without an audit pass. Fixed here rather than carried into A1.
+- `robots.txt` was missing entirely; the SPA fallback would have returned HTML for `/robots.txt` in production.
+- Touch targets were 20–40 px in several places on mobile; the checklist required 44 px.
+
+**Next session should:** run Audit A1 from `docs/audit/CHECKLISTS.md` using the evidence pack, close the copy/brand-asset items, and only then start P2.
+
+**Human review:** [ ] diff read  [ ] approved

@@ -39,12 +39,14 @@ Built pnpm workspace, React 19/Vite 8 SPA, Tailwind v4 tokens, shadcn primitives
 
 **Measured budgets (local production build, 2026-10-17):**
 - Shell JS: **147.2 kB gzip** (entry + static imports; budget 200 kB).
-- Precache candidates: **30 files / 781.4 kB** (budget 8 MiB); largest well under the 2 MiB per-file limit.
-- Build files: **34** (limit 20,000); no file over 20 MiB.
-- Lighthouse mobile: home **93** performance (first run 95), **100** accessibility, **100** best practices, **100** SEO. Tool pages 93–95 performance.
+- Precache candidates: **30 files / 781.7 kB** (budget 8 MiB); largest well under the 2 MiB per-file limit.
+- Build files: **35** (limit 20,000); no file over 20 MiB.
+- Lighthouse mobile (`pnpm lighthouse`, 2026-10-18): home **96** performance, tool pages **92–95**, **100** accessibility, best practices and SEO on all six audited routes.
 - axe: **0 serious/critical** on home, privacy, about and the three tools (light and dark).
 - Unit tests: **69 passing**; tool-core/registry line coverage **98.6%**.
 
 **Deviations:** Stitch exports were absent, so `DESIGN.md` seed tokens were used. `qrcode` (MIT) is used for the QR sample instead of qr-code-styling. The image converter simulates the first-use codec download and uses native canvas encoding. Category labels for the two original-branded categories were replaced with neutral ones. `produces` metadata and some missing `accepts` were added to the seed provisionally and need review.
+
+Lighthouse runs from `scripts/lighthouse.mjs` (direct `lighthouse` + `chrome-launcher`, serving `dist` with Brotli/gzip) rather than `@lhci/cli`, whose pinned transitive dependencies carried four high advisories with no upstream fix. A `robots.txt` was added so crawlers are not served the SPA shell. Coarse-pointer rules in `apps/web/src/styles/app.css` raise touch targets to 44 px.
 
 **Known gaps:** 94 tools unbuilt; all 97 descriptions blank; brand/OG assets absent; real WASM codecs and JXL deferred to P4; service-worker update prompt not exercised against a real second deployment.

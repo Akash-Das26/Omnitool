@@ -28,5 +28,7 @@ Omnitool's identity assets (logo, icons, social image, empty-state illustrations
 
 **Recorded decisions (Session 004, P1):** `@axe-core/playwright` and `axe-core` are **MPL-2.0**, used as development-only dependencies for accessibility testing. They are not modified and are not shipped in the production bundle. Accepted on that basis (see `docs/review/REVIEW-LOG.md`, Session 004).
 
+**Recorded decisions (Session 005, P1):** `lighthouse@13.5.0` and `chrome-launcher@1.2.2` are **Apache-2.0**, development-only, used by `scripts/lighthouse.mjs` and CI. `@lhci/cli` was removed; its transitive dependency tree carried four high advisories with no upstream fix. Neither package ships in the production bundle. `qrcode` is **MIT**, shipped in the QR sample.
+
 ## 5. Omnitool's own licence
 MIT (placeholder holder "Omnitool contributors"); confirm via DEC-02.

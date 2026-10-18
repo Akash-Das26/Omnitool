@@ -1,7 +1,7 @@
 # Development guide
 
 ## 1. Prerequisites
-Node >= 22 (`nvm use`), pnpm via `corepack enable`, a current Chromium for Playwright.
+Node >= 22.19 (`nvm use`), pnpm via `corepack enable`, a current Chromium for Playwright.
 
 ## 2. Commands
 | Command | Purpose |
@@ -37,7 +37,7 @@ Node >= 22 (`nvm use`), pnpm via `corepack enable`, a current Chromium for Playw
 | Components | Vitest + Testing Library | key interaction states |
 | E2E | Playwright | smoke per tool, offline mode, no unexpected network |
 | A11y | axe via Playwright | zero serious/critical |
-| Performance | Lighthouse CI, bundle budget | NFR-002/003 |
+| Performance | Lighthouse (`pnpm lighthouse`), bundle budget | NFR-002/003 |
 
 ## 6. Definition of Done
 Same as `plan.md` section 7, plus: lint/typecheck/test green; docs updated; no new dependency without a licence note.
