@@ -59,108 +59,106 @@ export default function PxToRemTool() {
 
   return (
     <ToolFrame tool={tool}>
-      <div className="rounded-panel border border-border bg-surface">
-        <ToolStage title="Root size">
-          <div className="max-w-xs space-y-2">
-            <Label htmlFor="root-size">Root font size in pixels</Label>
-            <Input
-              id="root-size"
-              type="number"
-              min={1}
-              step="0.5"
-              value={root}
-              onChange={(event) => setRoot(event.target.value)}
-            />
-          </div>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Browsers default to 16 px. If your CSS sets a different root size, enter it here so the
-            conversions match.
+      <ToolStage title="Root size">
+        <div className="max-w-xs space-y-2">
+          <Label htmlFor="root-size">Root font size in pixels</Label>
+          <Input
+            id="root-size"
+            type="number"
+            min={1}
+            step="0.5"
+            value={root}
+            onChange={(event) => setRoot(event.target.value)}
+          />
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Browsers default to 16 px. If your CSS sets a different root size, enter it here so the
+          conversions match.
+        </p>
+        {rootError ? (
+          <p role="alert" className="mt-3 text-sm text-destructive">
+            Root font size must be a number greater than zero.
           </p>
-          {rootError ? (
-            <p role="alert" className="mt-3 text-sm text-destructive">
-              Root font size must be a number greater than zero.
-            </p>
-          ) : null}
-        </ToolStage>
+        ) : null}
+      </ToolStage>
 
-        <ToolStage title="Convert">
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="px-input">Pixels</Label>
-              <Input
-                id="px-input"
-                type="number"
-                value={px}
-                onChange={(event) => setPx(event.target.value)}
-              />
-              <p className="text-sm text-muted-foreground">Equals</p>
-              <Input
-                aria-label="Pixels converted to rem"
-                readOnly
-                value={pxConversion.error ? '' : `${pxConversion.value}rem`}
-                className="font-mono"
-              />
-              {pxConversion.error && !pxConversion.error.includes('Root font size') ? (
-                <p role="alert" className="text-sm text-destructive">
-                  {pxConversion.error}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="rem-input">Rem</Label>
-              <Input
-                id="rem-input"
-                type="number"
-                step="0.0625"
-                value={rem}
-                onChange={(event) => setRem(event.target.value)}
-              />
-              <p className="text-sm text-muted-foreground">Equals</p>
-              <Input
-                aria-label="Rem converted to pixels"
-                readOnly
-                value={remConversion.error ? '' : `${remConversion.value}px`}
-                className="font-mono"
-              />
-              {remConversion.error && !remConversion.error.includes('Root font size') ? (
-                <p role="alert" className="text-sm text-destructive">
-                  {remConversion.error}
-                </p>
-              ) : null}
-            </div>
+      <ToolStage title="Convert">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="px-input">Pixels</Label>
+            <Input
+              id="px-input"
+              type="number"
+              value={px}
+              onChange={(event) => setPx(event.target.value)}
+            />
+            <p className="text-sm text-muted-foreground">Equals</p>
+            <Input
+              aria-label="Pixels converted to rem"
+              readOnly
+              value={pxConversion.error ? '' : `${pxConversion.value}rem`}
+              className="font-mono"
+            />
+            {pxConversion.error && !pxConversion.error.includes('Root font size') ? (
+              <p role="alert" className="text-sm text-destructive">
+                {pxConversion.error}
+              </p>
+            ) : null}
           </div>
-        </ToolStage>
 
-        <ToolStage title="Common values">
-          <div className="overflow-x-auto">
-            <table className="w-full max-w-md border-collapse text-sm">
-              <caption className="sr-only">Common pixel values in rem</caption>
-              <thead>
-                <tr className="border-b border-border text-left">
-                  <th scope="col" className="py-2 pr-6 font-medium">
-                    Pixels
-                  </th>
-                  <th scope="col" className="py-2 font-medium">
-                    Rem
-                  </th>
+          <div className="space-y-2">
+            <Label htmlFor="rem-input">Rem</Label>
+            <Input
+              id="rem-input"
+              type="number"
+              step="0.0625"
+              value={rem}
+              onChange={(event) => setRem(event.target.value)}
+            />
+            <p className="text-sm text-muted-foreground">Equals</p>
+            <Input
+              aria-label="Rem converted to pixels"
+              readOnly
+              value={remConversion.error ? '' : `${remConversion.value}px`}
+              className="font-mono"
+            />
+            {remConversion.error && !remConversion.error.includes('Root font size') ? (
+              <p role="alert" className="text-sm text-destructive">
+                {remConversion.error}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </ToolStage>
+
+      <ToolStage title="Common values">
+        <div className="overflow-x-auto">
+          <table className="w-full max-w-md border-collapse text-sm">
+            <caption className="sr-only">Common pixel values in rem</caption>
+            <thead>
+              <tr className="border-b border-border text-left">
+                <th scope="col" className="py-2 pr-6 font-medium">
+                  Pixels
+                </th>
+                <th scope="col" className="py-2 font-medium">
+                  Rem
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.px} className="border-b border-border/60">
+                  <td className="py-1.5 pr-6 font-mono">{row.px}px</td>
+                  <td className="py-1.5 font-mono">{row.rem}rem</td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.px} className="border-b border-border/60">
-                    <td className="py-1.5 pr-6 font-mono">{row.px}px</td>
-                    <td className="py-1.5 font-mono">{row.rem}rem</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-4">
-            <OutputActions text={tableText} filename="px-to-rem.txt" disabled={rows.length === 0} />
-          </div>
-        </ToolStage>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-4">
+          <OutputActions text={tableText} filename="px-to-rem.txt" disabled={rows.length === 0} />
+        </div>
+      </ToolStage>
     </ToolFrame>
   );
 }

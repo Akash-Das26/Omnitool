@@ -40,41 +40,36 @@ export default function WordCounterTool() {
 
   return (
     <ToolFrame tool={tool}>
-      <div className="rounded-panel border border-border bg-surface">
-        <ToolStage title="Text">
-          <Label htmlFor="word-counter-input">Text to count</Label>
-          <TextArea
-            id="word-counter-input"
-            className="mt-2 font-sans"
-            rows={14}
-            value={text}
-            placeholder="Type or paste text; the counts update as you go."
-            onChange={(event) => setText(event.target.value)}
-          />
-          <p className="mt-3 text-sm text-muted-foreground">
-            Words and sentences use the browser's text segmentation for en-GB, so numbers,
-            contractions and punctuation are counted sensibly. Reading time assumes 200 words a
-            minute; speaking time 130.
-          </p>
-        </ToolStage>
+      <ToolStage title="Text">
+        <Label htmlFor="word-counter-input">Text to count</Label>
+        <TextArea
+          id="word-counter-input"
+          className="mt-2 font-sans"
+          rows={14}
+          value={text}
+          placeholder="Type or paste text; the counts update as you go."
+          onChange={(event) => setText(event.target.value)}
+        />
+        <p className="mt-3 text-sm text-muted-foreground">
+          Words and sentences use the browser's text segmentation for en-GB, so numbers,
+          contractions and punctuation are counted sensibly. Reading time assumes 200 words a
+          minute; speaking time 130.
+        </p>
+      </ToolStage>
 
-        <ToolStage title="Counts">
-          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {cards.map(([label, value]) => (
-              <div
-                key={label}
-                className="rounded-control border border-border bg-surface-inset p-3"
-              >
-                <dt className="text-sm text-muted-foreground">{label}</dt>
-                <dd className="mt-1 font-mono text-xl">{value}</dd>
-              </div>
-            ))}
-          </dl>
-          <div className="mt-4">
-            <OutputActions text={summary} filename="word-count.txt" disabled={text === ''} />
-          </div>
-        </ToolStage>
-      </div>
+      <ToolStage title="Counts">
+        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {cards.map(([label, value]) => (
+            <div key={label} className="rounded-control border border-border bg-surface-inset p-3">
+              <dt className="text-sm text-muted-foreground">{label}</dt>
+              <dd className="mt-1 font-mono text-xl">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="mt-4">
+          <OutputActions text={summary} filename="word-count.txt" disabled={text === ''} />
+        </div>
+      </ToolStage>
     </ToolFrame>
   );
 }

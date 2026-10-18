@@ -131,126 +131,124 @@ export default function JsonFormatterTool() {
 
   return (
     <ToolFrame tool={tool}>
-      <div className="rounded-panel border border-border bg-surface">
-        <ToolStage title="Input">
-          <Label htmlFor="json-input">JSON input</Label>
-          <TextArea
-            id="json-input"
-            className="mt-2"
-            rows={12}
-            value={text}
-            spellCheck={false}
-            placeholder={'{\n  "paste": "your JSON here"\n}'}
-            onChange={(event) => {
-              setText(event.target.value);
-              setValid(false);
-              setError(null);
-            }}
-            disabled={running}
-          />
-          <div className="mt-3 flex flex-wrap items-end gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="json-indent">Indent</Label>
-              <Select
-                value={String(indent)}
-                onValueChange={(value) =>
-                  setIndent(value === 'tab' ? 'tab' : (Number(value) as 2 | 4))
-                }
-              >
-                <SelectTrigger id="json-indent" className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2">2 spaces</SelectItem>
-                  <SelectItem value="4">4 spaces</SelectItem>
-                  <SelectItem value="tab">Tab</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              type="button"
-              onClick={() => transform('format')}
-              disabled={running || text === ''}
+      <ToolStage title="Input">
+        <Label htmlFor="json-input">JSON input</Label>
+        <TextArea
+          id="json-input"
+          className="mt-2"
+          rows={12}
+          value={text}
+          spellCheck={false}
+          placeholder={'{\n  "paste": "your JSON here"\n}'}
+          onChange={(event) => {
+            setText(event.target.value);
+            setValid(false);
+            setError(null);
+          }}
+          disabled={running}
+        />
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="json-indent">Indent</Label>
+            <Select
+              value={String(indent)}
+              onValueChange={(value) =>
+                setIndent(value === 'tab' ? 'tab' : (Number(value) as 2 | 4))
+              }
             >
-              Format
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => transform('minify')}
-              disabled={running || text === ''}
-            >
-              Minify
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={validate}
-              disabled={running || text === ''}
-            >
-              Validate
-            </Button>
-            {running ? (
-              <Button type="button" variant="outline" onClick={() => jobRef.current?.cancel()}>
-                <XIcon aria-hidden="true" className="size-4" />
-                Cancel
-              </Button>
-            ) : null}
+              <SelectTrigger id="json-indent" className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2 spaces</SelectItem>
+                <SelectItem value="4">4 spaces</SelectItem>
+                <SelectItem value="tab">Tab</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Inputs over about 1 MB are processed in a worker, so the page stays responsive.
-          </p>
-        </ToolStage>
-
-        <ToolStage title="Result">
+          <Button
+            type="button"
+            onClick={() => transform('format')}
+            disabled={running || text === ''}
+          >
+            Format
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => transform('minify')}
+            disabled={running || text === ''}
+          >
+            Minify
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={validate}
+            disabled={running || text === ''}
+          >
+            Validate
+          </Button>
           {running ? (
-            <div role="status" className="mb-4 max-w-md">
-              <div className="mb-2 flex items-center justify-between gap-4 text-sm">
-                <span>{label}</span>
-                <span className="font-mono text-muted-foreground">{progress}%</span>
-              </div>
-              <Progress value={progress} aria-label="JSON processing progress" />
+            <Button type="button" variant="outline" onClick={() => jobRef.current?.cancel()}>
+              <XIcon aria-hidden="true" className="size-4" />
+              Cancel
+            </Button>
+          ) : null}
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Inputs over about 1 MB are processed in a worker, so the page stays responsive.
+        </p>
+      </ToolStage>
+
+      <ToolStage title="Result">
+        {running ? (
+          <div role="status" className="mb-4 max-w-md">
+            <div className="mb-2 flex items-center justify-between gap-4 text-sm">
+              <span>{label}</span>
+              <span className="font-mono text-muted-foreground">{progress}%</span>
             </div>
-          ) : null}
-
-          {status === 'cancelled' ? (
-            <p role="status" className="mb-3 text-sm text-muted-foreground">
-              Cancelled. The worker was stopped and the previous result is unchanged.
-            </p>
-          ) : null}
-
-          {valid ? (
-            <p role="status" className="mb-3 text-sm font-medium">
-              Valid JSON.
-            </p>
-          ) : null}
-
-          {error ? (
-            <p role="alert" className="mb-3 text-sm text-destructive">
-              Line {error.line}, column {error.column}: {error.message}
-            </p>
-          ) : null}
-
-          <Label htmlFor="json-output">Formatted JSON</Label>
-          <TextArea
-            id="json-output"
-            className="mt-2"
-            rows={14}
-            readOnly
-            value={output}
-            spellCheck={false}
-            placeholder="The formatted or minified JSON appears here."
-          />
-          <div className="mt-3">
-            <OutputActions
-              text={output}
-              filename={output.includes('\n') ? 'formatted.json' : 'minified.json'}
-              mime="application/json"
-              disabled={output === ''}
-            />
+            <Progress value={progress} aria-label="JSON processing progress" />
           </div>
-        </ToolStage>
-      </div>
+        ) : null}
+
+        {status === 'cancelled' ? (
+          <p role="status" className="mb-3 text-sm text-muted-foreground">
+            Cancelled. The worker was stopped and the previous result is unchanged.
+          </p>
+        ) : null}
+
+        {valid ? (
+          <p role="status" className="mb-3 text-sm font-medium">
+            Valid JSON.
+          </p>
+        ) : null}
+
+        {error ? (
+          <p role="alert" className="mb-3 text-sm text-destructive">
+            Line {error.line}, column {error.column}: {error.message}
+          </p>
+        ) : null}
+
+        <Label htmlFor="json-output">Formatted JSON</Label>
+        <TextArea
+          id="json-output"
+          className="mt-2"
+          rows={14}
+          readOnly
+          value={output}
+          spellCheck={false}
+          placeholder="The formatted or minified JSON appears here."
+        />
+        <div className="mt-3">
+          <OutputActions
+            text={output}
+            filename={output.includes('\n') ? 'formatted.json' : 'minified.json'}
+            mime="application/json"
+            disabled={output === ''}
+          />
+        </div>
+      </ToolStage>
     </ToolFrame>
   );
 }

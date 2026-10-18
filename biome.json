@@ -9,6 +9,7 @@
       "!**/playwright-report",
       "!**/test-results",
       "!**/reports/lighthouse",
+      "!**/.wrangler",
       "!delphitools-main",
       "!docs/design/stitch"
     ]
