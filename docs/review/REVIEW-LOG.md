@@ -224,7 +224,7 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 - Recorded Audit A1 as PASS with no open Must findings, transcribed from the owner's independent run at commit `da0d381`. Added F-013 (browser matrix) and F-014 (screen reader) as Should findings for A2.
 - Recorded DEC-07..DEC-12, accepted the Stitch gate for now (DEC-09), kept the wordmark placeholder, and moved P1-13b and all artwork to a new Phase 9 section (DEC-11).
 - Documented the Phase 1 gaps in `docs/implementation/IMPLEMENTATION.md`: no OG image, no PWA install icons, no canonical URLs, and no real-deployment test of the update prompt or Cloudflare Pages.
-- Added nine `tool-core` modules with tests: `json`, `jwt`, `encoder`, `base`, `password`, `words`, `px`, `diff` (plus a barrel test). No new dependencies; platform APIs and a hand-written Myers diff cover everything.
+- Added eight `tool-core` modules with tests: `json`, `jwt`, `encoder`, `base`, `password`, `words`, `px`, `diff` (plus a barrel test). No new dependencies; platform APIs and a hand-written Myers diff cover everything.
 - Built the eight tools with lazy routes, error and pending states, shared `TextArea` and `OutputActions`: `json-formatter`, `jwt-decoder`, `encoder`, `base-converter`, `password-genny`, `word-counter`, `px-to-rem`, `text-diff`. JSON over 1 MB runs in a worker with four progress stages and terminate-based cancel.
 - Drafted the eight registry descriptions (DEC-12) and corrected `produces` for encoder, word-counter, px-to-rem and text-diff.
 - Added E2E smoke tests for all eight, the 1 MB worker path, offline JSON and word counting, and axe coverage on all fourteen tool and static routes.
