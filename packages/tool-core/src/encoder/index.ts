@@ -46,13 +46,7 @@ export function decodeBase64(value: string): string {
     throw new EncodingError('Base64 input needs padding to a multiple of four characters');
   }
 
-  let binary: string;
-  try {
-    binary = atob(cleaned);
-  } catch {
-    throw new EncodingError('That is not valid Base64');
-  }
-  return decodeUtf8(fromBinary(binary));
+  return decodeUtf8(fromBinary(atob(cleaned)));
 }
 
 export function encodeUrl(text: string): string {

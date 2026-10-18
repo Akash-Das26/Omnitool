@@ -148,3 +148,15 @@ describe('passphrases', () => {
     expect(passphraseEntropyBits(4)).toBeGreaterThan(25);
   });
 });
+
+describe('crypto availability', () => {
+  it('explains when the browser has no random source', async () => {
+    const { vi } = await import('vitest');
+    vi.stubGlobal('crypto', undefined);
+    try {
+      expect(() => cryptoRandomBytes(4)).toThrow('secure random numbers');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});

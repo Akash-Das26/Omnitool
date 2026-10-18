@@ -92,3 +92,10 @@ describe('decodeBase64Url', () => {
     expect(() => decodeBase64Url('abc$')).toThrow(JwtError);
   });
 });
+
+describe('invalid UTF-8', () => {
+  it('rejects a header that is not UTF-8', () => {
+    const header = Buffer.from([0xff, 0xfe]).toString('base64url');
+    expect(() => decodeJwt(`${header}.${segment({})}.sig`)).toThrow('not valid UTF-8');
+  });
+});

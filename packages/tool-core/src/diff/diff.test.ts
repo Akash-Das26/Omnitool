@@ -144,3 +144,25 @@ describe('toRows', () => {
     ]);
   });
 });
+
+describe('multi-hunk diffs', () => {
+  it('keeps both changes and the text between them', () => {
+    const result = diffText('a\nb\nc\nd\n', 'a\nB\nc\nD\n', 'line');
+    expect(result.additions).toBe(2);
+    expect(result.deletions).toBe(2);
+    expect(result.parts).toEqual([
+      { type: 'equal', value: 'a\n' },
+      { type: 'delete', value: 'b\n' },
+      { type: 'insert', value: 'B\n' },
+      { type: 'equal', value: 'c\n' },
+      { type: 'delete', value: 'd\n' },
+      { type: 'insert', value: 'D\n' },
+    ]);
+  });
+
+  it('handles a pure deletion in the middle', () => {
+    const result = diffText('a\nb\nc\n', 'a\nc\n', 'line');
+    expect(result.deletions).toBe(1);
+    expect(result.parts.filter((part) => part.type === 'insert')).toHaveLength(0);
+  });
+});

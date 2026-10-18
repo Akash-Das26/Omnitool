@@ -55,3 +55,17 @@ describe('countText', () => {
     expect(countText('   \n\t ').words).toBe(0);
   });
 });
+
+describe('without Intl.Segmenter', () => {
+  it('falls back to whitespace and punctuation splitting', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Intl, 'Segmenter');
+    Object.defineProperty(Intl, 'Segmenter', { value: undefined, configurable: true });
+    try {
+      const stats = countText('One two. Three!');
+      expect(stats.words).toBe(3);
+      expect(stats.sentences).toBe(2);
+    } finally {
+      if (descriptor) Object.defineProperty(Intl, 'Segmenter', descriptor);
+    }
+  });
+});

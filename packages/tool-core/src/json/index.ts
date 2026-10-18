@@ -180,6 +180,14 @@ function scan(text: string): ScanResult {
   return { ok: true };
 }
 
+/** Locate the first syntax error without relying on engine error messages. */
+export function scanJsonSyntax(text: string): JsonErrorInfo | null {
+  const result = scan(text);
+  if (result.ok) return null;
+  const { line, column } = positionAt(text, result.offset);
+  return { message: result.message, line, column };
+}
+
 /**
  * Engines word their parse errors differently: V8 and Firefox often include
  * "line N column M", older messages only a character position, and some omit
