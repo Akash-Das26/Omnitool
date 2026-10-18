@@ -5,9 +5,17 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./uuid": "./src/uuid/index.ts",
+    "./base": "./src/base/index.ts",
+    "./diff": "./src/diff/index.ts",
+    "./encoder": "./src/encoder/index.ts",
+    "./files": "./src/files/index.ts",
+    "./json": "./src/json/index.ts",
+    "./jwt": "./src/jwt/index.ts",
+    "./password": "./src/password/index.ts",
+    "./px": "./src/px/index.ts",
     "./qr": "./src/qr/index.ts",
-    "./files": "./src/files/index.ts"
+    "./uuid": "./src/uuid/index.ts",
+    "./words": "./src/words/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
