@@ -1,10 +1,20 @@
-import { expect, test } from '@playwright/test';
+import { type BrowserContext, expect, test } from '@playwright/test';
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
-test.describe('uuid-genny', () => {
-  test('generates and copies UUIDs', async ({ page, context }) => {
+/**
+ * Chromium needs the clipboard permissions granted by name; Firefox and WebKit
+ * expose the clipboard to the page without a grant (audit F-013 matrix runs).
+ */
+async function allowClipboard(browserName: string, context: BrowserContext) {
+  if (browserName === 'chromium') {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  }
+}
+
+test.describe('uuid-genny', () => {
+  test('generates and copies UUIDs', async ({ page, context, browserName }) => {
+    await allowClipboard(browserName, context);
     await page.goto('/tools/uuid-genny');
 
     const outputValues = () =>
@@ -25,8 +35,8 @@ test.describe('uuid-genny', () => {
     expect(clipboard).toBe((await outputValues()).join('\n'));
   });
 
-  test('copies a single value from its row', async ({ page, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  test('copies a single value from its row', async ({ page, context, browserName }) => {
+    await allowClipboard(browserName, context);
     await page.goto('/tools/uuid-genny');
 
     await page.getByRole('button', { name: 'Copy value 2' }).click();

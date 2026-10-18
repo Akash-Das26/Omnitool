@@ -1,5 +1,20 @@
 import { defineConfig, devices } from '@playwright/test';
 
+/**
+ * Chromium is the default gate. Set `PLAYWRIGHT_BROWSERS=all` to add Firefox and
+ * WebKit for the browser-matrix checks (audit finding F-013). On Linux those two
+ * need extra system libraries: `pnpm exec playwright install --with-deps firefox webkit`.
+ */
+const everyBrowser = process.env.PLAYWRIGHT_BROWSERS === 'all';
+
+/** Pixel baselines only exist for Chromium; the others assert styles instead. */
+const extraProjects = everyBrowser
+  ? [
+      { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+      { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    ]
+  : [];
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -23,5 +38,6 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    ...extraProjects,
   ],
 });

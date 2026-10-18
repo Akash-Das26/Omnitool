@@ -21,7 +21,8 @@ async function openDark(page: Page, route: string) {
   await page.evaluate(() => document.fonts.ready);
 }
 
-test('dark home matches its layout reference', async ({ page }) => {
+test('dark home matches its layout reference', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Pixel baselines exist for Chromium only');
   await openDark(page, '/');
   const surface = await page.evaluate(
     () => getComputedStyle(document.querySelector('html') as HTMLElement).backgroundColor,
@@ -33,7 +34,8 @@ test('dark home matches its layout reference', async ({ page }) => {
   });
 });
 
-test('dark tool page matches its layout reference', async ({ page }) => {
+test('dark tool page matches its layout reference', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Pixel baselines exist for Chromium only');
   // A tool with deterministic output, so the baseline is meaningful.
   await openDark(page, '/tools/qr-genny');
   await expect(page.getByRole('img', { name: /QR code/ })).toBeVisible();
@@ -43,7 +45,8 @@ test('dark tool page matches its layout reference', async ({ page }) => {
   });
 });
 
-test('dark image converter shows the first-use codec state', async ({ page }) => {
+test('dark image converter shows the first-use codec state', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Pixel baselines exist for Chromium only');
   await openDark(page, '/tools/image-converter');
   await page.locator('input[type="file"]').setInputFiles('tests/fixtures/sample.png');
   await expect(page.getByText('Image codec (sample)')).toBeVisible();
@@ -102,7 +105,11 @@ for (const theme of ['light', 'dark'] as const) {
   });
 }
 
-test('dark omnibox shows the Marker selected row and the key hints', async ({ page }) => {
+test('dark omnibox shows the Marker selected row and the key hints', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'Pixel baselines exist for Chromium only');
   await openDark(page, '/');
   await page.keyboard.press('Control+K');
   const dialog = page.getByRole('dialog');
@@ -131,7 +138,8 @@ test('dark omnibox shows the Marker selected row and the key hints', async ({ pa
   await expect(page).toHaveScreenshot('omnibox-dark.png', SCREENSHOT_OPTIONS);
 });
 
-test('the dropped-file chip shows the name, size and type', async ({ page }) => {
+test('the dropped-file chip shows the name, size and type', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Pixel baselines exist for Chromium only');
   await openDark(page, '/');
 
   await page.evaluate(() => {
