@@ -16,6 +16,7 @@ const routes = [
   '/tools/word-counter',
   '/tools/px-to-rem',
   '/tools/text-diff',
+  '/tools/morse-code',
 ];
 
 const themes = ['light', 'dark'] as const;

@@ -1102,8 +1102,8 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
-      "produces": ["text/plain", "audio/wav"]
+      "description": "Turn text into Morse code, decode it, or play the beeps.",
+      "produces": ["text/plain"]
     },
     {
       "id": "braille-converter",

@@ -4,6 +4,7 @@ export * from './encoder/index';
 export * from './files/index';
 export * from './json/index';
 export * from './jwt/index';
+export * from './morse/index';
 export * from './password/index';
 export * from './px/index';
 export * from './qr/index';

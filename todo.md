@@ -66,7 +66,7 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [ ] P2-10 Approve the 97 drafted descriptions in `docs/review/DESCRIPTIONS-DRAFT.md`; the registry stays unchanged until then (human)
 
 ## P2 Text, dev & calculators — Batch 2 (eight tools; stop at the batch gate)
-- [ ] P2-11 `morse-code`: ITU letters, digits and punctuation both ways, unknown-character and word-separator handling; Web Audio playback at a chosen words per minute with a visible Stop (agent)
+- [x] P2-11 `morse-code`: ITU letters, digits and punctuation both ways, unknown-character and word-separator handling; Web Audio playback at a chosen words per minute with a visible Stop (agent, Session 010)
 - [ ] P2-12 `nato-phonetic`: ICAO spelling alphabet including digit pronunciations, unknown characters passed through and flagged (agent)
 - [ ] P2-13 `braille-converter`: Unicode braille patterns, English grade 1 both ways, with the contracted-braille limitation stated in the UI (agent)
 - [ ] P2-14 `unit-converter`: eleven categories with exact factors and offset temperature handling, precision setting, round-trip tests (agent)

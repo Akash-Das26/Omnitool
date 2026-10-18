@@ -18,6 +18,7 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   'word-counter': () => import('@/tools/word-counter'),
   'px-to-rem': () => import('@/tools/px-to-rem'),
   'text-diff': () => import('@/tools/text-diff'),
+  'morse-code': () => import('@/tools/morse-code'),
 };
 
 export function isToolImplemented(id: string): boolean {

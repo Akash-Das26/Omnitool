@@ -16,6 +16,7 @@ const TOOL_ROUTES = [
   '/tools/word-counter',
   '/tools/px-to-rem',
   '/tools/text-diff',
+  '/tools/morse-code',
 ];
 
 for (const route of TOOL_ROUTES) {
