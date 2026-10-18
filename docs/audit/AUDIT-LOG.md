@@ -18,8 +18,10 @@ Audits happen at each phase gate (A1..A9) using `CHECKLISTS.md`. Findings have a
 | F-012 | A1 pre-check | Should | `pnpm audit` reported 4 high, 2 moderate and 1 low advisories, all from `@lhci/cli` transitive dependencies (`tmp`, `extract-zip`, `basic-ftp`, `uuid`, `sprintf-js`) | Closed in Session 005: Lighthouse runs from `scripts/lighthouse.mjs` using `lighthouse` + `chrome-launcher`; `pnpm audit` reports 0 vulnerabilities | agent |
 | F-013 | A1 | Should | Browser matrix limited to Chromium; Firefox, WebKit, Safari, iOS Safari and Android Chrome have not been exercised | Open: A2/Phase 9 | agent |
 | F-014 | A1 | Should | No screen-reader spot check (NVDA or VoiceOver) has been done | Open: A2 | human+agent |
-| F-015 | A1 | Should | `apps/web/public/_redirects` (`/* /index.html 200`) produces an infinite loop warning under Wrangler / Cloudflare Pages and will be ignored at deploy; needs removal before first deploy | Open: P1-15 | human |
-| F-016 | A1 | Info | Working tree has uncommitted edits to `docs/design/DESIGN.md` and untracked Stitch review/prompt archives at `62bd5e1` | Open | human |
+| F-015 | A1 | Should | `apps/web/public/_redirects` (`/* /index.html 200`) produces an infinite loop warning under Wrangler / Cloudflare Pages and will be ignored at deploy; needs removal before first deploy | Closed in Session 009: P1-15 decided — file deleted, build and `wrangler@4.151.1 pages dev` re-verified (prerendered routes 200/308, unknown paths 404 with `404.html`, 5 header rules, 0 redirect rules), runbook section 3 updated | human |
+| F-016 | A1 | Info | Working tree has uncommitted edits to `docs/design/DESIGN.md` and untracked Stitch review/prompt archives at `62bd5e1` | Closed in Session 008/009: the design docs were committed; `docs/design/stitch/` stays untracked by intent (`.gitignore`) | human |
+| F-017 | P2 batch 1 gate | Should | Browser matrix outside Chromium (F-013): Firefox and WebKit are now runnable through an optional Playwright project, but their results are not yet part of the gate | Open: A2 | agent |
+| F-018 | P2 batch 2 | Should | No screen-reader spot check (F-014) and no Firefox/WebKit sign-off for the eight Batch 2 tools | Open: A2 | human+agent |
 
 ## Pre-audit evidence for A1 — collected 2026-10-18 — not a verdict
 

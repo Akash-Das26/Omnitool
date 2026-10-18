@@ -8,8 +8,8 @@ Nothing here needs to be run by an agent: the owner connects the repository and 
 
 - A static site only: no Pages Functions, no Worker script, no server-side rendering.
 - Build output: **`apps/web/dist`** (created by `pnpm build`).
-- Contents: the app shell, lazy tool chunks, fonts, `_headers`, `_redirects`, `robots.txt`, `manifest.webmanifest`, `sw.js`, a prerendered `index.html` for the home page, about, privacy and every built tool, and `404.html`.
-- Current size: **58 files**, shell **150.8 kB gzip**, precache **53 files / 873.2 kB**. Cloudflare's limits are 20,000 files and 25 MiB per file, so there is a lot of headroom.
+- Contents: the app shell, lazy tool chunks, fonts, `_headers`, `robots.txt`, `manifest.webmanifest`, `sw.js`, a prerendered `index.html` for the home page, about, privacy and every built tool, and `404.html`. There is deliberately no `_redirects` file (section 3).
+- Current size: **58 files**, shell **151.3 kB gzip**, precache **53 files / 881.9 kB** (design alignment, Session 008). Cloudflare's limits are 20,000 files and 25 MiB per file, so there is a lot of headroom.
 - Do not commit `apps/web/dist`; Cloudflare builds it.
 
 ## 2. Project settings
@@ -39,15 +39,9 @@ corepack enable && pnpm install --frozen-lockfile && pnpm build
 
 That forces the pinned `pnpm@11.24.0` from `package.json` and keeps the lockfile check. It is slower than the default install, so only use it if the first attempt fails with a lockfile or pnpm-version error.
 
-## 3. Before the first deploy: decide about `_redirects`
+## 3. No `_redirects` file (decided 2026-10-18, P1-15)
 
-`apps/web/public/_redirects` contains one rule:
-
-```
-/* /index.html 200
-```
-
-This is the traditional Pages SPA fallback, but **`wrangler@4.151.1` rejects it**:
+`apps/web/public/_redirects` held one rule, `/* /index.html 200`, the traditional Pages SPA fallback. **`wrangler@4.151.1` rejects it:**
 
 ```
 ✨ Parsed 0 valid redirect rules.
@@ -57,18 +51,27 @@ This is the traditional Pages SPA fallback, but **`wrangler@4.151.1` rejects it*
       at apps/web/dist/_redirects:1 | /* /index.html 200
 ```
 
-The rewrite to `/index.html` is normalised to `/`, which matches `/*` again. This is not a local-only quirk: the same rule is reported as rejected by the Workers deploy API. Assume Pages will ignore it and log the warning.
+The rewrite to `/index.html` is normalised to `/`, which matches `/*` again. The Workers deploy API reports the same rule as rejected, so it was never in effect on Pages.
+
+**Decision (P1-15, 2026-10-18): the file was deleted.** It is not in the repository and is not in the build output, so the deployment log is clean. Re-verified after removal with `wrangler@4.151.1 pages dev apps/web/dist`:
+
+| Request | Result |
+|---------|--------|
+| `GET /` | 200 |
+| `GET /tools/text-diff` | 308 to the prerendered `/tools/text-diff/` |
+| `GET /tools/text-diff/` | 200 |
+| `GET /tools/does-not-exist`, `/tools/text-diff/extra`, `/not-a-page` | **404** with our `404.html` (`Page not found — Omnitool`) |
+| `GET /robots.txt` | 200 `text/plain` |
+| header rules parsed | 5; CSP, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` all present; COOP/COEP absent; 0 redirect rules parsed |
 
 What that means in practice:
 
-- Every current route is prerendered (`/`, `/about/`, `/privacy/`, all eleven tools, `404.html`), so direct navigation and refresh work without a rewrite.
+- Every current route is prerendered (`/`, `/about/`, `/privacy/`, every built tool, `404.html`), so direct navigation and refresh work without a rewrite.
 - Unknown paths return `404.html` with a **404** status, which is the better outcome for search engines.
 - After the service worker is active, Workbox's `navigateFallback: '/index.html'` provides client-side fallback for navigations, independent of Pages.
 - Any future route that is not prerendered would 404 on a hard load until it is added to `scripts/prerender.mjs`.
 
-Recommendation: **delete `apps/web/public/_redirects` before the first deploy** so the deployment log is clean. This session was documents-only, so the file is still present; deleting it is a one-line repository change.
-
-Do not replace it with `/* / 200`: it was tested locally and rewrites JavaScript and CSS requests to HTML. `/tools/* / 200` also rewrites prerendered tool URLs to the home page, which breaks their meta and titles. A Workers Static Assets project with `not_found_handling: "single-page-application"` would solve it properly, but that changes the hosting model (ADR 0003 / DEC-03) and is out of scope here.
+Do not replace it with `/* / 200`: that was tested locally and rewrites JavaScript and CSS requests to HTML. `/tools/* / 200` also rewrites prerendered tool URLs to the home page, which breaks their meta and titles. A Workers Static Assets project with `not_found_handling: "single-page-application"` would solve it properly, but that changes the hosting model (ADR 0003 / DEC-03).
 
 ## 4. First deploy
 
@@ -82,7 +85,7 @@ Do not replace it with `/* / 200`: it was tested locally and rewrites JavaScript
    - no error about the Node or pnpm version.
 4. Open the `*.pages.dev` URL.
 
-Expected build warning if `_redirects` was not removed: the infinite-loop warning above. It does not fail the build.
+The build log should contain no redirect warnings. If one appears, a `_redirects` file has been reintroduced; see section 3.
 
 ## 5. After the first deploy
 
@@ -170,8 +173,8 @@ A custom domain can be attached under **Custom domains** once one exists. Canoni
 |---------|----------------|
 | Build fails with an unsupported engine (`>=22.19`) | `NODE_VERSION` not set or set to a version below 22.19. Set `NODE_VERSION=22.22.1`. |
 | `ERR_PNPM_LOCKFILE_MISMATCH` or an unexpected pnpm version | v3 does not read the pnpm version from the lockfile. Set `PNPM_VERSION=11.24.0`; if it still fails, use the `corepack enable` build command in section 2. |
-| Deployment log warns about an invalid redirect | The `_redirects` rule; see section 3. Remove the file. |
-| Unknown paths return the shell with status 200 | A rewrite rule was applied. Remove `_redirects` and redeploy. |
+| Deployment log warns about an invalid redirect | A `_redirects` file has been reintroduced; see section 3. Remove it. |
+| Unknown paths return the shell with status 200 | A rewrite rule was applied somewhere. Remove it and redeploy; unknown paths must return `404.html` with a 404. |
 | Headers missing | `_headers` must be in the output directory, not only in `public/`. The build copies it; confirm with `ls apps/web/dist/_headers`. Headers do not apply to Pages Functions, but this project has none. |
 | Site loads but tools fail offline | Check the service worker is active, `/sw.js` is `no-cache`, and the browser is not in a private window that blocks storage. |
 | 404 on a newly added route | Add it to `scripts/prerender.mjs`; without a Pages rewrite, only prerendered paths exist as files. |
