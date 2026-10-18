@@ -55,3 +55,16 @@ Lighthouse runs from `scripts/lighthouse.mjs` (direct `lighthouse` + `chrome-lau
 - Real WASM codecs and JXL are deferred to P4.
 
 **Known gaps:** 94 tools unbuilt at the end of P1 (eight more arrive in P2 Batch 1); the remaining tool descriptions are still blank; brand/OG assets deferred to Phase 9 under DEC-11.
+
+### P2 — Batch 1 (2026-10-18)
+Eight text and dev tools: `json-formatter`, `jwt-decoder`, `encoder`, `base-converter`, `password-genny`, `word-counter`, `px-to-rem`, `text-diff`. Logic sits in `packages/tool-core` (`json`, `jwt`, `encoder`, `base`, `password`, `words`, `px`, `diff`) with tests beside it; the UIs are thin components under `apps/web/src/tools/<id>` registered in `lib/tool-modules`. No new dependencies: Web Crypto, `Intl.Segmenter`, `BigInt`, `TextEncoder` and a hand-written Myers diff cover everything. Descriptions were drafted by the agent for owner review (DEC-12).
+
+**Measured budgets (local production build, 2026-10-18):**
+- Shell JS: **150.8 kB gzip** (budget 200 kB), up 3.6 kB from P1.
+- Precache: **53 files / 873.2 kB** (budget 8 MiB), up 23 files / 91.5 kB from P1.
+- Build files: **58** (limit 20,000); no file over 20 MiB.
+- Lighthouse mobile: home **96** performance, **100** accessibility, best practices and SEO (the six audited routes; tool pages scored 91-93).
+- Unit tests: **182 passing in 19 files**; coverage **96.7% statements / 90.2% branches** (thresholds 90/85).
+- E2E: **34 passing**, including the 1 MB JSON worker path, offline formatting and 14 axe routes.
+
+**Known gaps:** the remaining P2 tools are unbuilt; the diff caps each side at 20,000 units and 2,000 edits; JSON above 1 MB reports four progress stages rather than byte-level progress; only Chromium is exercised.

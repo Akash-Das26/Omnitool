@@ -23,12 +23,12 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | PF-01 | App shell & layout | Header, collapsible category sidebar, content area; responsive | P1 | ✅ | Header, collapsible rail, responsive to 320 px; skip link |
 | PF-02 | Home page | Hero, featured tools (Substrata, QR, Auto Subtitle, Background Remover), suites, tool grid by category | P1 | ✅ | Omnibox hero and category index of rows (not cards); all 97 rows, unbuilt tools marked by phase |
 | PF-03 | Tool registry | Single typed registry (id, name, description, icon, href, flags, accepts/produces) drives nav, grid, search and routing | P1 | ✅ | Valibot-validated seed; `produces` and some missing `accepts` added as provisional metadata |
-| PF-04 | Per-tool routes, lazy-loaded | `/tools/<id>` routes; each tool code-split | P1 | ✅ | Loader import map, `defaultPreload: 'intent'`; three tools implemented |
+| PF-04 | Per-tool routes, lazy-loaded | `/tools/<id>` routes; each tool code-split | P1 | ✅ | Loader import map, `defaultPreload: 'intent'`; eleven tools implemented |
 | PF-05 | Omnibox / command search | Keyboard-driven search over tools (and accepted file types) | P1 | ✅ | Ctrl/Cmd+K, grouped results, file filter, planned tools disabled |
 | PF-06 | Theme toggle (light/dark) | Class-based dark mode with no-flash bootstrap; persists choice | P1 | ✅ | External pre-paint bootstrap, localStorage, system default |
 | PF-07 | 404 page | Not-found route | P1 | ✅ | Root not-found route plus static `404.html` |
 | PF-08 | Privacy page | States: no accounts, no data collection, runs locally | P1 | ✅ | `/privacy` written in British English |
-| PF-09 | Offline / PWA | Works with no internet after first load (service worker + cached assets) | P1 | ✅ | Workbox precache 781 kB, SW update prompt; offline E2E passes |
+| PF-09 | Offline / PWA | Works with no internet after first load (service worker + cached assets) | P1 | ✅ | Workbox precache 873 kB, SW update prompt; offline E2E passes |
 | PF-10 | Static prerender / SEO | Per-route HTML + meta + OG image for discoverability | P1 | 🟨 | Postbuild HTML and meta for home/privacy/about/every built tool/404; no OG image or canonical URLs until Phase 9 (DEC-10, DEC-11) |
 | PF-11 | Changelog popup | "What's new" with versioned entries | P7 | ⬜ |  |
 | PF-12 | Colour notation selector | Header-level preference (hex/rgb/hsl/oklch…) read by every colour tool | P3 | ⬜ |  |
@@ -129,10 +129,10 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | `large-type` | Large Type | Text, but big | – | T1 | P2 | CSS fullscreen | ⬜ | |
 | `line-height-calc` | Line Height Calculator | Calculate optimal line heights | – | T1 | P2 | tool-core | ⬜ | |
 | `paper-sizes` | Paper Sizes | Reference for paper dimensions | – | T1 | P2 | Own data table | ⬜ | |
-| `px-to-rem` | PX to REM | Convert pixels to rem units | – | T1 | P2 | tool-core | ⬜ | |
-| `text-diff` | Text Diff | Compare two texts and highlight differences | – | T1 | P2 | diff algorithm (jsdiff or own) | ⬜ | |
+| `px-to-rem` | PX to REM | Convert pixels to rem units | – | T1 | P2 | tool-core | ✅ | P2 Batch 1: configurable root, px to rem and back, common-value table |
+| `text-diff` | Text Diff | Compare two texts and highlight differences | – | T1 | P2 | diff algorithm (jsdiff or own) | ✅ | P2 Batch 1: line, word and character Myers diff; inline and side-by-side views |
 | `typo-calc` | Typography Calculator | Convert between typographic units | – | T1 | P2 | tool-core | ⬜ | |
-| `word-counter` | Word Counter | Count words, characters and more | – | T1 | P2 | Intl.Segmenter | ⬜ | |
+| `word-counter` | Word Counter | Count words, characters and more | – | T1 | P2 | Intl.Segmenter | ✅ | P2 Batch 1: Intl.Segmenter words and sentences, characters, paragraphs and reading time |
 
 ### PDF (6)
 
@@ -158,8 +158,8 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 |----|------|----------------------|-------|------|-------|--------------------|--------|-------|
 | `cron-builder` | Cron Builder | Build a cron expression field by field or decode one | new | T1 | P2 | tool-core | ⬜ | |
 | `http-status` | HTTP Status | Search HTTP status codes with phrases and spec references | new | T1 | P2 | Own data table | ⬜ | |
-| `json-formatter` | JSON Formatter | Format or minify JSON or look at it | new | T1 | P2 | tool-core | ⬜ | |
-| `jwt-decoder` | JWT Decoder | Decode a JWT's header, payload & claims | new | T1 | P2 | tool-core (decode only, no verify keys stored) | ⬜ | |
+| `json-formatter` | JSON Formatter | Format or minify JSON or look at it | new | T1 | P2 | tool-core | ✅ | P2 Batch 1: format, minify and validate with line and column; worker above 1 MB with progress and cancel |
+| `jwt-decoder` | JWT Decoder | Decode a JWT's header, payload & claims | new | T1 | P2 | tool-core (decode only, no verify keys stored) | ✅ | P2 Batch 1: header, payload and registered claims; decode only, no verification, storage or requests |
 | `meta-tag-genny` | Meta Tag Generator | Generate HTML meta tags | – | T1 | P2 | tool-core | ⬜ | |
 | `regex-tester` | Regex Tester | Test regular expressions | – | T1 | P2 | JS RegExp + Worker timeout guard | ⬜ | |
 | `request-builder` | Request Builder | Compose a cURL or HTTP request | new | T2 | P2 | fetch (user-initiated network only) | ⬜ | |
@@ -172,7 +172,7 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 |----|------|----------------------|-------|------|-------|--------------------|--------|-------|
 | `code-genny` | Barcode Generator | Generate Data Matrix, Aztec, PDF417, Code 128, EAN-13, and more | – | T2 | P2 | bwip-js | ⬜ | |
 | `decoder` | Cipher Decoder | Decode classical ciphers manually or auto-detect the cipher | – | T2 | P2 | tool-core ciphers | ⬜ | |
-| `password-genny` | Password Generator | Generate strong passwords or multi-word passphrases | new | T1 | P2 | crypto.getRandomValues | ⬜ | |
+| `password-genny` | Password Generator | Generate strong passwords or multi-word passphrases | new | T1 | P2 | crypto.getRandomValues | ✅ | P2 Batch 1: passwords and passphrases; rejection sampling removes modulo bias, nothing stored |
 | `qr-genny` | QR Generator | Generate styled QR codes with custom colors, shapes, and logos | – | T2 | P2 | qr-code-styling | 🟨 | P1 sample: PNG/SVG, size, quiet zone, error correction. Styled shapes and logos still P2; used `qrcode` (MIT) instead of qr-code-styling |
 | `markdown-writer` | Text Scratchpad | Text editor with manipulation tools | – | T2 | P2 | Markdown editor | ⬜ | |
 
@@ -181,8 +181,8 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | ID | Tool | Original description | Flags | Tier | Phase | Suggested approach | Status | Notes |
 |----|------|----------------------|-------|------|-------|--------------------|--------|-------|
 | `algebra-calc` | Algebra Calculator | Symbolic algebra: simplify, factor, solve, derivatives | – | T2 | P2 | mathjs | ⬜ | |
-| `base-converter` | Base Converter | Convert between decimal, hex, binary, and octal | – | T1 | P2 | BigInt | ⬜ | |
-| `encoder` | Encoding Tools | Base64, URL encoding, and hash generation | – | T1 | P2 | tool-core | ⬜ | |
+| `base-converter` | Base Converter | Convert between decimal, hex, binary, and octal | – | T1 | P2 | BigInt | ✅ | P2 Batch 1: BigInt, bases 2-36, clear digit-range errors |
+| `encoder` | Encoding Tools | Base64, URL encoding, and hash generation | – | T1 | P2 | tool-core | ✅ | P2 Batch 1: Base64, URL, HTML entity and hex with correct UTF-8 round trips |
 | `graph-calc` | Graph Calculator | Plot and visualise mathematical functions | – | T2 | P2 | mathjs + Canvas | ⬜ | |
 | `sci-calc` | Scientific Calculator | Full-featured scientific calculator with history | – | T1 | P2 | mathjs | ⬜ | |
 | `time-calc` | Time Calculator | Unix timestamps, date arithmetic, timezone conversion | – | T1 | P2 | tool-core | ⬜ | |

@@ -216,3 +216,48 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 **Next session should:** run Audit A1 from `docs/audit/CHECKLISTS.md` using the evidence pack, close the copy/brand-asset items, and only then start P2.
 
 **Human review:** [ ] diff read  [ ] approved
+
+### Session 006 — 2026-10-18 — P2 Batch 1 — Buffy
+**Goal:** Close Phase 1 using the A1 result, then build the eight text and dev tools in the agreed order and stop at the batch gate.
+
+**Done:**
+- Recorded Audit A1 as PASS with no open Must findings, transcribed from the owner's independent run at commit `da0d381`. Added F-013 (browser matrix) and F-014 (screen reader) as Should findings for A2.
+- Recorded DEC-07..DEC-12, accepted the Stitch gate for now (DEC-09), kept the wordmark placeholder, and moved P1-13b and all artwork to a new Phase 9 section (DEC-11).
+- Documented the Phase 1 gaps in `docs/implementation/IMPLEMENTATION.md`: no OG image, no PWA install icons, no canonical URLs, and no real-deployment test of the update prompt or Cloudflare Pages.
+- Added nine `tool-core` modules with tests: `json`, `jwt`, `encoder`, `base`, `password`, `words`, `px`, `diff` (plus a barrel test). No new dependencies; platform APIs and a hand-written Myers diff cover everything.
+- Built the eight tools with lazy routes, error and pending states, shared `TextArea` and `OutputActions`: `json-formatter`, `jwt-decoder`, `encoder`, `base-converter`, `password-genny`, `word-counter`, `px-to-rem`, `text-diff`. JSON over 1 MB runs in a worker with four progress stages and terminate-based cancel.
+- Drafted the eight registry descriptions (DEC-12) and corrected `produces` for encoder, word-counter, px-to-rem and text-diff.
+- Added E2E smoke tests for all eight, the 1 MB worker path, offline JSON and word counting, and axe coverage on all fourteen tool and static routes.
+
+**Features touched:** eight rows in `features.md` moved to ✅. PF-04 note now says eleven tools; PF-09 precache figure updated to 873 kB. PF-10 and PF-24 stay 🟨 (Phase 9).
+
+**Decisions:** DEC-07..DEC-12 recorded as ticked. No new dependencies, so no licence decision was needed.
+
+**Verification:**
+- `pnpm lint`, `pnpm typecheck`: pass.
+- `pnpm test`: **182 tests in 19 files** pass.
+- `pnpm test:coverage`: **96.73% statements, 90.2% branches, 100% functions, 98.03% lines**; thresholds unchanged.
+- `pnpm build`: pass. Shell JS **150.8 kB gzip** (budget 200 kB); precache **53 files / 873.2 kB** (budget 8 MiB); 58 build files, none over 20 MiB.
+- `pnpm e2e`: **34 pass**, including offline use, the 1 MB worker case, zero third-party requests and axe (0 serious/critical on every route).
+- `pnpm lighthouse`: home **96** performance, 100 accessibility/best practices/SEO; other audited routes 91–93 performance. LCP 2.3–2.9 s, CLS 0.
+- `pnpm audit`: 0 vulnerabilities (unchanged).
+
+**Descriptions drafted for owner approval:** see the session report; all eight are one sentence, en-GB and written for Omnitool rather than copied from the original.
+
+**Not done / uncertain:**
+- The batch gate is not approved; P2-09 stays open for the owner.
+- The eight descriptions need owner review before they are treated as final copy.
+- The rest of P2 (cron builder, HTTP status, meta tags, regex tester, request builder, Tailwind cheat sheet, decoders, calculators and the remaining typography tools) is untouched.
+- F-013 and F-014 remain open: Chromium only, no screen-reader pass.
+- Lighthouse still audits six routes; the new tool pages are covered by axe and E2E but not by the Lighthouse budget script.
+- Diff is capped at 20,000 units and 2,000 edits per side; the message tells the user to use a coarser mode.
+- JSON worker progress is stage-based, not byte-based.
+
+**Problems and risks found:**
+- Adding eight modules dropped coverage to 89.31% statements / 83.13% branches. Fixed by testing the JSON scanner and failure paths, not by changing thresholds. One unreachable `atob` catch was removed.
+- E2E caught a duplicate accessible name: the base-converter stage and its input were both called "Value". The stage is now "Number".
+- `RandomBytes` clashed between `uuid` and `password`; the password type is now `RandomByteSource`.
+
+**Next session should:** wait for the owner's review of the batch and descriptions, then continue the remaining P2 tools; book the screen-reader and cross-browser checks for A2.
+
+**Human review:** [ ] diff read  [ ] approved
