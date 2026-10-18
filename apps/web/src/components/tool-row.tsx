@@ -17,7 +17,9 @@ export function ToolRow({ tool }: { readonly tool: Tool }) {
           <Badge className="border-transparent bg-highlight text-highlight-foreground">New</Badge>
         ) : null}
         {tool.flags.includes('beta') ? <Badge variant="outline">Beta</Badge> : null}
-        {!ready ? <span className="text-xs text-muted-foreground">Phase {tool.phase}</span> : null}
+        {!ready ? (
+          <span className="text-xs text-muted-foreground">Not built yet — phase {tool.phase}</span>
+        ) : null}
       </span>
       {tool.description ? (
         <span className="min-w-0 text-sm text-muted-foreground">{tool.description}</span>
@@ -28,13 +30,13 @@ export function ToolRow({ tool }: { readonly tool: Tool }) {
     </>
   );
 
+  const rowClass =
+    'flex flex-col gap-1 px-3 py-3 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring md:flex-row md:items-center md:gap-4';
+
   if (!ready) {
     return (
       <li>
-        <div
-          aria-disabled="true"
-          className="flex flex-col gap-1 border-b border-border bg-muted/30 px-3 py-3 last:border-b-0 md:flex-row md:items-center md:gap-4"
-        >
+        <div aria-disabled="true" className={`${rowClass} bg-surface-inset`}>
           {body}
         </div>
       </li>
@@ -46,7 +48,7 @@ export function ToolRow({ tool }: { readonly tool: Tool }) {
       <Link
         to="/tools/$toolId"
         params={{ toolId: tool.id }}
-        className="flex flex-col gap-1 border-b border-border px-3 py-3 last:border-b-0 hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring md:flex-row md:items-center md:gap-4"
+        className={`${rowClass} hover:bg-surface-hover`}
       >
         {body}
       </Link>

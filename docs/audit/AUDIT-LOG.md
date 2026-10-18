@@ -18,6 +18,8 @@ Audits happen at each phase gate (A1..A9) using `CHECKLISTS.md`. Findings have a
 | F-012 | A1 pre-check | Should | `pnpm audit` reported 4 high, 2 moderate and 1 low advisories, all from `@lhci/cli` transitive dependencies (`tmp`, `extract-zip`, `basic-ftp`, `uuid`, `sprintf-js`) | Closed in Session 005: Lighthouse runs from `scripts/lighthouse.mjs` using `lighthouse` + `chrome-launcher`; `pnpm audit` reports 0 vulnerabilities | agent |
 | F-013 | A1 | Should | Browser matrix limited to Chromium; Firefox, WebKit, Safari, iOS Safari and Android Chrome have not been exercised | Open: A2/Phase 9 | agent |
 | F-014 | A1 | Should | No screen-reader spot check (NVDA or VoiceOver) has been done | Open: A2 | human+agent |
+| F-015 | A1 | Should | `apps/web/public/_redirects` (`/* /index.html 200`) produces an infinite loop warning under Wrangler / Cloudflare Pages and will be ignored at deploy; needs removal before first deploy | Open: P1-15 | human |
+| F-016 | A1 | Info | Working tree has uncommitted edits to `docs/design/DESIGN.md` and untracked Stitch review/prompt archives at `62bd5e1` | Open | human |
 
 ## Pre-audit evidence for A1 — collected 2026-10-18 — not a verdict
 
@@ -81,3 +83,92 @@ Evidence only; A1 itself is still unrun and unapproved. Re-run these commands at
 **Verdict:** PASS — no open Must findings.
 **Conditions / next actions:** F-013 and F-014 carry forward to A2. P1-00 (Stitch gate) accepted for now under DEC-09; P1-13b and artwork moved to Phase 9 under DEC-11.
 **Transcription note:** the verdict was supplied by the project owner from an audit run independently of the session that built the code. This entry records that verdict; it was not produced by the implementing session.
+
+---
+
+### Audit A1 (Independent Verification) — 2026-10-18 — Phase 1 gate — Independent Auditor
+**Scope / commit:** Omnitool Phase 1 verified at HEAD (`62bd5e1`, includes Phase 1 foundations and Batch 1 text/dev tools).
+**Checklists run:** Sections 1 to 8 of `docs/audit/CHECKLISTS.md` for Phase 1 scope.
+
+#### Gate Command Results
+- `pnpm install --frozen-lockfile`: PASS (clean install in 708ms, pnpm v11.24.0, node v22.22.1).
+- `pnpm lint` (`biome check .`): PASS (129 files checked, 0 errors, 0 fixes).
+- `pnpm typecheck` (`tsc --noEmit` across all workspaces): PASS (5 workspace projects checked, 0 errors).
+- `pnpm test:coverage` (`vitest run --coverage`): PASS (19 test files, 182 passed tests, 0 failures; `tool-core` coverage: 98.03% lines [threshold 90%], 90.2% branches [threshold 85%]).
+- `pnpm build`: PASS (Vite v8.3.4 client production build in 528ms; prerendered 14 routes + 404.html; workbox precache 38 entries, 828.69 KiB).
+- `node scripts/check-build-budget.mjs`: PASS (Shell JS: 150.8 kB gzip [budget 200.0 kB]; precache candidates: 53 files, 873.2 kB [budget 8192.0 kB]; total build files: 58 [limit 20,000]; largest file: 367 kB [limit 20 MiB]).
+- `pnpm e2e` (`playwright test`): PASS (34 tests passed across 8 workers in 18.2s).
+- `axe-core`: PASS (16 pages/states scanned via `@axe-core/playwright`, 0 critical, 0 serious violations).
+- `pnpm lighthouse` (mobile profile on home `/`): PASS (Performance 96, Accessibility 100, Best Practices 100, SEO 100; LCP 2273 ms, TBT 31 ms, CLS 0.000).
+
+#### Checklist Results (Sections 1–8)
+1. **Privacy and offline (NFR-001, FR-007):**
+   - [PASS] E2E offline reload and tools: `tests/e2e/offline.spec.ts` passes with network blocked (`context.setOffline(true)`) for home, privacy, `uuid-genny`, `image-converter`, `json-formatter`, `word-counter`.
+   - [PASS] Network trace: `tests/e2e/network.spec.ts` verified zero third-party requests (`external = []`).
+   - [PASS] Third-party origins: No third-party analytics, fonts, or scripts; fonts bundled locally (`@fontsource-variable/*` woff2 in `dist/assets/`).
+   - [PASS] Persistence: No automatic storage of user files; IndexedDB handoff not in scope (scheduled for P7).
+2. **Security (NFR-007):**
+   - [PASS] CSP & scripts: `apps/web/public/_headers:6` sets strict CSP (`script-src 'self'`); zero inline scripts in `apps/web/dist/index.html`; theme bootstrap is external `/theme.js`. COOP/COEP absent.
+   - [PASS] `pnpm audit`: 0 vulnerabilities reported.
+   - [PASS] Defensive parsing: `packages/tool-core/src/json/index.ts:39` enforces `MAX_DEPTH = 1000`; `dataUrlToBlob` validates header/comma; malformed inputs throw handled errors.
+   - [NOT TESTED] Regex tester sandboxing: Out of scope for Phase 1 (scheduled for Phase 2).
+   - [PASS] Secrets: Repo files, `.npmrc`, and full `git log -p` verified free of tokens, API keys, credentials or user data.
+3. **Accessibility (NFR-004):**
+   - [PASS] axe scans: 0 serious/critical violations on home, about, privacy, dark mode, omnibox dialog, and all 11 tool routes.
+   - [PASS] Keyboard walkthrough: `tests/e2e/home.spec.ts` verifies skip link, Ctrl/Cmd+K omnibox opening, arrow navigation, and Escape dismissal.
+   - [NOT TESTED] Screen-reader spot check: NVDA/VoiceOver not testable in headless Linux environment. Tracked as open finding F-014.
+   - [PASS] Contrast, focus & motion: Contrast AA verified by axe; visible focus rings on `--ring`; `@media (prefers-reduced-motion: reduce)` respected.
+   - [PASS] Touch targets: Minimum 44 px targets enforced on coarse pointers via `apps/web/src/styles/app.css`.
+4. **Performance (NFR-002/003):**
+   - [PASS] Lighthouse mobile performance: 96 on home `/` (threshold >= 90), 100 on a11y, best practices, SEO.
+   - [PASS] Shell JS & lazy chunks: Shell JS is 150.8 kB gzip (budget 200 kB); all tool modules are separate lazy chunks in `dist/assets/`.
+   - [NOT TESTED] Heavy tool stress tests (24 MP image / 100 MB file / 10-minute media): Heavy tools belong to P4/P6. (Worker cancellation and progress harness verified in `job.test.ts` and `batch1.spec.ts`).
+   - [PASS] Main-thread long tasks: Lighthouse TBT <= 78 ms across all routes (31 ms on home); no blocking tasks > 200 ms.
+5. **Licence and provenance (NFR-009):**
+   - [PASS] Dependency licences: Every dependency recorded in `docs/legal/ATTRIBUTION.md`.
+   - [PASS] No AGPL/GPL: Full scan of 1014 packages in `node_modules/.pnpm` confirmed zero AGPL or GPL dependencies.
+   - [PASS] Clean provenance: Zero source code, UI copy, or artwork copied from `delphitools-main` or `../delphitools-main.zip`. All 8 implemented tool descriptions are original British English. `tests/fixtures/sample.png` has no match in original.
+   - [NOT TESTED] `THIRD-PARTY-NOTICES.md`: Phase 9 item (credits currently listed on `/about`).
+6. **Code quality (NFR-008):**
+   - [PASS] CI checks: lint, typecheck, tests all green.
+   - [PASS] Coverage: `tool-core` lines coverage is 98.03% (>= 90%), branches 90.2% (>= 85%).
+   - [PASS] Clean source: Zero TODO, FIXME, or XXX comments in `apps/web/src` or `packages/*/src`.
+   - [PASS] Module contract: All tools implement lazy route exports, registry metadata, and error boundary isolation.
+7. **Documentation sync:**
+   - [PASS] `features.md` matches reality: 5 spot-checked rows (`PF-06`, `uuid-genny`, `PF-07`, `json-formatter`, `password-genny`) verified against active code.
+   - [PASS] `todo.md` ticks: Ticks accurately match delivered work; P1-15 correctly left open.
+   - [PASS] Review log: Sessions 001–007 recorded in `docs/review/REVIEW-LOG.md`.
+   - [PASS] SRS verification: Functional and non-functional requirements backed by automated tests.
+   - [PASS] ADRs: ADRs 0001–0004 document stack, routing, hosting/caching, and worker RPC.
+8. **Browser matrix (NFR-006):**
+   - [NOT TESTED] Full browser matrix: Only Chromium tested via Playwright. Firefox, WebKit/Safari, iOS Safari, and Android Chrome not tested in this environment. Open finding F-013.
+   - [PASS] Support matrix: Documented in `docs/development/SUPPORT-MATRIX.md`.
+
+#### Specific Verification Items
+- Same-origin network only: PASS (`tests/e2e/network.spec.ts`).
+- Built entry inline scripts: PASS (0 inline scripts in `dist/index.html`; `/theme.js` external).
+- CSP in `_headers`: PASS (`script-src 'self'`).
+- COOP/COEP absent: PASS (headers absent from `_headers`).
+- File size <= 20 MiB & precache in budget: PASS (largest file 367 kB; precache total 873.2 kB <= 8 MiB).
+- `axe-core` & devDependencies absent from bundle: PASS (0 matches in `dist/`).
+- Licence compliance: PASS (all licences recorded, 0 AGPL/GPL).
+- URL search params: PASS (`lib/search-params.ts` drops unknown & file-like keys).
+- Worker cancellation: PASS (worker terminated on cancel via `job.ts:81-86`).
+- No copied code/art/copy from delphitools: PASS (0 matches).
+- Registry descriptions: PASS (8 original British English, 89 empty).
+- No secrets in repo/git: PASS (0 secrets or API keys found).
+
+**New findings:**
+- F-015 (Should): `apps/web/public/_redirects` rule `/* /index.html 200` causes an infinite loop warning on Cloudflare Pages / Wrangler and is ignored; should be deleted before first deployment (P1-15).
+- F-016 (Info): Working tree contains uncommitted changes to `docs/design/DESIGN.md` and untracked Stitch prompts/archives at commit `62bd5e1`.
+
+**Closed findings:** None (as an independent auditor, no Must findings are self-closed). F-004, F-005, F-008, F-009, F-010, F-012 remain closed from prior sessions.
+
+**Verdict:** PASS WITH CONDITIONS
+
+**Conditions / next actions:**
+1. Resolve F-015 before first production deploy: remove `apps/web/public/_redirects` as recommended in `docs/deployment/CLOUDFLARE-PAGES.md` section 3.
+2. F-013 (browser matrix outside Chromium) and F-014 (screen-reader spot check) remain open as recorded Should findings to be addressed in Phase 2 / Phase 9.
+3. F-003 (own branding & artwork) remains Open under human decision DEC-11 (deferred to Phase 9).
+4. Clean up or commit working tree modifications (`docs/design/DESIGN.md` and untracked Stitch review files) before starting subsequent phase work.
+Phase 2 may proceed from a code and quality perspective subject to the above conditions.

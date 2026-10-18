@@ -55,7 +55,7 @@ function SecureContextNotice() {
   return (
     <div
       role="status"
-      className="border-b border-border bg-highlight px-4 py-2 text-sm text-highlight-foreground"
+      className="border-b border-warning bg-surface px-4 py-2 text-sm text-warning"
     >
       This page is not being served over HTTPS. Omnitool still works, but offline mode, clipboard
       access and some tools will be unavailable. Open the secure HTTPS address to use them.

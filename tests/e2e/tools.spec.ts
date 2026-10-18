@@ -7,18 +7,35 @@ test.describe('uuid-genny', () => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await page.goto('/tools/uuid-genny');
 
-    const output = page.getByLabel('Generated values');
-    const first = await output.inputValue();
-    expect(first.split('\n')).toHaveLength(5);
-    for (const value of first.split('\n')) expect(value).toMatch(UUID_V4);
+    const outputValues = () =>
+      page
+        .locator('[data-output-value]')
+        .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-output-value') ?? ''));
+
+    const first = await outputValues();
+    expect(first).toHaveLength(5);
+    for (const value of first) expect(value).toMatch(UUID_V4);
 
     await page.getByRole('button', { name: 'Generate' }).click();
-    await expect(page.getByRole('button', { name: 'Copied' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Copied all' })).toHaveCount(0);
     await page.getByRole('button', { name: 'Copy all' }).click();
-    await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Copied all' })).toBeVisible();
 
     const clipboard = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipboard).toBe(await output.inputValue());
+    expect(clipboard).toBe((await outputValues()).join('\n'));
+  });
+
+  test('copies a single value from its row', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.goto('/tools/uuid-genny');
+
+    await page.getByRole('button', { name: 'Copy value 2' }).click();
+
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+    const values = await page
+      .locator('[data-output-value]')
+      .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-output-value') ?? ''));
+    expect(clipboard).toBe(values[1]);
   });
 
   test('downloads a text file', async ({ page }) => {
@@ -49,20 +66,31 @@ test.describe('qr-genny', () => {
 });
 
 test.describe('image-converter', () => {
-  test('shows progress, cancels, then converts and downloads', async ({ page }) => {
+  test('shows the first-use download, cancels, then converts and downloads', async ({ page }) => {
     await page.goto('/tools/image-converter');
 
     await page.locator('input[type="file"]').setInputFiles('tests/fixtures/sample.png');
     await expect(page.getByText('sample.png')).toBeVisible();
 
+    // First use: the codec is not cached yet.
+    await expect(page.getByText('Image codec (sample)')).toBeVisible();
+    await expect(page.getByText(/cached for this session/i)).toHaveCount(0);
+
     await page.getByRole('button', { name: 'Convert' }).click();
-    await expect(page.getByText(/Downloading sample converter/)).toBeVisible();
+    await expect(page.getByText(/Fetching Image codec \(sample\)/)).toBeVisible();
+    await expect(page.getByRole('progressbar')).toBeVisible();
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByText(/Conversion cancelled/)).toBeVisible();
+    await expect(page.getByText(/cached for this session/i)).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Convert' }).click();
     const downloadButton = page.getByRole('button', { name: 'Download PNG' });
-    await expect(downloadButton).toBeVisible({ timeout: 20_000 });
+    await expect(downloadButton).toBeEnabled({ timeout: 20_000 });
+
+    // Real before/after sizes, computed from the file and the produced blob.
+    await expect(page.getByText('Size before')).toBeVisible();
+    await expect(page.getByText('Size after')).toBeVisible();
+    await expect(page.getByText(/cached for this session/i)).toBeVisible();
 
     const downloadPromise = page.waitForEvent('download');
     await downloadButton.click();

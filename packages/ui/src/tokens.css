@@ -6,14 +6,20 @@
   /* DESIGN.md — Paper, Panel, Ink */
   --background: #edf0f3;
   --surface: #ffffff;
+  --surface-inset: #edf0f3;
+  --surface-hover: #edf0f3;
   --foreground: #101828;
   --muted-foreground: #4a5565;
+  /* Decorative hairlines only. Controls use --border-strong (>= 3:1). */
   --border: #bcc5d0;
+  --border-strong: #6b7686;
   --primary: #2447f5;
   --primary-foreground: #ffffff;
   --highlight: #ffd84d;
   --highlight-foreground: #101828;
   --destructive: #c42b1c;
+  --success: #067a52;
+  --warning: #8a5a00;
   --ring: #2447f5;
 
   /* Supporting surfaces derived from the same palette */
@@ -22,7 +28,7 @@
   --accent-foreground: #101828;
   --secondary: #e2e7ec;
   --secondary-foreground: #101828;
-  --input: #bcc5d0;
+  --input: #6b7686;
   --card: #ffffff;
   --card-foreground: #101828;
   --popover: #ffffff;
@@ -41,14 +47,19 @@
 
   --background: #12161d;
   --surface: #1a2029;
+  --surface-inset: #161b23;
+  --surface-hover: #202733;
   --foreground: #e6eaf0;
   --muted-foreground: #9aa6b8;
   --border: #2c3441;
+  --border-strong: #6c7a90;
   --primary: #7f98ff;
   --primary-foreground: #0b1020;
   --highlight: #ffd84d;
   --highlight-foreground: #101828;
   --destructive: #ff8a7a;
+  --success: #4ade9b;
+  --warning: #f5b93a;
   --ring: #7f98ff;
 
   --muted: #202833;
@@ -56,7 +67,7 @@
   --accent-foreground: #e6eaf0;
   --secondary: #232b37;
   --secondary-foreground: #e6eaf0;
-  --input: #2c3441;
+  --input: #6c7a90;
   --card: #1a2029;
   --card-foreground: #e6eaf0;
   --popover: #1a2029;
@@ -68,12 +79,17 @@
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-inset: var(--surface-inset);
+  --color-surface-hover: var(--surface-hover);
   --color-foreground: var(--foreground);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-primary: var(--primary);

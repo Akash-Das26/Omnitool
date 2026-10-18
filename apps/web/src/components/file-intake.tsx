@@ -89,7 +89,7 @@ export function FileIntake({
         onPaste={handlePaste}
         aria-describedby={error ? errorId : undefined}
         className={cn(
-          'flex min-w-0 flex-col items-start gap-3 rounded-panel border border-dashed border-border bg-surface p-5',
+          'flex min-w-0 flex-col items-start gap-3 rounded-panel border border-dashed border-border-strong bg-surface p-5',
           'transition-colors focus-within:border-ring',
           dragging && 'border-solid border-primary bg-highlight/20',
           disabled && 'opacity-60',
@@ -107,7 +107,7 @@ export function FileIntake({
           type="button"
           disabled={disabled}
           onClick={() => inputRef.current?.click()}
-          className="inline-flex min-h-10 items-center justify-center rounded-control border border-border bg-surface px-3 text-sm font-medium hover:bg-muted disabled:pointer-events-none disabled:opacity-50 max-sm:min-h-11"
+          className="inline-flex min-h-10 items-center justify-center rounded-control border border-border-strong bg-surface px-3 text-sm font-medium hover:bg-surface-hover disabled:pointer-events-none disabled:opacity-50 max-sm:min-h-11"
         >
           {buttonLabel}
         </button>

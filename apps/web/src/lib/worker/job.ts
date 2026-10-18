@@ -4,15 +4,21 @@ export interface WorkerHandle {
   terminate(): void;
 }
 
+/**
+ * `phase` lets a heavy tool tell the UI which part of the job is running, so
+ * first-use codec downloads can show their own state without a mock switch.
+ */
+export type WorkerProgress = (progress: number, label?: string, phase?: string) => void;
+
 export interface WorkerRemote<TInput, TOutput> {
-  run(input: TInput, onProgress: (progress: number, label?: string) => void): Promise<TOutput>;
+  run(input: TInput, onProgress: WorkerProgress): Promise<TOutput>;
 }
 
 export interface WorkerJobOptions<TInput, TOutput, TRemote extends WorkerRemote<TInput, TOutput>> {
   readonly worker: WorkerHandle;
   readonly remoteFactory?: (worker: WorkerHandle) => TRemote;
   readonly input: TInput;
-  readonly onProgress?: (progress: number, label?: string) => void;
+  readonly onProgress?: WorkerProgress;
 }
 
 export class WorkerCancelledError extends Error {
@@ -57,9 +63,9 @@ export function createWorkerJob<TInput, TOutput, TRemote extends WorkerRemote<TI
 
   const run = remote.run(
     input,
-    Comlink.proxy((progress: number, label?: string) => {
+    Comlink.proxy((progress: number, label?: string, phase?: string) => {
       if (settled) return;
-      onProgress?.(Math.max(0, Math.min(100, progress)), label);
+      onProgress?.(Math.max(0, Math.min(100, progress)), label, phase);
     }),
   );
 

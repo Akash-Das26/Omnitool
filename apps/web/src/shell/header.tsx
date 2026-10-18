@@ -20,11 +20,11 @@ export function Header() {
           type="button"
           onClick={() => openOmnibox()}
           aria-keyshortcuts="Meta+K Control+K"
-          className="ml-2 flex h-10 min-w-0 flex-1 items-center gap-2 rounded-control border border-border bg-surface px-3 text-left text-sm text-muted-foreground hover:border-ring/60 hover:text-foreground md:ml-6 md:max-w-md"
+          className="ml-2 flex h-10 min-w-0 flex-1 items-center gap-2 rounded-control border border-border-strong bg-surface px-3 text-left text-sm text-muted-foreground hover:bg-surface-hover hover:text-foreground md:ml-6 md:max-w-md"
         >
           <SearchIcon aria-hidden="true" className="size-4 shrink-0" />
-          <span className="truncate">Find a tool or drop a file</span>
-          <kbd className="ml-auto hidden rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground sm:inline">
+          <span className="min-w-0 flex-1 overflow-hidden">Find a tool or drop a file</span>
+          <kbd className="ml-auto hidden rounded-control border border-border-strong px-1.5 py-0.5 font-mono text-xs text-muted-foreground sm:inline">
             Ctrl K
           </kbd>
         </button>

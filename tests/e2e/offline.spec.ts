@@ -26,12 +26,12 @@ test('the shell and sample tools work offline after first load', async ({ page, 
 
   await page.goto('/tools/uuid-genny');
   await page.getByRole('button', { name: 'Generate' }).click();
-  await expect(page.getByLabel('Generated values')).not.toHaveValue('');
+  await expect(page.locator('[data-output-value]').first()).not.toBeEmpty();
 
   await page.goto('/tools/image-converter');
   await page.locator('input[type="file"]').setInputFiles('tests/fixtures/sample.png');
   await page.getByRole('button', { name: 'Convert' }).click();
-  await expect(page.getByRole('button', { name: 'Download PNG' })).toBeVisible({
+  await expect(page.getByRole('button', { name: 'Download PNG' })).toBeEnabled({
     timeout: 20_000,
   });
 

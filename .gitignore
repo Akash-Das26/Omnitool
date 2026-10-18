@@ -15,3 +15,4 @@ delphitools-main/
 # Personal agent configs are not committed; AGENTS.md is the shared source of truth.
 CLAUDE.local.md
 .claude/settings.local.json
+docs/design/stitch/

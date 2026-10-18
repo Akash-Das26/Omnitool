@@ -10,9 +10,12 @@ describe('createWorkerJob', () => {
     const worker = fakeWorker();
     const progress = vi.fn();
     const remoteFactory = () => ({
-      async run(input: number, onProgress: (value: number, label?: string) => void) {
-        onProgress(10, 'Reading');
-        onProgress(120, 'Clamped');
+      async run(
+        input: number,
+        onProgress: (value: number, label?: string, phase?: string) => void,
+      ) {
+        onProgress(10, 'Reading', 'convert');
+        onProgress(120, 'Clamped', 'convert');
         return input * 2;
       },
     });
@@ -25,8 +28,8 @@ describe('createWorkerJob', () => {
     });
 
     await expect(job.promise).resolves.toBe(42);
-    expect(progress).toHaveBeenNthCalledWith(1, 10, 'Reading');
-    expect(progress).toHaveBeenNthCalledWith(2, 100, 'Clamped');
+    expect(progress).toHaveBeenNthCalledWith(1, 10, 'Reading', 'convert');
+    expect(progress).toHaveBeenNthCalledWith(2, 100, 'Clamped', 'convert');
     expect(worker.terminate).toHaveBeenCalledOnce();
   });
 

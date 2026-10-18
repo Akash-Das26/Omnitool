@@ -64,8 +64,8 @@ export function Rail() {
                   title={category.name}
                   aria-current={active === category.id ? 'page' : undefined}
                   className={cn(
-                    'flex min-h-10 items-center gap-2 rounded-control px-2 text-sm hover:bg-muted',
-                    active === category.id && 'bg-muted font-medium',
+                    'flex min-h-10 items-center gap-2 rounded-control px-2 text-sm hover:bg-surface-hover',
+                    active === category.id && 'bg-surface-hover font-medium',
                     collapsed && 'justify-center px-0',
                   )}
                 >
@@ -74,7 +74,7 @@ export function Rail() {
                     <span className="sr-only">{category.name}</span>
                   ) : (
                     <>
-                      <span className="truncate">{category.name}</span>
+                      <span className="min-w-0 flex-1 break-words">{category.name}</span>
                       <span className="ml-auto text-xs text-muted-foreground">
                         {category.tools.length}
                       </span>
@@ -90,10 +90,10 @@ export function Rail() {
       <div className="border-t border-border p-2">
         {!collapsed ? (
           <nav aria-label="About Omnitool" className="mb-2 space-y-0.5 text-sm">
-            <Link to="/privacy" className="block rounded-control px-2 py-2 hover:bg-muted">
+            <Link to="/privacy" className="block rounded-control px-2 py-2 hover:bg-surface-hover">
               Privacy
             </Link>
-            <Link to="/about" className="block rounded-control px-2 py-2 hover:bg-muted">
+            <Link to="/about" className="block rounded-control px-2 py-2 hover:bg-surface-hover">
               Acknowledgements
             </Link>
           </nav>
@@ -103,7 +103,7 @@ export function Rail() {
           onClick={toggleRail}
           aria-expanded={!collapsed}
           aria-label={collapsed ? 'Expand category rail' : 'Collapse category rail'}
-          className="flex min-h-10 w-full items-center justify-center rounded-control text-muted-foreground hover:bg-muted"
+          className="flex min-h-10 w-full items-center justify-center rounded-control text-muted-foreground hover:bg-surface-hover"
         >
           {collapsed ? (
             <PanelLeftOpenIcon aria-hidden="true" className="size-4" />

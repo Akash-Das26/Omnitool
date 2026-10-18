@@ -143,7 +143,7 @@ export default function TextDiffTool() {
               </p>
 
               {view === 'inline' ? (
-                <pre className="max-h-96 overflow-auto rounded-control border border-border bg-background p-3 font-mono text-sm whitespace-pre-wrap break-words">
+                <pre className="max-h-96 overflow-auto rounded-control border border-border bg-surface-inset p-3 font-mono text-sm whitespace-pre-wrap break-words">
                   {keyedParts.map(({ part, key }) =>
                     part.type === 'equal' ? (
                       <span key={key}>{part.value}</span>

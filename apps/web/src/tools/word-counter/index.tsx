@@ -61,7 +61,10 @@ export default function WordCounterTool() {
         <ToolStage title="Counts">
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {cards.map(([label, value]) => (
-              <div key={label} className="rounded-control border border-border bg-background p-3">
+              <div
+                key={label}
+                className="rounded-control border border-border bg-surface-inset p-3"
+              >
                 <dt className="text-sm text-muted-foreground">{label}</dt>
                 <dd className="mt-1 font-mono text-xl">{value}</dd>
               </div>

@@ -20,7 +20,7 @@ export function ToolErrorPage({ error }: { readonly error: unknown }) {
         </button>
         <Link
           to="/"
-          className="inline-flex min-h-10 items-center rounded-control border border-border px-3 text-sm font-medium"
+          className="inline-flex min-h-10 items-center rounded-control border border-border-strong px-3 text-sm font-medium"
         >
           Back to the index
         </Link>

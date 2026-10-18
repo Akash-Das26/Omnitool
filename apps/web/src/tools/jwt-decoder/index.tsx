@@ -21,7 +21,7 @@ function JsonBlock({
       <h3 className="mb-2 text-sm font-medium">{title}</h3>
       <pre
         id={id}
-        className="max-h-80 overflow-auto rounded-control border border-border bg-background p-3 font-mono text-sm"
+        className="max-h-80 overflow-auto rounded-control border border-border bg-surface-inset p-3 font-mono text-sm"
       >
         {JSON.stringify(value, null, 2)}
       </pre>
