@@ -118,5 +118,61 @@ test('dark omnibox shows the Marker selected row and the key hints', async ({ pa
   expect(colours.background).toBe('rgb(255, 216, 77)');
   expect(colours.color).toBe('rgb(16, 24, 40)');
 
+  // Matching text is underlined, and the match is not coloured.
+  const mark = dialog.locator('mark').first();
+  await expect(mark).toHaveText(/uuid/i);
+  const markStyle = await mark.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return { decoration: style.textDecorationLine, background: style.backgroundColor };
+  });
+  expect(markStyle.decoration).toContain('underline');
+  expect(markStyle.background).toBe('rgba(0, 0, 0, 0)');
+
   await expect(page).toHaveScreenshot('omnibox-dark.png', SCREENSHOT_OPTIONS);
+});
+
+test('the dropped-file chip shows the name, size and type', async ({ page }) => {
+  await openDark(page, '/');
+
+  await page.evaluate(() => {
+    const file = new File([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])], 'hero-banner.png', {
+      type: 'image/png',
+    });
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    document
+      .querySelector('main button')
+      ?.dispatchEvent(
+        new DragEvent('drop', { dataTransfer: transfer, bubbles: true, cancelable: true }),
+      );
+  });
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByText('hero-banner.png')).toBeVisible();
+  await expect(dialog.getByText('8 B')).toBeVisible();
+  await expect(dialog.getByText('image/png')).toBeVisible();
+  // cmdk renders group headings as plain elements with aria-labelledby.
+  await expect(dialog.getByText(/Tools that accept this file/)).toBeVisible();
+
+  await expect(page).toHaveScreenshot('omnibox-file-dark.png', SCREENSHOT_OPTIONS);
+});
+
+test('the mobile action bar is fixed to the viewport bottom', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openDark(page, '/tools/uuid-genny');
+
+  const actions = page.locator('[data-slot="tool-actions"]');
+  await expect(actions).toBeVisible();
+  const box = await actions.evaluate((node) => {
+    const style = getComputedStyle(node);
+    const rect = node.getBoundingClientRect();
+    return {
+      position: style.position,
+      bottom: Math.round(window.innerHeight - rect.bottom),
+      height: Math.round(rect.height),
+    };
+  });
+  expect(box.position).toBe('fixed');
+  expect(Math.abs(box.bottom)).toBeLessThanOrEqual(1);
+  expect(box.height).toBeGreaterThanOrEqual(44);
 });

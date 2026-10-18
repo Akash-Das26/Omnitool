@@ -78,7 +78,7 @@ The Phase 1 shell was aligned with the accepted Stitch layout reference (`docs/d
 - Build files: **58**; no file over 20 MiB.
 - Lighthouse mobile: home **96** performance, **100** accessibility, best practices and SEO; tool pages 91–93 performance.
 - Unit tests: **246 passing in 20 files**; coverage **96.73% statements / 90.2% branches** (thresholds unchanged).
-- E2E: **63 passing**, including axe in light and dark on every route and four dark screenshot baselines.
+- E2E: **65 passing**, including axe in light and dark on every route and five dark screenshot baselines.
 
 **Deviations:** the tool stages stay a single column (DESIGN.md wording) rather than the two-column split in the Stitch screens; "Send to" is hidden until handoff exists (P7) rather than shown disabled; Reset is wired on the three sample tools only. The image converter's codec download is still simulated, with the size labelled as a sample.
 
