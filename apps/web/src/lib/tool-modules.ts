@@ -28,10 +28,19 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   'paper-sizes': () => import('@/tools/paper-sizes'),
 };
 
+/**
+ * The loader map is the single source of truth for what is built. Home, the
+ * omnibox, the rail and the router all derive availability from these keys, so
+ * adding a tool is one entry here plus its registry row.
+ */
+export const IMPLEMENTED_TOOL_IDS: readonly string[] = Object.freeze(Object.keys(TOOL_LOADERS));
+
+export const IMPLEMENTED_TOOL_COUNT = IMPLEMENTED_TOOL_IDS.length;
+
 export function isToolImplemented(id: string): boolean {
-  return id in TOOL_LOADERS;
+  return Object.hasOwn(TOOL_LOADERS, id);
 }
 
 export function loadTool(id: string): (() => Promise<ToolModule>) | undefined {
-  return TOOL_LOADERS[id];
+  return Object.hasOwn(TOOL_LOADERS, id) ? TOOL_LOADERS[id] : undefined;
 }

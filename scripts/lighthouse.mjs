@@ -10,6 +10,7 @@
  * written to `reports/lighthouse/` for CI.
  */
 
+import { readdirSync } from 'node:fs';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, resolve, sep } from 'node:path';
@@ -21,14 +22,22 @@ import lighthouse from 'lighthouse';
 const DIST = resolve('apps/web/dist');
 const REPORT_DIR = resolve('reports/lighthouse');
 
-const ROUTES = [
-  { path: '/', name: 'home' },
-  { path: '/about/', name: 'about' },
-  { path: '/privacy/', name: 'privacy' },
-  { path: '/tools/uuid-genny/', name: 'uuid-genny' },
-  { path: '/tools/qr-genny/', name: 'qr-genny' },
-  { path: '/tools/image-converter/', name: 'image-converter' },
-];
+// Every prerendered tool directory is a built route; planned tools have no
+// directory and are intentionally absent. Read after the dist check so a
+// missing build still gets the clear "run pnpm build" message.
+function routesForDist() {
+  const builtToolRoutes = readdirSync(resolve(DIST, 'tools'), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+
+  return [
+    { path: '/', name: 'home' },
+    { path: '/about/', name: 'about' },
+    { path: '/privacy/', name: 'privacy' },
+    ...builtToolRoutes.map((id) => ({ path: `/tools/${id}/`, name: `tool-${id}` })),
+  ];
+}
 
 const ASSERTIONS = {
   performance: { minScore: 0.9, level: 'error' },
@@ -148,6 +157,7 @@ async function main() {
   if (!(await isFile(resolve(DIST, 'index.html')))) {
     throw new Error('apps/web/dist is missing; run `pnpm build` first.');
   }
+  const routes = routesForDist();
   await mkdir(REPORT_DIR, { recursive: true });
 
   const server = await startServer();
@@ -160,7 +170,7 @@ async function main() {
   const rows = [];
 
   try {
-    for (const route of ROUTES) {
+    for (const route of routes) {
       const result = await lighthouse(`http://127.0.0.1:${port}${route.path}`, {
         port: chrome.port,
         output: ['json', 'html'],

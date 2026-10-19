@@ -1,5 +1,12 @@
+import { TOOLS } from '@omnitool/tools-registry';
 import { describe, expect, it } from 'vitest';
-import { isToolImplemented, loadTool, TOOL_LOADERS } from './tool-modules';
+import {
+  IMPLEMENTED_TOOL_COUNT,
+  IMPLEMENTED_TOOL_IDS,
+  isToolImplemented,
+  loadTool,
+  TOOL_LOADERS,
+} from './tool-modules';
 
 describe('tool modules', () => {
   it('lists only the tools that exist', () => {
@@ -36,5 +43,28 @@ describe('tool modules', () => {
   it('returns a loader for implemented tools and nothing for planned tools', () => {
     expect(typeof loadTool('qr-genny')).toBe('function');
     expect(loadTool('pdf-organiser')).toBeUndefined();
+  });
+
+  it('derives built and planned tools from the loader map, agreeing with the registry', () => {
+    const registryIds = TOOLS.map((tool) => tool.id).sort();
+    const built = TOOLS.filter((tool) => isToolImplemented(tool.id)).map((tool) => tool.id);
+
+    // Built comes only from the loader map, and every loader has a registry row.
+    expect([...IMPLEMENTED_TOOL_IDS].sort()).toEqual(Object.keys(TOOL_LOADERS).sort());
+    expect(built.sort()).toEqual(Object.keys(TOOL_LOADERS).sort());
+    expect(IMPLEMENTED_TOOL_COUNT).toBe(built.length);
+
+    // Planned is the exact complement: no loader, and no route to load.
+    for (const id of registryIds) {
+      if (built.includes(id)) continue;
+      expect(loadTool(id)).toBeUndefined();
+      expect(isToolImplemented(id)).toBe(false);
+    }
+
+    // The two sets partition the registry, so counts can be derived without a
+    // second hand-kept list.
+    expect(built.length + registryIds.filter((id) => !built.includes(id)).length).toBe(
+      TOOLS.length,
+    );
   });
 });

@@ -20,16 +20,16 @@ export function Header() {
           type="button"
           onClick={() => openOmnibox()}
           aria-keyshortcuts="Meta+K Control+K"
-          className="ml-2 flex h-10 min-w-0 flex-1 items-center gap-2 rounded-control border border-border-strong bg-surface px-3 text-left text-sm text-muted-foreground hover:bg-surface-hover hover:text-foreground md:ml-6 md:max-w-md"
+          className="ml-2 flex h-10 shrink-0 items-center gap-2 rounded-control border border-border-strong bg-surface px-3 text-left text-sm text-muted-foreground hover:bg-surface-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:ml-6"
         >
           <SearchIcon aria-hidden="true" className="size-4 shrink-0" />
-          <span className="min-w-0 flex-1 overflow-hidden">Find a tool or drop a file</span>
-          <kbd className="ml-auto hidden rounded-control border border-border-strong px-1.5 py-0.5 font-mono text-xs text-muted-foreground sm:inline">
+          <span className="min-w-0">Find tool</span>
+          <kbd className="ml-1 hidden rounded-control border border-border-strong px-1.5 py-0.5 font-mono text-xs text-muted-foreground sm:inline">
             Ctrl K
           </kbd>
         </button>
 
-        <div className="ml-1 flex shrink-0 items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <ThemeToggle />
         </div>
       </div>

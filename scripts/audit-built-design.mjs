@@ -456,32 +456,31 @@ function collectHome() {
       heading: heading?.textContent?.trim() ?? '',
       rows: rows.length,
       builtRows: rows.filter((row) => row.querySelector('a[href]')).length,
-      unbuiltRows: rows.filter((row) => row.querySelector('[aria-disabled="true"]')).length,
+      plannedRows: rows.filter((row) => row.querySelector('[data-row-planned]')).length,
       ...rectOf(section),
     };
   });
-  const allRows = [
-    ...document.querySelectorAll('main section li > a, main section li > [aria-disabled="true"]'),
-  ];
+  const allRows = [...document.querySelectorAll('main section li > a, main section li > div')];
   const rowsInFold = allRows.filter((row) => row.getBoundingClientRect().top < innerHeight);
   const firstRow = allRows[0];
   const firstLink = document.querySelector('main section li > a[href]');
   const targetRow = firstLink ?? firstRow;
   const rowStyle = targetRow ? getComputedStyle(targetRow) : null;
-  const nameSpan = targetRow?.querySelector('span.font-medium') ?? null;
+  const nameSpan = targetRow?.querySelector('[data-row-name]') ?? null;
   const nameStyle = nameSpan ? getComputedStyle(nameSpan) : null;
 
   const rowList = allRows.map((row, index) => {
-    const name = row.querySelector('span.font-medium')?.textContent?.trim() ?? '';
-    const description = row.querySelector('span.text-sm')?.textContent?.trim() ?? null;
-    const status = row.textContent?.match(/Not built yet — phase \d+/)?.[0] ?? null;
+    const name = row.querySelector('[data-row-name]')?.textContent?.trim() ?? '';
+    const description = row.querySelector('[data-row-description]')?.textContent?.trim() ?? null;
+    const planned = row.matches('[data-row-planned]');
     return {
       index,
       name,
       built: row.matches('a[href]'),
       height: Math.round(row.getBoundingClientRect().height),
       description,
-      status,
+      planned,
+      status: planned ? 'Planned' : null,
       top: Math.round(row.getBoundingClientRect().top),
     };
   });
@@ -498,9 +497,18 @@ function collectHome() {
       nameFontSize: nameStyle?.fontSize ?? null,
       nameFontWeight: nameStyle?.fontWeight ?? null,
       nameText: nameSpan?.textContent?.trim() ?? null,
-      hasDescription: Boolean(targetRow?.querySelector('span.text-sm')),
+      hasDescription: Boolean(targetRow?.querySelector('[data-row-description]')),
       descriptionText:
-        targetRow?.querySelector('span.text-sm')?.textContent?.trim().slice(0, 90) ?? null,
+        targetRow?.querySelector('[data-row-description]')?.textContent?.trim().slice(0, 90) ??
+        null,
+      rowsWithDescriptionHeight: allRows
+        .filter((row) => row.querySelector('[data-row-description]'))
+        .map((row) => Math.round(row.getBoundingClientRect().height))
+        .slice(0, 6),
+      rowsWithoutDescriptionHeight: allRows
+        .filter((row) => !row.querySelector('[data-row-description]'))
+        .map((row) => Math.round(row.getBoundingClientRect().height))
+        .slice(0, 6),
       wholeRowIsLink: targetRow?.tagName === 'A',
       linkHref: targetRow?.getAttribute('href') ?? null,
       withDescription: rowList.filter((row) => row.description).length,
@@ -516,6 +524,21 @@ function collectHome() {
         .map((section) => section.heading),
       builtRows: rowList.filter((row) => row.top < innerHeight && row.built).length,
       rows: rowList.filter((row) => row.top < innerHeight).length,
+    },
+    planned: {
+      visibleRows: document.querySelectorAll('[data-row-planned]').length,
+      badges: [...document.querySelectorAll('main section li')].filter((row) =>
+        row.textContent?.includes('Planned'),
+      ).length,
+      toggle: (() => {
+        const button = document.querySelector('main button[aria-controls="tool-index"]');
+        if (!button) return null;
+        return {
+          text: button.textContent?.trim().replace(/\s+/g, ' ') ?? '',
+          expanded: button.getAttribute('aria-expanded'),
+          height: Math.round(button.getBoundingClientRect().height),
+        };
+      })(),
     },
     hero: (() => {
       const hero = document.querySelector('main button[aria-keyshortcuts]');
@@ -581,8 +604,18 @@ function collectOmnibox() {
       color: getComputedStyle(item).color,
       descriptionColor: description ? getComputedStyle(description).color : null,
       disabled: item.getAttribute('data-disabled') ?? item.getAttribute('aria-disabled'),
+      height: Math.round(item.getBoundingClientRect().height),
+      borderRadius: getComputedStyle(item).borderRadius,
+      fontSize: getComputedStyle(item).fontSize,
     };
   });
+  const plannedRows = [...dialog.querySelectorAll('[data-planned-tool]')].map((row) => ({
+    text: row.textContent?.trim().replace(/\s+/g, ' ').slice(0, 60) ?? '',
+    background: background(row),
+    color: getComputedStyle(row).color,
+    height: Math.round(row.getBoundingClientRect().height),
+    ariaSelected: row.getAttribute('aria-selected'),
+  }));
   const groups = [...dialog.querySelectorAll('[cmdk-group-heading]')].map((heading) =>
     heading.textContent?.trim(),
   );
@@ -616,7 +649,13 @@ function collectOmnibox() {
     keyHints,
     footerText,
     marks,
-    notBuiltRows: rowData.filter((row) => /Not built yet — phase \d+/.test(row.text)).length,
+    plannedRows,
+    plannedCount: plannedRows.length,
+    plannedGroup: groups.find((heading) => /^Planned/.test(heading ?? '')) ?? null,
+    notBuiltRows: [...rowData, ...plannedRows].filter((row) =>
+      /not built|phase \d|coming soon/i.test(row.text),
+    ).length,
+    plannedLabels: plannedRows.filter((row) => /\bPlanned\b/.test(row.text)).length,
     inputCount: dialog.querySelectorAll('input').length,
     chipText: chip?.textContent?.trim().replace(/\s+/g, ' ') ?? null,
     text: dialog.textContent?.replace(/\s+/g, ' ').slice(0, 400) ?? '',
@@ -793,10 +832,22 @@ async function capture(browser, viewport, theme, screen) {
     const link = page.locator('main section li > a[href]').first();
     if ((await link.count()) > 0) {
       await link.hover();
+      await page.waitForTimeout(100);
       measurement.home.rowHoverBackground = await link.evaluate(
         (element) => getComputedStyle(element).backgroundColor,
       );
       await page.mouse.move(0, 0);
+    }
+
+    // Reveal the planned rows to measure their labels and non-link state.
+    const toggle = page.getByRole('button', { name: /Show planned tools/ });
+    if ((await toggle.count()) > 0) {
+      await toggle.click();
+      await page.waitForTimeout(150);
+      measurement.homePlanned = await page.evaluate(collectHome);
+      measurement.homePlannedContrast = (await page.evaluate(collectPageMeasurements)).contrast;
+      await page.getByRole('button', { name: /Hide planned tools/ }).click();
+      await page.waitForTimeout(150);
     }
   }
 

@@ -18,3 +18,5 @@ delphitools-main/
 CLAUDE.local.md
 .claude/settings.local.json
 docs/design/stitch/
+# Generated audit evidence (screenshots and measurements.json).
+docs/design/built/

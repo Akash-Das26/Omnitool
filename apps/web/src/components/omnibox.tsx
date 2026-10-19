@@ -1,7 +1,7 @@
 import { formatBytes } from '@omnitool/tool-core';
 import { CATEGORIES, searchTools, type Tool } from '@omnitool/tools-registry';
 import { FileIcon, XIcon } from 'lucide-react';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, type KeyboardEvent, useMemo, useState } from 'react';
 import {
   Command,
   CommandEmpty,
@@ -71,16 +71,21 @@ interface OmniboxFile {
 
 function resultGroups(query: string, file: OmniboxFile | null) {
   const results = searchTools(query);
+  const built = results.filter((tool) => isToolImplemented(tool.id));
+  const planned = results.filter((tool) => !isToolImplemented(tool.id));
   const accepting = file ? searchTools(query, { accepts: file }) : [];
-  const shown = new Set(accepting.slice(0, FILE_MATCH_LIMIT).map((tool) => tool.id));
+  const acceptingBuilt = accepting.filter((tool) => isToolImplemented(tool.id));
+  const shown = new Set(acceptingBuilt.slice(0, FILE_MATCH_LIMIT).map((tool) => tool.id));
 
   return {
-    accepting: accepting.slice(0, FILE_MATCH_LIMIT),
-    acceptingCount: accepting.length,
+    accepting: acceptingBuilt.slice(0, FILE_MATCH_LIMIT),
+    acceptingCount: acceptingBuilt.length,
     categories: CATEGORIES.map((category) => ({
       ...category,
-      tools: results.filter((tool) => tool.category === category.id && !shown.has(tool.id)),
+      tools: built.filter((tool) => tool.category === category.id && !shown.has(tool.id)),
     })).filter((category) => category.tools.length > 0),
+    available: built.length,
+    planned,
     total: results.length,
   };
 }
@@ -96,19 +101,35 @@ export function Omnibox() {
   const groups = useMemo(() => resultGroups(query, file), [query, file]);
 
   function choose(tool: Tool) {
-    if (!isToolImplemented(tool.id)) return;
     closeOmnibox();
     setQuery('');
     void navigate({ to: '/tools/$toolId', params: { toolId: tool.id } });
   }
 
+  /**
+   * cmdk moves with the arrow keys. DESIGN.md's footer also promises Tab, so
+   * turn Tab into the equivalent arrow press rather than letting focus escape
+   * the dialog. Selection itself still lives in cmdk's aria-selected state.
+   */
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'Tab') return;
+    event.preventDefault();
+    event.currentTarget.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: event.shiftKey ? 'ArrowUp' : 'ArrowDown',
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  }
+
   function renderItem(tool: Tool) {
-    const ready = isToolImplemented(tool.id);
     return (
       <CommandItem
         key={tool.id}
         value={`${tool.name} ${tool.id}`}
-        disabled={!ready}
+        data-tool-id={tool.id}
+        data-tool-name={tool.name}
         onSelect={() => choose(tool)}
         className="flex items-start gap-2"
       >
@@ -122,9 +143,7 @@ export function Omnibox() {
             </span>
           ) : null}
         </span>
-        <span className="shrink-0 text-xs text-muted-foreground">
-          {ready ? tool.categoryName : `Not built yet — phase ${tool.phase}`}
-        </span>
+        <span className="shrink-0 text-xs text-muted-foreground">{tool.categoryName}</span>
       </CommandItem>
     );
   }
@@ -144,11 +163,11 @@ export function Omnibox() {
         <DialogHeader className="sr-only">
           <DialogTitle>Search tools</DialogTitle>
           <DialogDescription>
-            Search by tool name, category or file type. Use the arrow keys to move, Enter to open a
-            tool and Escape to close.
+            Search by tool name, category or file type. Use the arrow keys or Tab to move, Enter to
+            open a tool and Escape to close.
           </DialogDescription>
         </DialogHeader>
-        <Command shouldFilter={false} loop>
+        <Command shouldFilter={false} loop disablePointerSelection onKeyDown={handleKeyDown}>
           <div className="relative">
             <CommandInput
               value={query}
@@ -191,7 +210,7 @@ export function Omnibox() {
           ) : null}
 
           <CommandList aria-label="Tools" className="max-h-[56vh]">
-            <CommandEmpty>No tools match that search.</CommandEmpty>
+            {groups.total === 0 ? <CommandEmpty>No tools match that search.</CommandEmpty> : null}
             {groups.accepting.length > 0 ? (
               <CommandGroup heading={`Tools that accept this file (${groups.acceptingCount})`}>
                 {groups.accepting.map(renderItem)}
@@ -202,6 +221,20 @@ export function Omnibox() {
                 {group.tools.map(renderItem)}
               </CommandGroup>
             ))}
+            {groups.planned.length > 0 ? (
+              <CommandGroup forceMount heading={`Planned (${groups.planned.length})`}>
+                {groups.planned.map((tool) => (
+                  <div
+                    key={tool.id}
+                    data-planned-tool
+                    className="flex min-h-10 items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground"
+                  >
+                    <span className="min-w-0 flex-1 truncate">{tool.name}</span>
+                    <span className="shrink-0 text-xs">Planned</span>
+                  </div>
+                ))}
+              </CommandGroup>
+            ) : null}
           </CommandList>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border px-3 py-2 text-xs text-muted-foreground">
@@ -221,7 +254,7 @@ export function Omnibox() {
               <kbd className="rounded border border-border-strong px-1.5 py-0.5 font-mono text-xs">
                 Tab
               </kbd>
-              Cycle categories
+              Move
             </span>
             <span className="flex items-center gap-1.5">
               <kbd className="rounded border border-border-strong px-1.5 py-0.5 font-mono text-xs">
@@ -229,7 +262,9 @@ export function Omnibox() {
               </kbd>
               Close
             </span>
-            <span className="ml-auto">{groups.total} results</span>
+            <span className="ml-auto">
+              {groups.available} available, {groups.planned.length} planned
+            </span>
           </div>
         </Command>
       </DialogContent>

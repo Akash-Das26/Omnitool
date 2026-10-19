@@ -12,6 +12,7 @@ export function ThemeToggle() {
       type="button"
       variant="ghost"
       size="icon"
+      className="rounded-control!"
       onClick={toggleTheme}
       aria-label={`Switch to ${next} theme`}
       title={`Switch to ${next} theme`}

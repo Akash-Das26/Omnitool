@@ -18,12 +18,41 @@ const registry = JSON.parse(
 );
 const toolsById = new Map(registry.tools.map((tool) => [tool.id, tool]));
 
-const toolIds = readdirSync(join(web, 'src/tools'), { withFileTypes: true })
+// Built tools come from the lazy-route map, the same source the app uses. A
+// planned registry row has no loader and therefore no prerendered HTML.
+const modulesSource = readFileSync(join(web, 'src/lib/tool-modules.ts'), 'utf8');
+const toolIds = [
+  ...modulesSource.matchAll(/^\s*(?:'([a-z0-9-]+)'|([a-z0-9-]+)):\s*\(\)\s*=>\s*import\(/gm),
+]
+  .map((match) => match[1] ?? match[2])
+  .sort();
+
+if (toolIds.length === 0) {
+  throw new Error('prerender: no built tools found in src/lib/tool-modules.ts');
+}
+
+const toolDirectories = readdirSync(join(web, 'src/tools'), { withFileTypes: true })
   .filter(
     (entry) => entry.isDirectory() && existsSync(join(web, 'src/tools', entry.name, 'index.tsx')),
   )
   .map((entry) => entry.name)
   .sort();
+
+if (new Set(toolIds).size !== toolIds.length) {
+  throw new Error('prerender: a tool id is listed twice in src/lib/tool-modules.ts');
+}
+
+for (const id of toolIds) {
+  if (!toolDirectories.includes(id)) {
+    throw new Error(`prerender: ${id} has a loader but no src/tools/${id}/index.tsx`);
+  }
+}
+
+for (const id of toolDirectories) {
+  if (!toolIds.includes(id)) {
+    throw new Error(`prerender: src/tools/${id} exists but has no loader in tool-modules.ts`);
+  }
+}
 
 function escapeHtml(value) {
   return value
@@ -85,4 +114,7 @@ for (const route of routes) {
 
 writeFileSync(join(dist, '404.html'), render({ ...routeMeta['not-found'], robots: true }));
 
-console.log(`prerender: wrote ${routes.length} routes plus 404.html`);
+console.log(
+  `prerender: wrote ${routes.length} routes plus 404.html; ` +
+    `${registry.tools.length - toolIds.length} planned routes excluded`,
+);

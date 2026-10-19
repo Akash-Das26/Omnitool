@@ -11,7 +11,8 @@
       "!**/reports/lighthouse",
       "!**/.wrangler",
       "!delphitools-main",
-      "!docs/design/stitch"
+      "!docs/design/stitch",
+      "!docs/design/built"
     ]
   },
   "formatter": {

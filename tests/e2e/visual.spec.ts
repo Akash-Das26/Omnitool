@@ -117,7 +117,7 @@ test('dark omnibox shows the Marker selected row and the key hints', async ({
   await dialog.getByRole('combobox').fill('uuid');
 
   const selected = dialog.getByRole('option').first();
-  await expect(selected).toHaveAttribute('data-selected', 'true');
+  await expect(selected).toHaveAttribute('aria-selected', 'true');
   const colours = await selected.evaluate((node) => {
     const style = getComputedStyle(node);
     return { background: style.backgroundColor, color: style.color };

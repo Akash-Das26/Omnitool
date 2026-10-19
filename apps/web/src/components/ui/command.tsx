@@ -139,8 +139,9 @@ function CommandItem({
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        // The selected row is the one Marker fill in the app (DESIGN.md, Colors).
-        "group/command-item relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none in-data-[slot=dialog-content]:rounded-lg! data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-selected:bg-highlight data-selected:text-highlight-foreground data-selected:**:text-highlight-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        // Selection is driven only by aria-selected="true"; hover stays on the
+        // hover surface. The selected row is the one Marker fill in the app.
+        "group/command-item relative flex min-h-10 cursor-default items-center gap-2 rounded-control px-2 py-0 text-sm outline-hidden select-none hover:bg-surface-hover aria-selected:bg-highlight aria-selected:text-highlight-foreground aria-selected:**:text-highlight-foreground aria-selected:hover:bg-highlight data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 max-md:min-h-11 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
@@ -155,7 +156,7 @@ function CommandShortcut({ className, ...props }: React.ComponentProps<'span'>) 
     <span
       data-slot="command-shortcut"
       className={cn(
-        'ml-auto text-xs tracking-widest text-muted-foreground group-data-selected/command-item:text-foreground',
+        'ml-auto text-xs tracking-widest text-muted-foreground group-data-[selected=true]/command-item:text-foreground',
         className,
       )}
       {...props}

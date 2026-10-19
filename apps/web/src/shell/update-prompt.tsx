@@ -29,6 +29,7 @@ export function UpdatePrompt() {
             type="button"
             variant="ghost"
             size="icon"
+            className="rounded-control!"
             aria-label="Dismiss offline notice"
             onClick={() => setOfflineReady(false)}
           >

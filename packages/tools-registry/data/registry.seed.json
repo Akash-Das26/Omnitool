@@ -286,7 +286,7 @@
       "accepts": ["image/*", ".jxl"],
       "tier": 3,
       "phase": 4,
-      "description": "",
+      "description": "Convert images between common formats and resize them on the way.",
       "produces": ["image/png", "image/jpeg", "image/webp"]
     },
     {
@@ -934,7 +934,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Make UUID v4, v7 or Nano IDs in bulk and copy them.",
       "produces": ["text/plain", "application/json"]
     },
     {
@@ -982,7 +982,7 @@
       "accepts": [],
       "tier": 2,
       "phase": 2,
-      "description": "",
+      "description": "Create QR codes as PNG or SVG, with size and error correction controls.",
       "produces": ["image/png", "image/svg+xml"]
     },
     {

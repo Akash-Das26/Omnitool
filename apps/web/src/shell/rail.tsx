@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Link, useRouterState } from '@/lib/navigation';
 import { useUiStore } from '@/lib/stores';
+import { isToolImplemented } from '@/lib/tool-modules';
 import { cn } from '@/lib/utils';
 
 const CATEGORY_ICONS: Record<CategoryId, LucideIcon> = {
@@ -53,9 +54,12 @@ export function Rail() {
       )}
     >
       <nav className="flex-1 overflow-y-auto p-2">
+        {!collapsed ? <p className="px-2 pb-1 text-xs text-muted-foreground">Available</p> : null}
         <ul className="space-y-0.5">
           {CATEGORIES.map((category) => {
             const Icon = CATEGORY_ICONS[category.id];
+            const available = category.tools.filter((tool) => isToolImplemented(tool.id)).length;
+            const planned = category.tools.length - available;
             return (
               <li key={category.id}>
                 <Link
@@ -71,12 +75,15 @@ export function Rail() {
                 >
                   <Icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
                   {collapsed ? (
-                    <span className="sr-only">{category.name}</span>
+                    <span className="sr-only">
+                      {category.name} {available} available, {planned} planned
+                    </span>
                   ) : (
                     <>
                       <span className="min-w-0 flex-1 break-words">{category.name}</span>
                       <span className="ml-auto text-xs text-muted-foreground">
-                        {category.tools.length}
+                        {available}
+                        <span className="sr-only"> available, {planned} planned</span>
                       </span>
                     </>
                   )}

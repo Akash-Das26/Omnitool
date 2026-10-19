@@ -5,7 +5,7 @@ test('home shows the index and opens the omnibox with Ctrl+K', async ({ page }) 
 
   await expect(page.getByRole('heading', { level: 1, name: 'Omnitool tools index' })).toBeVisible();
   await expect(page.getByRole('main').getByRole('button', { name: /Find a tool/ })).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: 'Colour' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Images & assets' })).toBeVisible();
 
   await page.keyboard.press('Control+K');
   const dialog = page.getByRole('dialog');
@@ -38,11 +38,11 @@ test('omnibox finds a second sample tool and closes on Escape', async ({ page })
 });
 
 test('category filter is applied through validated search params', async ({ page }) => {
-  await page.goto('/?category=pdf');
+  await page.goto('/?category=img-assets');
 
-  await expect(page.getByRole('heading', { level: 2, name: 'PDF' })).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2, name: 'Colour' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 2, name: 'Images & assets' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Dev tools' })).toHaveCount(0);
 
   await page.goto('/?category=nonsense');
-  await expect(page.getByRole('heading', { level: 2, name: 'Colour' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Images & assets' })).toBeVisible();
 });

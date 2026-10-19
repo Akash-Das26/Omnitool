@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('the shell and sample tools work offline after first load', async ({ page, context }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 2, name: 'Colour' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Images & assets' })).toBeVisible();
 
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
@@ -19,7 +19,7 @@ test('the shell and sample tools work offline after first load', async ({ page, 
   await context.setOffline(true);
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 2, name: 'Colour' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Images & assets' })).toBeVisible();
 
   await page.goto('/privacy');
   await expect(page.getByRole('heading', { level: 1, name: 'Privacy' })).toBeVisible();

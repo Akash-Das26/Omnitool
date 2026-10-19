@@ -24,6 +24,7 @@ const routes = [
   '/tools/line-height-calc',
   '/tools/typo-calc',
   '/tools/paper-sizes',
+  '/tools/colour-converter',
 ];
 
 const themes = ['light', 'dark'] as const;

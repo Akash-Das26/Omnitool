@@ -7,7 +7,14 @@ import { useDocumentMeta } from '@/lib/document-meta';
 import { useNavigate, useSearch } from '@/lib/navigation';
 import { validateSharedSearch } from '@/lib/search-params';
 import { toIntakeFile, useOmniboxStore } from '@/lib/stores';
+import { IMPLEMENTED_TOOL_COUNT, isToolImplemented } from '@/lib/tool-modules';
 import { cn } from '@/lib/utils';
+
+const PLANNED_TOOL_COUNT = TOOL_COUNT - IMPLEMENTED_TOOL_COUNT;
+
+function toolCountLabel(count: number): string {
+  return count === 1 ? '1 tool' : `${count} tools`;
+}
 
 export function HomePage() {
   useDocumentMeta(routeMeta.home.title, routeMeta.home.description);
@@ -15,11 +22,30 @@ export function HomePage() {
   const navigate = useNavigate();
   const openOmnibox = useOmniboxStore((state) => state.openOmnibox);
   const [dragging, setDragging] = useState(false);
+  const [showPlanned, setShowPlanned] = useState(false);
 
   const category = search.category;
   const visibleCategories = category
     ? CATEGORIES.filter((entry) => entry.id === category)
     : CATEGORIES;
+
+  const sections = visibleCategories
+    .map((entry) => {
+      const available = entry.tools.filter((tool) => isToolImplemented(tool.id));
+      const planned = entry.tools.filter((tool) => !isToolImplemented(tool.id));
+      return {
+        ...entry,
+        available,
+        planned,
+        shown: showPlanned ? entry.tools : available,
+      };
+    })
+    .filter((entry) => entry.shown.length > 0);
+
+  const plannedInFilter = visibleCategories.reduce(
+    (total, entry) => total + entry.tools.filter((tool) => !isToolImplemented(tool.id)).length,
+    0,
+  );
 
   function handleDrop(event: DragEvent<HTMLElement>) {
     event.preventDefault();
@@ -71,7 +97,8 @@ export function HomePage() {
           </kbd>
         </button>
         <p className="border-t border-border bg-surface-inset px-3 py-2 text-sm text-muted-foreground md:px-5">
-          {TOOL_COUNT} tools. Drop a file here to see which ones can open it.
+          {toolCountLabel(IMPLEMENTED_TOOL_COUNT)} available, {PLANNED_TOOL_COUNT} planned. Drop a
+          file here to see which ones can open it.
         </p>
       </div>
 
@@ -88,33 +115,59 @@ export function HomePage() {
           <option value="">All categories</option>
           {CATEGORIES.map((entry) => (
             <option key={entry.id} value={entry.id}>
-              {entry.name} ({entry.tools.length})
+              {entry.name} ({entry.tools.filter((tool) => isToolImplemented(tool.id)).length}{' '}
+              available)
             </option>
           ))}
         </select>
       </div>
 
-      <div className="mt-8 space-y-8">
-        {visibleCategories.map((entry) => (
+      <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => setShowPlanned((value) => !value)}
+          aria-expanded={showPlanned}
+          aria-controls="tool-index"
+          className="inline-flex h-10 items-center rounded-control border border-border-strong bg-surface px-3 text-sm font-medium hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          {showPlanned
+            ? `Hide planned tools (${plannedInFilter})`
+            : `Show planned tools (${plannedInFilter})`}
+        </button>
+      </div>
+
+      <div id="tool-index" className="mt-4 space-y-8">
+        {sections.length === 0 ? (
+          <p className="rounded-panel border border-border bg-surface px-3 py-6 text-sm text-muted-foreground">
+            No tools are available in this category yet. Use “Show planned tools” to see what is
+            planned.
+          </p>
+        ) : null}
+
+        {sections.map((entry) => (
           <section key={entry.id} aria-labelledby={`category-${entry.id}`}>
             <div className="overflow-hidden rounded-panel border border-border bg-surface">
               <div className="flex flex-wrap items-center gap-2 border-b border-border bg-surface-inset px-3 py-2">
                 <h2 id={`category-${entry.id}`} className="text-base">
                   {entry.name}
                 </h2>
-                <span className="text-xs text-muted-foreground">{entry.tools.length} tools</span>
+                <span className="text-xs text-muted-foreground">
+                  {showPlanned
+                    ? `${entry.available.length} available, ${entry.planned.length} planned`
+                    : `${entry.available.length} available`}
+                </span>
                 {category ? (
                   <button
                     type="button"
                     onClick={() => changeCategory('')}
-                    className="ml-auto text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                    className="ml-auto inline-flex h-10 items-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     Show all
                   </button>
                 ) : null}
               </div>
               <ul className="divide-y divide-border">
-                {entry.tools.map((tool) => (
+                {entry.shown.map((tool) => (
                   <ToolRow key={tool.id} tool={tool} />
                 ))}
               </ul>
