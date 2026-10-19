@@ -1,13 +1,14 @@
 /**
  * Lighthouse budget check for the built site.
  *
- * Serves `apps/web/dist` from a throwaway static server (SPA fallback, same as
- * Cloudflare Pages), then runs Lighthouse in mobile emulation over the routes
- * that carry prerendered HTML. `404.html` is excluded on purpose: it sends
- * `noindex`, so its SEO score is expected to be low.
+ * Serves `apps/web/dist` from a throwaway static server, then runs Lighthouse
+ * in mobile emulation over the routes that carry prerendered HTML. Each route
+ * is measured three times; the budget uses the median and the minimum is
+ * reported. `404.html` is excluded on purpose: it sends `noindex`, so its SEO
+ * score is expected to be low.
  *
- * Exits non-zero if an error-level assertion fails. HTML and JSON reports are
- * written to `reports/lighthouse/` for CI.
+ * Exits non-zero if a median error-level assertion fails. HTML and JSON reports
+ * for every run are written to `reports/lighthouse/` for CI.
  */
 
 import { readdirSync } from 'node:fs';
@@ -91,8 +92,9 @@ async function resolveFile(pathname) {
     if (await isFile(option)) return option;
   }
 
-  // Unknown app routes fall back to the shell, as `_redirects` does in production.
-  const shell = resolve(DIST, 'index.html');
+  // Cloudflare Pages serves 404.html for unknown paths; only known routes are
+  // measured here, so this fallback should never be reached.
+  const shell = resolve(DIST, '404.html');
   return (await isFile(shell)) ? shell : null;
 }
 
@@ -142,15 +144,58 @@ function startServer() {
   });
 }
 
-function metric(lhr, id) {
+const RUNS = 3;
+
+function median(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+function metricValue(lhr, id) {
   const value = lhr.audits[id]?.numericValue;
-  if (typeof value !== 'number') return 'n/a';
+  return typeof value === 'number' ? value : null;
+}
+
+function metric(values, id) {
+  const value = median(values.map((lhr) => metricValue(lhr, id)).filter((v) => v !== null));
+  if (!Number.isFinite(value)) return 'n/a';
   if (id === 'cumulative-layout-shift') return value.toFixed(3);
   return `${Math.round(value)} ms`;
 }
 
 function score(value) {
   return typeof value === 'number' ? Math.round(value * 100) : 0;
+}
+
+function lcpElement(lhr) {
+  const items = lhr.audits['lcp-breakdown-insight']?.details?.items ?? [];
+  const node = items.find((item) => item?.type === 'node');
+  return node
+    ? {
+        selector: node.selector ?? 'unknown',
+        label: node.nodeLabel ?? '',
+        snippet: node.snippet ?? '',
+      }
+    : null;
+}
+
+function longTasks(lhr) {
+  return [...(lhr.audits['long-tasks']?.details?.items ?? [])]
+    .sort((a, b) => (b.duration ?? 0) - (a.duration ?? 0))
+    .map((item) => ({
+      url: item.url ?? 'unknown',
+      duration: Math.round(item.duration ?? 0),
+      start: Math.round(item.startTime ?? 0),
+    }));
+}
+
+function mainThreadWork(lhr) {
+  return [...(lhr.audits['mainthread-work-breakdown']?.details?.items ?? [])]
+    .sort((a, b) => (b.duration ?? 0) - (a.duration ?? 0))
+    .map((item) => ({
+      label: item.groupLabel ?? item.group ?? 'unknown',
+      duration: Math.round(item.duration ?? 0),
+    }));
 }
 
 async function main() {
@@ -171,42 +216,83 @@ async function main() {
 
   try {
     for (const route of routes) {
-      const result = await lighthouse(`http://127.0.0.1:${port}${route.path}`, {
-        port: chrome.port,
-        output: ['json', 'html'],
-        logLevel: 'error',
-        onlyCategories: Object.keys(ASSERTIONS),
-      });
-      if (!result) throw new Error(`Lighthouse returned no result for ${route.path}`);
+      const runs = [];
+      for (let run = 1; run <= RUNS; run += 1) {
+        const result = await lighthouse(`http://127.0.0.1:${port}${route.path}`, {
+          port: chrome.port,
+          output: ['json', 'html'],
+          logLevel: 'error',
+          onlyCategories: Object.keys(ASSERTIONS),
+        });
+        if (!result) throw new Error(`Lighthouse returned no result for ${route.path}`);
 
-      const { lhr, report } = result;
-      const [json, html] = report;
-
-      await writeFile(resolve(REPORT_DIR, `${route.name}.report.json`), json);
-      await writeFile(resolve(REPORT_DIR, `${route.name}.report.html`), html);
+        const { lhr, report } = result;
+        const [json, html] = report;
+        await writeFile(resolve(REPORT_DIR, `${route.name}-run${run}.report.json`), json);
+        await writeFile(resolve(REPORT_DIR, `${route.name}-run${run}.report.html`), html);
+        runs.push({ lhr, json, html });
+      }
 
       const scores = Object.fromEntries(
-        Object.entries(ASSERTIONS).map(([category, rule]) => {
-          const value = lhr.categories[category]?.score ?? 0;
-          if (value < rule.minScore) {
-            failures.push({
-              route: route.path,
-              category,
-              level: rule.level,
-              score: score(value),
-              min: Math.round(rule.minScore * 100),
-            });
-          }
-          return [category, score(value)];
-        }),
+        Object.entries(ASSERTIONS).map(([category]) => [
+          category,
+          runs.map(({ lhr }) => score(lhr.categories[category]?.score)),
+        ]),
       );
+      const medians = Object.fromEntries(
+        Object.entries(scores).map(([category, values]) => [category, median(values)]),
+      );
+      const minimums = Object.fromEntries(
+        Object.entries(scores).map(([category, values]) => [category, Math.min(...values)]),
+      );
+
+      for (const [category, rule] of Object.entries(ASSERTIONS)) {
+        if ((medians[category] ?? 0) < Math.round(rule.minScore * 100)) {
+          failures.push({
+            route: route.path,
+            category,
+            level: rule.level,
+            score: medians[category],
+            minimum: minimums[category],
+            min: Math.round(rule.minScore * 100),
+          });
+        }
+      }
+
+      const lowest = runs.reduce((worst, run) =>
+        score(run.lhr.categories.performance?.score) <
+        score(worst.lhr.categories.performance?.score)
+          ? run
+          : worst,
+      );
+      await writeFile(resolve(REPORT_DIR, `${route.name}.report.json`), lowest.json);
+      await writeFile(resolve(REPORT_DIR, `${route.name}.report.html`), lowest.html);
 
       rows.push({
         route: route.path,
-        scores,
-        lcp: metric(lhr, 'largest-contentful-paint'),
-        tbt: metric(lhr, 'total-blocking-time'),
-        cls: metric(lhr, 'cumulative-layout-shift'),
+        name: route.name,
+        medians,
+        minimums,
+        lcp: metric(
+          runs.map(({ lhr }) => lhr),
+          'largest-contentful-paint',
+        ),
+        tbt: metric(
+          runs.map(({ lhr }) => lhr),
+          'total-blocking-time',
+        ),
+        cls: metric(
+          runs.map(({ lhr }) => lhr),
+          'cumulative-layout-shift',
+        ),
+        lowest: {
+          score: score(lowest.lhr.categories.performance?.score),
+          lcp: Math.round(metricValue(lowest.lhr, 'largest-contentful-paint') ?? 0),
+          lcpElement: lcpElement(lowest.lhr),
+          tbt: Math.round(metricValue(lowest.lhr, 'total-blocking-time') ?? 0),
+          longTasks: longTasks(lowest.lhr).slice(0, 3),
+          mainThread: mainThreadWork(lowest.lhr).slice(0, 3),
+        },
       });
     }
   } finally {
@@ -214,27 +300,51 @@ async function main() {
     server.close();
   }
 
-  console.log('route                        perf  a11y  best  seo    LCP        TBT        CLS');
+  console.log(
+    'route                        perf med/min  a11y med/min  best med/min  seo med/min  LCP med    TBT med    CLS med',
+  );
   for (const row of rows) {
-    const { scores } = row;
+    const pair = (category) =>
+      `${String(row.medians[category]).padStart(3)}/${String(row.minimums[category]).padStart(3)}`;
     console.log(
       [
         row.route.padEnd(28),
-        String(scores.performance).padStart(4),
-        String(scores.accessibility).padStart(5),
-        String(scores['best-practices']).padStart(5),
-        String(scores.seo).padStart(5),
-        row.lcp.padStart(10),
+        pair('performance').padStart(8),
+        pair('accessibility').padStart(11),
+        pair('best-practices').padStart(11),
+        pair('seo').padStart(10),
+        row.lcp.padStart(9),
         row.tbt.padStart(10),
-        row.cls.padStart(6),
+        row.cls.padStart(8),
       ].join(' '),
     );
+  }
+
+  const uuid = rows.find((row) => row.name === 'tool-uuid-genny');
+  if (uuid) {
+    console.log('\nuuid-genny lowest performance run:');
+    console.log(
+      `  performance ${uuid.lowest.score}, LCP ${uuid.lowest.lcp} ms, TBT ${uuid.lowest.tbt} ms`,
+    );
+    console.log(
+      `  LCP element: ${uuid.lowest.lcpElement?.selector ?? 'not reported'} (${uuid.lowest.lcpElement?.label ?? ''})`,
+    );
+    console.log('  long tasks:');
+    for (const task of uuid.lowest.longTasks) {
+      console.log(`    ${task.duration} ms at ${task.start} ms — ${task.url}`);
+    }
+    console.log('  main-thread work:');
+    for (const item of uuid.lowest.mainThread) {
+      console.log(`    ${item.duration} ms — ${item.label}`);
+    }
   }
 
   const errors = failures.filter((failure) => failure.level === 'error');
   for (const failure of failures) {
     const label = failure.level === 'error' ? 'FAIL' : 'warn';
-    console.log(`${label}: ${failure.route} ${failure.category} ${failure.score} < ${failure.min}`);
+    console.log(
+      `${label}: ${failure.route} ${failure.category} median ${failure.score} < ${failure.min} (min ${failure.minimum})`,
+    );
   }
   console.log(`reports: ${REPORT_DIR}`);
 
