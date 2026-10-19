@@ -454,7 +454,7 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
   - `5acd622` `feat(tools): add braille, unit, time, typography and paper tools` (27 files).
   - `867d40e` `fix(web): align home and omnibox with the measured design rules` (30 files).
   - `b6eb6d9` `docs: record Batch 2 and the home/omnibox fix pass` (5 files).
-- **Follow-up commits**, one per agreed fix plus this documentation commit:
+- **Follow-up commits**, one per agreed fix, followed by this session's documentation commits (record, then reconciliation with the final check run):
   - `7042d0f` `fix(web): place toasts clear of the rail and mobile action bar` (3 files).
   - `b299df6` `fix(web): keep planned URLs as 404 with a neutral static shell` (2 files).
   - `b5c424c` `perf(ci): use three-run Lighthouse medians per route` (1 file).
@@ -477,8 +477,8 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 - `pnpm build`: 22 routes + `404.html`, 78 planned routes excluded, precache 46 entries / 897.83 KiB.
 - `pnpm check:budgets`: shell **157.6 kB gzip**, precache **953.6 kB**, 73 files.
 - `pnpm e2e --workers=4`: **138 passed**, including offline, no-third-party-request, 50 axe runs and the new toast and planned-URL tests.
-- `pnpm lighthouse`: **22 routes × 3 runs**; medians 90–96 performance, 100 accessibility/best-practices/SEO; minimum performance 90 (four routes), lowest minimum 91 for `time-calc` and `unit-converter`.
-- UUID lowest run: performance 90, LCP 3045 ms on the description paragraph, TBT 29 ms; 107 ms shared-shell long task and 51 ms route long task; Script Evaluation 195 ms, Other 122 ms, Style & Layout 114 ms.
+- `pnpm lighthouse`: **22 routes × 3 runs**; medians 90–96 performance, 100 accessibility/best-practices/SEO; minimum performance 90 (four routes: `json-formatter`, `morse-code`, `password-genny`, `uuid-genny`), lowest minimum 91 (`encoder`, `line-height-calc`, `time-calc`, `unit-converter`).
+- UUID lowest run: performance 90, LCP 3044 ms on the description paragraph, TBT 31 ms; 112 ms shared-shell long task and 64 ms route long task; Script Evaluation 196 ms, Style & Layout 138 ms, Other 120 ms. The three runs were 90/90/90 with LCP 3042–3047 ms and TBT 30–31 ms.
 
 **Not done / uncertain:**
 - With JavaScript disabled, a planned URL now shows a blank neutral shell (by decision) rather than the planned message. Hydration renders the planned page.

@@ -68,7 +68,7 @@ Tokens resolve exactly to the values in `DESIGN.md` in both themes (13 tokens re
 | C-15 | Mobile action bar | Fixed bottom bar, 44 px targets | `[data-slot="tool-actions"]`: `position: fixed`, `bottom: 0px`, height 69 px; buttons 44 px. Desktop: `position: static` | PASS | Must |
 | C-16 | Progress / cancel | Cancel always visible, first-use state | `image-converter`: file accepted, `Convert` starts a visible `role="progressbar"` with no `aria-valuenow` (indeterminate), `Cancel` visible at 40/44 px, cancellation ends in a "cancelled" state. Text states the 2.00 MB sample fetch and that this build simulates it | PASS | Should |
 | C-17 | 404 page | Not-found route | `/tools/does-not-exist` renders "404 / Page not found / That page does not exist…"; 0 contrast failures | PASS | Should |
-| C-18 | Offline toast position | Bottom-left toast, errors persist | When the offline-ready toast appears, it sits at `bottom-4 left-4` over the rail's `Collapse` control at 1440×900; a Playwright click on Collapse was intercepted by the toast in one run (the toast is intermittent) | **FAIL** | Should |
+| C-18 | Offline toast position | Bottom-left toast, errors persist | Fixed in the follow-up pass: `bottom-4 right-4` on desktop, clear of the 240 px rail and its Collapse control; above the sticky action bar on mobile. E2E asserts no intersection in both themes at 1440×900 and 390×844 | PASS | Should |
 | C-19 | Search entry points | Omnibox is the hero | Two visible `button[aria-keyshortcuts]` on home in every viewport: header 40 px (44 mobile) and hero 72 px (64 mobile). Both open the same dialog | PASS | Info |
 | C-20 | Mono usage | Values only | UUID values and `Ctrl K` keycaps only on `uuid-genny`; home has 2 mono keycaps and no other mono text | PASS (keycap note) | Info |
 
@@ -267,7 +267,6 @@ Visual baselines were regenerated deliberately: `home-dark`, `qr-genny-dark`, `i
 ### Deferred, with reasons
 
 - **C-12 stage anatomy** (tool pages use two stages where `DESIGN.md` says three) and the remaining **D-09/D-13** tool-page control geometry are outside this bounded change; no tool page was in scope.
-- **C-18 offline toast position** was fixed in the follow-up pass (section 9): bottom-right desktop, above the sticky action bar on mobile.
 - **Other disabled controls** keep 50% opacity. WCAG exempts them and they are not text the user is expected to read; the disabled omnibox rows that caused the H2 caveat no longer exist.
 - **Planned descriptions.** The 78 planned rows have empty registry descriptions by design of the current draft set. Revealed rows show name + “Planned”; no placeholder copy was added.
 - **Three registry descriptions** (`image-converter`, `uuid-genny`, `qr-genny`) were written from `docs/review/DESCRIPTIONS-DRAFT.md` so every built row has a purpose. They remain drafts pending P2-10 owner approval, matching how the Batch 1/2 descriptions were handled.
@@ -298,34 +297,34 @@ Each route was measured three times. Budget: median performance/accessibility �
 
 | Route | Perf med/min | A11y med/min | Best med/min | SEO med/min | LCP med | TBT med | CLS med |
 |---|---|---|---|---|---|---|---|
-| `/` | 96/96 | 100/100 | 100/100 | 100/100 | 2260 ms | 13 ms | 0.000 |
-| `/about/` | 96/96 | 100/100 | 100/100 | 100/100 | 2303 ms | 6 ms | 0.000 |
-| `/privacy/` | 96/96 | 100/100 | 100/100 | 100/100 | 2260 ms | 1 ms | 0.000 |
-| `/tools/base-converter/` | 94/94 | 100/100 | 100/100 | 100/100 | 2589 ms | 23 ms | 0.000 |
-| `/tools/braille-converter/` | 92/92 | 100/100 | 100/100 | 100/100 | 2892 ms | 27 ms | 0.004 |
-| `/tools/encoder/` | 92/92 | 100/100 | 100/100 | 100/100 | 2889 ms | 32 ms | 0.000 |
-| `/tools/image-converter/` | 92/92 | 100/100 | 100/100 | 100/100 | 2900 ms | 26 ms | 0.000 |
-| `/tools/json-formatter/` | 90/90 | 100/100 | 100/100 | 100/100 | 3043 ms | 27 ms | 0.000 |
-| `/tools/jwt-decoder/` | 94/94 | 100/100 | 100/100 | 100/100 | 2586 ms | 14 ms | 0.000 |
-| `/tools/line-height-calc/` | 92/92 | 100/100 | 100/100 | 100/100 | 2890 ms | 33 ms | 0.000 |
-| `/tools/morse-code/` | 90/90 | 100/100 | 100/100 | 100/100 | 3036 ms | 30 ms | 0.000 |
-| `/tools/nato-phonetic/` | 94/94 | 100/100 | 100/100 | 100/100 | 2591 ms | 17 ms | 0.000 |
-| `/tools/paper-sizes/` | 91/91 | 100/100 | 100/100 | 100/100 | 2935 ms | 29 ms | 0.000 |
-| `/tools/password-genny/` | 90/90 | 100/100 | 100/100 | 100/100 | 3040 ms | 29 ms | 0.000 |
-| `/tools/px-to-rem/` | 94/94 | 100/100 | 100/100 | 100/100 | 2588 ms | 25 ms | 0.011 |
-| `/tools/qr-genny/` | 92/92 | 100/100 | 100/100 | 100/100 | 2795 ms | 70 ms | 0.000 |
-| `/tools/text-diff/` | 91/91 | 100/100 | 100/100 | 100/100 | 2939 ms | 33 ms | 0.000 |
-| `/tools/time-calc/` | 92/91 | 100/100 | 100/100 | 100/100 | 2893 ms | 31 ms | 0.001 |
-| `/tools/typo-calc/` | 92/92 | 100/100 | 100/100 | 100/100 | 2893 ms | 33 ms | 0.000 |
-| `/tools/unit-converter/` | 92/91 | 100/100 | 100/100 | 100/100 | 2891 ms | 47 ms | 0.000 |
-| `/tools/uuid-genny/` | 90/90 | 100/100 | 100/100 | 100/100 | 3045 ms | 29 ms | 0.000 |
-| `/tools/word-counter/` | 94/94 | 100/100 | 100/100 | 100/100 | 2590 ms | 26 ms | 0.000 |
+| `/` | 96/96 | 100/100 | 100/100 | 100/100 | 2267 ms | 11 ms | 0.000 |
+| `/about/` | 96/96 | 100/100 | 100/100 | 100/100 | 2261 ms | 1 ms | 0.000 |
+| `/privacy/` | 96/96 | 100/100 | 100/100 | 100/100 | 2298 ms | 1 ms | 0.000 |
+| `/tools/base-converter/` | 94/94 | 100/100 | 100/100 | 100/100 | 2594 ms | 26 ms | 0.000 |
+| `/tools/braille-converter/` | 92/92 | 100/100 | 100/100 | 100/100 | 2890 ms | 27 ms | 0.004 |
+| `/tools/encoder/` | 92/91 | 100/100 | 100/100 | 100/100 | 2900 ms | 31 ms | 0.000 |
+| `/tools/image-converter/` | 92/92 | 100/100 | 100/100 | 100/100 | 2897 ms | 34 ms | 0.000 |
+| `/tools/json-formatter/` | 90/90 | 100/100 | 100/100 | 100/100 | 3045 ms | 31 ms | 0.000 |
+| `/tools/jwt-decoder/` | 94/94 | 100/100 | 100/100 | 100/100 | 2597 ms | 15 ms | 0.000 |
+| `/tools/line-height-calc/` | 91/91 | 100/100 | 100/100 | 100/100 | 2934 ms | 31 ms | 0.000 |
+| `/tools/morse-code/` | 90/90 | 100/100 | 100/100 | 100/100 | 3041 ms | 30 ms | 0.000 |
+| `/tools/nato-phonetic/` | 94/94 | 100/100 | 100/100 | 100/100 | 2590 ms | 23 ms | 0.000 |
+| `/tools/paper-sizes/` | 92/92 | 100/100 | 100/100 | 100/100 | 2894 ms | 33 ms | 0.000 |
+| `/tools/password-genny/` | 90/90 | 100/100 | 100/100 | 100/100 | 3041 ms | 28 ms | 0.000 |
+| `/tools/px-to-rem/` | 94/94 | 100/100 | 100/100 | 100/100 | 2588 ms | 24 ms | 0.011 |
+| `/tools/qr-genny/` | 93/93 | 100/100 | 100/100 | 100/100 | 2744 ms | 73 ms | 0.000 |
+| `/tools/text-diff/` | 92/92 | 100/100 | 100/100 | 100/100 | 2892 ms | 33 ms | 0.000 |
+| `/tools/time-calc/` | 91/91 | 100/100 | 100/100 | 100/100 | 2931 ms | 32 ms | 0.001 |
+| `/tools/typo-calc/` | 92/92 | 100/100 | 100/100 | 100/100 | 2891 ms | 37 ms | 0.000 |
+| `/tools/unit-converter/` | 92/91 | 100/100 | 100/100 | 100/100 | 2890 ms | 47 ms | 0.000 |
+| `/tools/uuid-genny/` | 90/90 | 100/100 | 100/100 | 100/100 | 3044 ms | 30 ms | 0.000 |
+| `/tools/word-counter/` | 94/94 | 100/100 | 100/100 | 100/100 | 2587 ms | 21 ms | 0.000 |
 
-No median or minimum is below 90; the two lowest minimums are `time-calc` and `unit-converter` at 91. The minimum performance across all routes is **90** (four routes: `json-formatter`, `morse-code`, `password-genny`, `uuid-genny`).
+No median or minimum is below 90. The lowest minimum is 91 (`encoder`, `line-height-calc`, `time-calc`, `unit-converter`). The minimum performance across all routes is **90** (four routes: `json-formatter`, `morse-code`, `password-genny`, `uuid-genny`).
 
-**`/tools/uuid-genny/` lowest run.** Performance 90, LCP 3045 ms, TBT 29 ms. LCP element: `article.mx-auto > header.mb-4 > div.min-w-0 > p.prose-measure` (“Make UUID v4, v7 or Nano IDs in bulk and copy them.”), i.e. the registry description text, not an image. LCP breakdown: 3 ms TTFB and 705 ms element render delay, after an FCP of about 2575 ms. Only two long tasks were reported: 107 ms in the shared `index-*.js` starting at 2442 ms, and 51 ms on the route document at 609 ms. Main-thread work: Script Evaluation 195 ms, Other 122 ms, Style & Layout 114 ms.
+**`/tools/uuid-genny/` lowest run.** Performance 90, LCP 3044 ms, TBT 31 ms. LCP element: `article.mx-auto > header.mb-4 > div.min-w-0 > p.prose-measure` (“Make UUID v4, v7 or Nano IDs in bulk and copy them.”), i.e. the registry description text, not an image. LCP breakdown: 4 ms TTFB and 710 ms element render delay, after an FCP of 2575 ms. Only two long tasks were reported: 112 ms in the shared `index-*.js` starting at 2441 ms, and 64 ms on the route document at 607 ms. Main-thread work: Script Evaluation 196 ms, Style & Layout 138 ms, Other 120 ms.
 
-The three runs were stable at 90/90/90 with LCP 3039–3045 ms and TBT 26–28 ms. The earlier 86 had TBT 149 ms and LCP 3312 ms with no code change, so it is environment noise rather than a code regression; the normal cost is the shared shell's script evaluation plus render delay for text. Shell JS is 157.6 kB gzip, within the 200 kB budget, and the route chunk is small. There is no large asset or font to optimise in this route, but the 90 score has little headroom.
+The three runs were stable at 90/90/90 with LCP 3042–3047 ms and TBT 30–31 ms. The earlier 86 had TBT 149 ms and LCP 3312 ms with no code change, so it is environment noise rather than a code regression; the normal cost is the shared shell's script evaluation plus render delay for text. Shell JS is 157.6 kB gzip, within the 200 kB budget, and the route chunk is small. There is no large asset or font to optimise in this route, but the 90 score has little headroom.
 
 ### Checks on the follow-up tree
 
