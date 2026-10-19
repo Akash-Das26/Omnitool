@@ -670,7 +670,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Turn a font size and ratio, or a baseline grid, into a line height.",
       "produces": ["text/css", "text/plain"]
     },
     {
@@ -682,7 +682,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Look up paper sizes in millimetres, inches, points and pixels.",
       "produces": ["text/plain"]
     },
     {
@@ -718,7 +718,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Build a modular type scale from a base size and ratio, with CSS variables.",
       "produces": ["text/plain"]
     },
     {
@@ -1066,7 +1066,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Add durations, compare times across zones and break seconds into days.",
       "produces": ["text/plain"]
     },
     {
@@ -1078,7 +1078,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Convert length, weight, temperature, data and other units.",
       "produces": ["text/plain"]
     },
     {
@@ -1114,7 +1114,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Convert text into Braille cell patterns.",
       "produces": ["text/plain"]
     },
     {

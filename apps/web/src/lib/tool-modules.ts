@@ -20,6 +20,12 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   'text-diff': () => import('@/tools/text-diff'),
   'morse-code': () => import('@/tools/morse-code'),
   'nato-phonetic': () => import('@/tools/nato-phonetic'),
+  'braille-converter': () => import('@/tools/braille-converter'),
+  'unit-converter': () => import('@/tools/unit-converter'),
+  'time-calc': () => import('@/tools/time-calc'),
+  'line-height-calc': () => import('@/tools/line-height-calc'),
+  'typo-calc': () => import('@/tools/typo-calc'),
+  'paper-sizes': () => import('@/tools/paper-sizes'),
 };
 
 export function isToolImplemented(id: string): boolean {

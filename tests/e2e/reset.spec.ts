@@ -18,6 +18,12 @@ const TOOL_ROUTES = [
   '/tools/text-diff',
   '/tools/morse-code',
   '/tools/nato-phonetic',
+  '/tools/braille-converter',
+  '/tools/unit-converter',
+  '/tools/time-calc',
+  '/tools/line-height-calc',
+  '/tools/typo-calc',
+  '/tools/paper-sizes',
 ];
 
 for (const route of TOOL_ROUTES) {
