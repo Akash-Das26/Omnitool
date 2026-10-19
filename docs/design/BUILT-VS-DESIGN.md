@@ -154,7 +154,7 @@ All files are in `docs/design/built/`, suffix `-<viewport>-<theme>.png`:
 | 404 | `not-found-{desktop,mobile}-{light,dark}.png` |
 | Selected text (extra) | `home-selection-desktop-light.png` |
 
-Desktop screenshots are 1440×900; mobile screenshots are 390×844. The offline-ready toast may appear at bottom-left in some shots because it is real app state and was not suppressed.
+Desktop screenshots are 1440×900; mobile screenshots are 390×844. The offline-ready toast may appear bottom-right on desktop (above the sticky action bar on mobile) because it is real app state and was not suppressed; its placement is covered in section 9.
 
 ## 6. Product decisions for the human
 
@@ -234,7 +234,7 @@ Home height fell from 6035 px to 1869 px desktop and from 8975 px to 2721 px mob
 |----|--------|-------|
 | C-01 (Must) | 97/97, 10/10, 97/97 Marker rows. | 1/1, 0/0, 1/1 Marker rows, matching `aria-selected` exactly. Selection follows only `aria-selected="true"`; hover stays `--surface-hover` and does not select. Tested in both themes, including a dropped PNG. |
 | C-05 (Should) | `Tab Cycle categories`, `97 results`. | `Tab Move`, and `19 available, 78 planned` / `0 available, 10 planned`. Tab now moves the selection and is covered by E2E. |
-| C-06 (Should) | Option rows 32 px high, 10 px radius. | 40 px high, 6 px radius on desktop; 54 px on mobile (above the 44 px touch target). |
+| C-06 (Should) | Option rows 32 px high, 10 px radius. | 40 px high, 6 px radius on desktop; 54 px on mobile, which exceeds `DESIGN.md`'s 44 px mobile target. The extra height is the two-line option content and is kept by decision. |
 | C-09 (Should) | Purpose on 16/97 rows (16/19 built). | Purpose on 19/19 built rows; empty descriptions are omitted rather than filled with placeholder copy. The 78 planned rows still have no registry description and show only name + “Planned”. |
 | D-09 (Should, home part) | Home: 19 controls at 6 px and the theme toggle at 10 px (plus the toast close at 10 px when visible). | All 22 home controls measure 6 px in the audited run, including the theme toggle and toast close. Tool-page buttons are unchanged (see deferred). |
 | D-13 (Should, home part) | `Show all` was 20 px high; tool-page segmented controls 32 px. | `Show all` is 40 px desktop / 44 px mobile; the planned-tools toggle is 40/44. No home control is below 40 desktop or 44 mobile. Tool-page controls are unchanged (see deferred). |
@@ -267,9 +267,74 @@ Visual baselines were regenerated deliberately: `home-dark`, `qr-genny-dark`, `i
 ### Deferred, with reasons
 
 - **C-12 stage anatomy** (tool pages use two stages where `DESIGN.md` says three) and the remaining **D-09/D-13** tool-page control geometry are outside this bounded change; no tool page was in scope.
-- **C-18 offline toast position.** The toast is real app state from `vite-plugin-pwa`'s `offlineReady`, shown bottom-left per `DESIGN.md`; at 1440×900 it can cover the rail’s Collapse control and intercept a click. Only its close button radius changed. Moving it needs a design decision, so it is left for the owner.
+- **C-18 offline toast position** was fixed in the follow-up pass (section 9): bottom-right desktop, above the sticky action bar on mobile.
 - **Other disabled controls** keep 50% opacity. WCAG exempts them and they are not text the user is expected to read; the disabled omnibox rows that caused the H2 caveat no longer exist.
 - **Planned descriptions.** The 78 planned rows have empty registry descriptions by design of the current draft set. Revealed rows show name + “Planned”; no placeholder copy was added.
 - **Three registry descriptions** (`image-converter`, `uuid-genny`, `qr-genny`) were written from `docs/review/DESCRIPTIONS-DRAFT.md` so every built row has a purpose. They remain drafts pending P2-10 owner approval, matching how the Batch 1/2 descriptions were handled.
 - **HTTP status for planned URLs.** The SPA renders the planned page, but without the removed `_redirects` fallback Cloudflare Pages can serve the static `404.html` shell with a 404 status before hydration; that shell is noindex. The visible page is the planned page, not the 404 copy.
 - **Visual comparison.** No image was viewed by the agent. The Stitch PNGs are not in this checkout, so no claim of visual match is made.
+
+## 9. Follow-up pass — 2026-10-19
+
+Scope: the five follow-up items agreed after the fix pass. No new tools, features, dependencies or artwork. All numbers below come from the rendered DOM, the built artefacts and the three-run Lighthouse reports.
+
+### C-18 — toast placement
+
+**Cause of the intermittent toast.** It is real app state, not a screenshot artefact: `vite-plugin-pwa` calls `onOfflineReady` when Workbox finishes precaching, which lands somewhere around the audit's `networkidle` + 150 ms capture. The defect was its old bottom-left position, which covered the rail's Collapse control at 1440×900 and could intercept a click.
+
+After: bottom-right on desktop, and above the sticky action bar on mobile (`bottom: calc(5rem + env(safe-area-inset-bottom))`). Measured at 1440×900: toast x 1129–1424, Collapse x 8–231, no overlap. At 390×844: toast bottom 764 px, action bar top 779 px, 15 px clearance. A new E2E test asserts no intersection with the rail Collapse control and with `[data-slot="tool-actions"]` in both themes at both viewports; all four cases pass. `DESIGN.md`'s toast rule is updated.
+
+### Planned URLs
+
+`404.html` now uses neutral metadata (title `Omnitool`, home description, `noindex`) and its visible body is empty. A static Pages-like server returns it for `/tools/colour-converter` with status **404**; the body's visible text is the empty string and contains no `Page not found` or `404`. The hydrated page still renders the planned message and a home link, covered by the existing E2E test. The 404 status is kept by decision; with JavaScript disabled the shell shows no text rather than a false 404.
+
+### Mobile omnibox note
+
+The row stays **54 px** on mobile. `DESIGN.md` asks for 44 px on mobile and 40 px on desktop, so the row meets the mobile minimum and exceeds it by 10 px because it carries two lines. The desktop measurement remains 40 px / 6 px radius. Wording in this report and the review log is corrected; no code changed.
+
+### Lighthouse — median of three runs
+
+Each route was measured three times. Budget: median performance/accessibility ≥ 90; best-practices and SEO remain warnings at the same 90 threshold. The table shows median/minimum.
+
+| Route | Perf med/min | A11y med/min | Best med/min | SEO med/min | LCP med | TBT med | CLS med |
+|---|---|---|---|---|---|---|---|
+| `/` | 96/96 | 100/100 | 100/100 | 100/100 | 2260 ms | 13 ms | 0.000 |
+| `/about/` | 96/96 | 100/100 | 100/100 | 100/100 | 2303 ms | 6 ms | 0.000 |
+| `/privacy/` | 96/96 | 100/100 | 100/100 | 100/100 | 2260 ms | 1 ms | 0.000 |
+| `/tools/base-converter/` | 94/94 | 100/100 | 100/100 | 100/100 | 2589 ms | 23 ms | 0.000 |
+| `/tools/braille-converter/` | 92/92 | 100/100 | 100/100 | 100/100 | 2892 ms | 27 ms | 0.004 |
+| `/tools/encoder/` | 92/92 | 100/100 | 100/100 | 100/100 | 2889 ms | 32 ms | 0.000 |
+| `/tools/image-converter/` | 92/92 | 100/100 | 100/100 | 100/100 | 2900 ms | 26 ms | 0.000 |
+| `/tools/json-formatter/` | 90/90 | 100/100 | 100/100 | 100/100 | 3043 ms | 27 ms | 0.000 |
+| `/tools/jwt-decoder/` | 94/94 | 100/100 | 100/100 | 100/100 | 2586 ms | 14 ms | 0.000 |
+| `/tools/line-height-calc/` | 92/92 | 100/100 | 100/100 | 100/100 | 2890 ms | 33 ms | 0.000 |
+| `/tools/morse-code/` | 90/90 | 100/100 | 100/100 | 100/100 | 3036 ms | 30 ms | 0.000 |
+| `/tools/nato-phonetic/` | 94/94 | 100/100 | 100/100 | 100/100 | 2591 ms | 17 ms | 0.000 |
+| `/tools/paper-sizes/` | 91/91 | 100/100 | 100/100 | 100/100 | 2935 ms | 29 ms | 0.000 |
+| `/tools/password-genny/` | 90/90 | 100/100 | 100/100 | 100/100 | 3040 ms | 29 ms | 0.000 |
+| `/tools/px-to-rem/` | 94/94 | 100/100 | 100/100 | 100/100 | 2588 ms | 25 ms | 0.011 |
+| `/tools/qr-genny/` | 92/92 | 100/100 | 100/100 | 100/100 | 2795 ms | 70 ms | 0.000 |
+| `/tools/text-diff/` | 91/91 | 100/100 | 100/100 | 100/100 | 2939 ms | 33 ms | 0.000 |
+| `/tools/time-calc/` | 92/91 | 100/100 | 100/100 | 100/100 | 2893 ms | 31 ms | 0.001 |
+| `/tools/typo-calc/` | 92/92 | 100/100 | 100/100 | 100/100 | 2893 ms | 33 ms | 0.000 |
+| `/tools/unit-converter/` | 92/91 | 100/100 | 100/100 | 100/100 | 2891 ms | 47 ms | 0.000 |
+| `/tools/uuid-genny/` | 90/90 | 100/100 | 100/100 | 100/100 | 3045 ms | 29 ms | 0.000 |
+| `/tools/word-counter/` | 94/94 | 100/100 | 100/100 | 100/100 | 2590 ms | 26 ms | 0.000 |
+
+No median or minimum is below 90; the two lowest minimums are `time-calc` and `unit-converter` at 91. The minimum performance across all routes is **90** (four routes: `json-formatter`, `morse-code`, `password-genny`, `uuid-genny`).
+
+**`/tools/uuid-genny/` lowest run.** Performance 90, LCP 3045 ms, TBT 29 ms. LCP element: `article.mx-auto > header.mb-4 > div.min-w-0 > p.prose-measure` (“Make UUID v4, v7 or Nano IDs in bulk and copy them.”), i.e. the registry description text, not an image. LCP breakdown: 3 ms TTFB and 705 ms element render delay, after an FCP of about 2575 ms. Only two long tasks were reported: 107 ms in the shared `index-*.js` starting at 2442 ms, and 51 ms on the route document at 609 ms. Main-thread work: Script Evaluation 195 ms, Other 122 ms, Style & Layout 114 ms.
+
+The three runs were stable at 90/90/90 with LCP 3039–3045 ms and TBT 26–28 ms. The earlier 86 had TBT 149 ms and LCP 3312 ms with no code change, so it is environment noise rather than a code regression; the normal cost is the shared shell's script evaluation plus render delay for text. Shell JS is 157.6 kB gzip, within the 200 kB budget, and the route chunk is small. There is no large asset or font to optimise in this route, but the 90 score has little headroom.
+
+### Checks on the follow-up tree
+
+| Check | Result |
+|---|---|
+| `pnpm install --frozen-lockfile` | pass |
+| `pnpm lint` | pass, 0 warnings (167 files + design rules) |
+| `pnpm typecheck` | pass |
+| `pnpm test:coverage` | 348 tests / 28 files; 97.06% statements, 90.8% branches, 99.5% functions, 98.22% lines |
+| `pnpm build` | 22 routes + `404.html`; 78 planned routes excluded; precache 46 entries / 897.83 KiB |
+| `pnpm check:budgets` | shell 157.6 kB gzip; precache 953.6 kB; 73 files |
+| `pnpm e2e --workers=4` | 138 passed, including offline, no third-party request, 50 axe runs and the new toast/planned-URL tests |

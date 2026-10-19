@@ -430,7 +430,7 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 - Planned descriptions for the other 78 tools are still empty; revealed rows show name + “Planned” only. P2-10 approval is still outstanding.
 - Three descriptions are now live as drafts without explicit owner approval.
 - C-12 (two-stage tool pages), the remaining D-09/D-13 tool-page control geometry and C-18 toast placement are deferred with reasons recorded in `BUILT-VS-DESIGN.md`.
-- The mobile omnibox option row is 54 px, not 40 px; it is above the 44 px touch target but taller than the desktop control spec.
+- The mobile omnibox option row is 54 px. `DESIGN.md` asks for 44 px on mobile and 40 px on desktop, so 54 px exceeds the mobile target; Session 013 confirmed this is kept and corrected the wording rather than shrinking the row.
 - Direct planned URLs can return the static 404 shell with a 404 status on Cloudflare Pages before hydration; the visible page is the planned page, and that shell is noindex.
 - No screenshot or Stitch image was viewed; no visual match is claimed.
 - Visual baselines only exist for Chromium on Linux.
@@ -443,5 +443,56 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 - The new 40 px planned-tools toggle measured 40 px on mobile because `min-h-10` beat the coarse-pointer rule. Switched to `h-10`, and the planned-page home link to `h-11 md:h-10`; both now measure 44 px at 390×844.
 
 **Next session should:** get P2-10 approval for the descriptions, decide C-18 (toast position) and whether two-stage tool pages are allowed, and continue the remaining P2 tools.
+
+**Human review:** [ ] diff read  [ ] approved
+
+### Session 013 — 2026-10-19 — P2 (wrap-up) — Buffy
+**Goal:** Safely commit the two uncommitted sessions, prove each commit alone, then make the five agreed follow-up fixes and run the full checks on the final tree.
+
+**Done:**
+- **Commit safety**, in three commits split by hunk where registry, loader, test and axe files contained both sessions:
+  - `5acd622` `feat(tools): add braille, unit, time, typography and paper tools` (27 files).
+  - `867d40e` `fix(web): align home and omnibox with the measured design rules` (30 files).
+  - `b6eb6d9` `docs: record Batch 2 and the home/omnibox fix pass` (5 files).
+- **Follow-up commits**, one per agreed fix plus this documentation commit:
+  - `7042d0f` `fix(web): place toasts clear of the rail and mobile action bar` (3 files).
+  - `b299df6` `fix(web): keep planned URLs as 404 with a neutral static shell` (2 files).
+  - `b5c424c` `perf(ci): use three-run Lighthouse medians per route` (1 file).
+- **Isolated proofs.** Temporary worktrees at each of the six code commits, frozen install, lint, typecheck and unit tests: all six passed. The first commit had 347 tests; the other five had 348. Worktrees removed.
+- **Toast** (`shell/update-prompt.tsx`, `docs/design/DESIGN.md`, `tests/e2e/toast.spec.ts`): bottom-right desktop, above the sticky action bar on mobile (`calc(5rem + env(safe-area-inset-bottom))`). E2E asserts no intersection with the rail Collapse control at 1440×900 and with `[data-slot="tool-actions"]` at 390×844, in both themes. Measured clearance: desktop toast x 1129–1424 vs Collapse x 8–231; mobile toast bottom 764 px vs action bar top 779 px.
+- **Planned URLs** (`scripts/prerender.mjs`, `tests/e2e/planned-url.spec.ts`): `404.html` now has title `Omnitool`, the home description, `noindex` and an empty visible body. A Pages-like static server returns status 404 for `/tools/colour-converter`; the static body text is empty, with no “Page not found” or “404”. The hydrated planned page still shows the planned message and home link.
+- **Mobile omnibox note:** 54 px kept; `DESIGN.md` asks for 44 px on mobile, so the row meets the mobile target and exceeds it by 10 px because of its two lines. Wording corrected in `BUILT-VS-DESIGN.md` and this log; no code changed.
+- **Lighthouse** (`scripts/lighthouse.mjs`): three runs per route, median and minimum per category, failure on median below 90 (thresholds unchanged), lowest-run reports and a UUID analysis. All 22 routes passed; see `BUILT-VS-DESIGN.md` section 9.
+- **Docs:** `docs/design/BUILT-VS-DESIGN.md` section 9; DEC-18, DEC-19 and DEC-20 in `todo.md`; P1-18 ticked. The existing Session 012 mobile-row note was corrected.
+
+**Features touched:** no new tools or feature statuses. PF-09/PF-10 notes remain accurate.
+
+**Decisions:** DEC-18 (toast placement), DEC-19 (planned URLs keep 404), DEC-20 (Lighthouse median of three at ≥90, minimum reported) accepted as written.
+
+**Verification on the follow-up tree:**
+- `pnpm install --frozen-lockfile`: pass.
+- `pnpm lint`: pass, **0 warnings** (167 files + design rules).
+- `pnpm typecheck`: pass.
+- `pnpm test:coverage`: **348 tests / 28 files**, 97.06% statements, 90.8% branches, 99.5% functions, 98.22% lines.
+- `pnpm build`: 22 routes + `404.html`, 78 planned routes excluded, precache 46 entries / 897.83 KiB.
+- `pnpm check:budgets`: shell **157.6 kB gzip**, precache **953.6 kB**, 73 files.
+- `pnpm e2e --workers=4`: **138 passed**, including offline, no-third-party-request, 50 axe runs and the new toast and planned-URL tests.
+- `pnpm lighthouse`: **22 routes × 3 runs**; medians 90–96 performance, 100 accessibility/best-practices/SEO; minimum performance 90 (four routes), lowest minimum 91 for `time-calc` and `unit-converter`.
+- UUID lowest run: performance 90, LCP 3045 ms on the description paragraph, TBT 29 ms; 107 ms shared-shell long task and 51 ms route long task; Script Evaluation 195 ms, Other 122 ms, Style & Layout 114 ms.
+
+**Not done / uncertain:**
+- With JavaScript disabled, a planned URL now shows a blank neutral shell (by decision) rather than the planned message. Hydration renders the planned page.
+- `/tools/uuid-genny/` sits exactly at the 90 performance threshold; three runs were stable at 90, but there is little headroom. The earlier 86 is attributed to environment noise because TBT jumped to 149 ms with no code change.
+- The toast E2E waits for the real service-worker `offlineReady` event (20 s timeout); it does not inject fake state.
+- No screenshot or Stitch image was viewed; no visual match is claimed.
+- Tool-page stage anatomy and control geometry remain deferred from Session 012.
+- Nothing was pushed.
+
+**Problems and risks found:**
+- One Lighthouse run before the three-run budget scored `uuid-genny` 86 and exited 1. The median budget reports the minimum and does not hide that run; subsequent runs were 90.
+- Splitting the two sessions required temporary intermediate versions of `tool-modules.ts`, its test, `a11y.spec.ts` and `registry.seed.json`; each commit was still proved in isolation.
+- The static 404 shell has no visible fallback for no-JS visitors. This follows the no-false-404 decision but is worth reviewing.
+
+**Next session should:** get owner review of the commits and DEC-18–20, then continue the remaining P2 tools. No phase gate is claimed.
 
 **Human review:** [ ] diff read  [ ] approved

@@ -20,6 +20,9 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] DEC-15 Fonts stay Schibsted Grotesk (sans) and Geist Mono (values only) (human)
 - [x] DEC-16 Corner radius follows `DESIGN.md` (6 px controls, 10 px panels, pill toggles), not the square corners in the Stitch screens (human)
 - [x] DEC-17 Mock tool names, counts, categories and features in the Stitch screens are not specs; everything comes from the registry (human)
+- [x] DEC-18 Toasts sit bottom-right on desktop and above the sticky action bar on mobile; they never cover the rail or its Collapse control (human, Session 013)
+- [x] DEC-19 Direct planned-tool URLs keep a 404 status; the static shell has no visible 404 or Page not found text and the hydrated page explains that the tool is planned (human, Session 013)
+- [x] DEC-20 Lighthouse is the median of three runs per route with every score at least 90; the minimum is reported and thresholds are unchanged (human, Session 013)
 
 ## P0 Planning (done in Sessions 000-001)
 - [x] P0-01 Analyse zip: structure, registry (97 tools), design doc, licence (agent)
@@ -53,6 +56,7 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] P1-16 Align the Phase 1 shell with the accepted Stitch layout reference (DEC-13..DEC-17): tokens, 12 px floor check, home, omnibox, tool frame, image-converter states, removals, dark screenshots and axe in both themes (agent, Session 008)
 - [x] DESC-01 Descriptions: only rows marked "approved" or "edited" in `docs/review/DESCRIPTIONS-DRAFT.md` are final. As at Session 009 all 97 rows are still `draft`, so the registry was not changed and every description in use is still awaiting approval (human)
 - [x] P1-17 Home/omnibox design fix pass (Session 012): one Marker row from `aria-selected`, planned tools behind a toggle, non-interactive Planned group, compact header, truthful counts, planned page with noindex, row anatomy, and `docs/design/built/` ignored by git and Biome (agent)
+- [x] P1-18 Follow-up fixes (Session 013): toast placement, planned-URL 404 shell, mobile row note, three-run Lighthouse medians, and isolated-commit verification (agent)
 
 ## P2 Text, dev & calculators — Batch 1 (eight tools; stop at the batch gate)
 - [x] P2-01 `json-formatter`: format, minify, validate with line/column errors; worker with progress and cancel above about 1 MB (agent)
