@@ -176,6 +176,8 @@ node scripts/audit-built-design.mjs
 
 `scripts/audit-built-design.mjs` writes `docs/design/built/measurements.json` and the screenshots. It uses only the rendered DOM: computed styles, bounding boxes, text nodes, CSSOM rules, focus after Tab, and Playwright's file-drop and image-converter interactions.
 
+Until the folder is deleted, `pnpm lint` prints one warning that the untracked `measurements.json` is 2.2 MiB, above Biome's 1 MiB file limit. It is a warning only: the command still exits 0 and the design rules pass.
+
 Useful checks on the JSON:
 
 ```bash
