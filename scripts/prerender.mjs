@@ -112,7 +112,13 @@ for (const route of routes) {
   writeFileSync(target, html);
 }
 
-writeFileSync(join(dist, '404.html'), render({ ...routeMeta['not-found'], robots: true }));
+// The static 404 shell is also what a direct planned-tool URL receives before
+// hydration. Keep its visible body empty and its metadata neutral; the router
+// renders either the planned page or the 404 copy once JavaScript runs.
+writeFileSync(
+  join(dist, '404.html'),
+  render({ title: 'Omnitool', description: routeMeta.home.description, robots: true }),
+);
 
 console.log(
   `prerender: wrote ${routes.length} routes plus 404.html; ` +
