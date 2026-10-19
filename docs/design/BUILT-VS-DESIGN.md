@@ -176,7 +176,7 @@ node scripts/audit-built-design.mjs
 
 `scripts/audit-built-design.mjs` writes `docs/design/built/measurements.json` and the screenshots. It uses only the rendered DOM: computed styles, bounding boxes, text nodes, CSSOM rules, focus after Tab, and Playwright's file-drop and image-converter interactions.
 
-Until the folder is deleted, `pnpm lint` prints one warning that the untracked `measurements.json` is 2.2 MiB, above Biome's 1 MiB file limit. It is a warning only: the command still exits 0 and the design rules pass.
+The folder is now in `.gitignore` and in Biome's ignore list, so `pnpm lint` neither reads `measurements.json` nor prints a size warning. (`docs/design/built/` stays untracked.)
 
 Useful checks on the JSON:
 
@@ -207,3 +207,69 @@ grep -o 'data-selected\\:bg-highlight\[data-selected\]{[^}]*}' apps/web/dist/ass
 ```bash
 grep -o '::selection{[^}]*}' apps/web/dist/assets/*.css
 ```
+
+## 8. Fix pass — 2026-10-19
+
+Scope: home, omnibox, tool index, planned-tool handling and the housekeeping in the review prompt. No new tools, dependencies or artwork. The decisions applied were **PLANNED** (unbuilt tools hidden behind a toggle, built first in the omnibox, muted non-interactive Planned group, no phase numbers) and **HEADER** (compact “Find tool Ctrl K” header button; the hero remains the only full-width search control).
+
+Method is unchanged: production build, Chromium 1440×900 and 390×844, both themes, values read from the rendered DOM. The 44 required screenshots and `measurements.json` were regenerated; the default home capture now shows the 19 built tools only, and `measurements.json` also records the revealed planned state. **No screenshot was viewed by the agent**, so nothing here is a claim of visual match with the Stitch screens.
+
+### H1–H7 before and after
+
+| ID | Before | After | Verdict |
+|----|--------|-------|---------|
+| H1 | Every option Marker: empty 97/97, `pdf` 10/10, dropped PNG 97/97; `aria-selected` 1/0/1. `.data-selected[data-selected]` matched the value `"false"`. | Options are built tools only: 19, 0 and 19. Marker rows 1, 0 and 1, exactly the `aria-selected="true"` rows. The planned group has 78/10/78 rows and 0 Marker rows. Hover no longer changes selection (`disablePointerSelection`). | **PASS** |
+| H2 | Marker text was Ink 12.83:1; the caveat was disabled rows at 50% opacity (3.28:1 light / 2.16:1 dark) and a hypothetical dark muted pair at 1.78:1. | Marker text is still 12.83:1. Planned rows are not disabled: muted text is 7.56:1 light / 6.64:1 dark on the popover; muted on inset is 6.61/7.01. A new E2E contrast sweep over empty, `pdf` and dropped-file states in both themes reports 0 failures. | **PASS** |
+| H3 | Panel on Paper in both themes. | Unchanged and re-measured: panel `rgb(255,255,255)` / `rgb(26,32,41)` on page `rgb(237,240,243)` / `rgb(18,22,29)`; section bars are inset in both themes. | **PASS** |
+| H4 | Two visible entry points, header 40/44 px and hero 72/64 px. | Header decision applied: a compact 40/44 px “Find tool” + `Ctrl K` button (177 px wide at 1440), hero 72/64 px. The only full-width search control is the hero; the only text input is inside the dialog. | **PASS** |
+| H5 | 78 roadmap strings on home, 11 filtered to Colour, 78 in the empty omnibox, 10 for `pdf`. | 0 on home (19 rows), 0 with the planned rows revealed, 0 in the omnibox in all three states, 0 on every built tool page, the planned page and 404. Planned rows carry the word “Planned” only. | **PASS** |
+| H6 | Name 16 px/500; rows 49 px desktop, 69 px mobile single-line, 113 px with a description; purpose on 16/97 rows, 16/19 built. | Name 16 px/500; 55 px desktop per description row, 95 px mobile. Purpose is present on 19/19 built rows (three missing registry drafts were filled for built tools). 8 rows are visible in the first 900 px desktop, 4 at 390×844, against 11 unbuilt rows before. | **PASS for built rows** |
+| H7 | `::selection` Marker with Ink text. | Unchanged; compiled rule still `::selection{background:var(--highlight);color:var(--highlight-foreground)}`, ratio 12.83:1. | **PASS** |
+
+Home height fell from 6035 px to 1869 px desktop and from 8975 px to 2721 px mobile; the first fold now contains 8 built rows instead of none. The first built row is at the top of the index, not 400 px below the fold.
+
+### Fixed rows
+
+| ID | Before | After |
+|----|--------|-------|
+| C-01 (Must) | 97/97, 10/10, 97/97 Marker rows. | 1/1, 0/0, 1/1 Marker rows, matching `aria-selected` exactly. Selection follows only `aria-selected="true"`; hover stays `--surface-hover` and does not select. Tested in both themes, including a dropped PNG. |
+| C-05 (Should) | `Tab Cycle categories`, `97 results`. | `Tab Move`, and `19 available, 78 planned` / `0 available, 10 planned`. Tab now moves the selection and is covered by E2E. |
+| C-06 (Should) | Option rows 32 px high, 10 px radius. | 40 px high, 6 px radius on desktop; 54 px on mobile (above the 44 px touch target). |
+| C-09 (Should) | Purpose on 16/97 rows (16/19 built). | Purpose on 19/19 built rows; empty descriptions are omitted rather than filled with placeholder copy. The 78 planned rows still have no registry description and show only name + “Planned”. |
+| D-09 (Should, home part) | Home: 19 controls at 6 px and the theme toggle at 10 px (plus the toast close at 10 px when visible). | All 22 home controls measure 6 px in the audited run, including the theme toggle and toast close. Tool-page buttons are unchanged (see deferred). |
+| D-13 (Should, home part) | `Show all` was 20 px high; tool-page segmented controls 32 px. | `Show all` is 40 px desktop / 44 px mobile; the planned-tools toggle is 40/44. No home control is below 40 desktop or 44 mobile. Tool-page controls are unchanged (see deferred). |
+| C-19 (Info) | Header duplicated the hero’s search copy at up to 448 px wide. | Header is a compact 177×40 px “Find tool” button; it still opens the same dialog. |
+
+### Planned-tool handling
+
+- **One source of truth.** `TOOL_LOADERS` in `apps/web/src/lib/tool-modules.ts` is now the only definition of “built”; `IMPLEMENTED_TOOL_IDS`/`IMPLEMENTED_TOOL_COUNT` derive from it. Home, rail, omnibox and router all call `isToolImplemented`. A unit test compares those ids with the registry and fails if a loader has no row or a row has no loader.
+- **Home.** Planned rows are hidden by default behind `Show planned tools (78)`; the button reports `19 available, 78 planned` in the hero and per-category `N available, M planned` when revealed. Rail rows show an “Available” column heading and the available count, with the full “N available, M planned” text for assistive technology. Planned rows are plain `div`s, not links, and are not focusable.
+- **Omnibox.** Built results come first, grouped by category. Planned matches follow under a muted `Planned (N)` group; they are not options (`role="option"` count excludes them), are not focusable and never receive Marker. A query that only matches planned tools (`pdf`) therefore has 0 options and 0 selected rows, rather than a fake selection.
+- **Route.** `/tools/<planned-id>` now renders a planned page with the tool name, a “Planned” badge, a sentence of explanation and a link home. It sets `meta[name="robots"]` to `noindex` while mounted and restores the previous value on leave. Unknown ids still 404.
+- **Prerender.** `scripts/prerender.mjs` now derives the tool route list from `tool-modules.ts`, verifies every loader has `src/tools/<id>/index.tsx`, fails on an orphan directory, and prints `78 planned routes excluded`. `dist/tools/colour-converter/index.html` is absent; `dist/tools/uuid-genny/index.html` is present. A test asserts both.
+
+### Checks after the fix
+
+| Check | Result |
+|-------|--------|
+| `pnpm install --frozen-lockfile` | pass, lockfile unchanged |
+| `pnpm lint` | pass, **0 warnings** (Biome 165 files + design rules) |
+| `pnpm typecheck` | pass across all projects |
+| `pnpm test:coverage` | **348 tests / 28 files**; 97.06% statements, 90.8% branches, 99.5% functions, 98.22% lines |
+| `pnpm build` | 22 routes plus `404.html`; 78 planned routes excluded; precache 46 entries / 897.63 KiB |
+| `pnpm check:budgets` | shell **157.5 kB gzip** (budget 200); precache **953.4 kB** (budget 8 MiB); 73 files |
+| `pnpm e2e --workers=4` | **133 passed** (includes offline, no third-party request, axe in both themes and the new design/omnibox specs) |
+| axe | 50 page/omnibox runs (including the planned page), 0 serious or critical |
+| Lighthouse mobile | 22 routes: accessibility **100**, best practices **100**, SEO **100**. Performance was **90–96** on the repeat runs; the preceding run scored `/tools/uuid-genny/` **86** (TBT 149 ms vs 35 ms on the final run) and exited 1. Two later runs, including the final build, passed all routes, so that route is borderline/noisy rather than a confirmed regression. |
+
+Visual baselines were regenerated deliberately: `home-dark`, `qr-genny-dark`, `image-converter-dark`, `omnibox-dark` and `omnibox-file-dark`. All five change because the header copy and button geometry changed; home also hides planned rows and uses the new row heights, and the two omnibox shots show the built/planned split and the single Marker row. Baselines are Chromium-on-Linux.
+
+### Deferred, with reasons
+
+- **C-12 stage anatomy** (tool pages use two stages where `DESIGN.md` says three) and the remaining **D-09/D-13** tool-page control geometry are outside this bounded change; no tool page was in scope.
+- **C-18 offline toast position.** The toast is real app state from `vite-plugin-pwa`'s `offlineReady`, shown bottom-left per `DESIGN.md`; at 1440×900 it can cover the rail’s Collapse control and intercept a click. Only its close button radius changed. Moving it needs a design decision, so it is left for the owner.
+- **Other disabled controls** keep 50% opacity. WCAG exempts them and they are not text the user is expected to read; the disabled omnibox rows that caused the H2 caveat no longer exist.
+- **Planned descriptions.** The 78 planned rows have empty registry descriptions by design of the current draft set. Revealed rows show name + “Planned”; no placeholder copy was added.
+- **Three registry descriptions** (`image-converter`, `uuid-genny`, `qr-genny`) were written from `docs/review/DESCRIPTIONS-DRAFT.md` so every built row has a purpose. They remain drafts pending P2-10 owner approval, matching how the Batch 1/2 descriptions were handled.
+- **HTTP status for planned URLs.** The SPA renders the planned page, but without the removed `_redirects` fallback Cloudflare Pages can serve the static `404.html` shell with a 404 status before hydration; that shell is noindex. The visible page is the planned page, not the 404 copy.
+- **Visual comparison.** No image was viewed by the agent. The Stitch PNGs are not in this checkout, so no claim of visual match is made.

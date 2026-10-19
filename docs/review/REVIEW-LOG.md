@@ -352,3 +352,96 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 **Next session should:** continue the remaining P2 tools, decide P1-15 and DEC-13, finish the per-tool Reset work, and keep the new design checks in mind when adding UI.
 
 **Human review:** [ ] diff read  [ ] approved
+
+### Session 011 — 2026-10-19 — P2 Batch 2 (continued) — Buffy
+**Goal:** Finish P2 Batch 2: build `unit-converter`, `time-calc`, `line-height-calc`, `typo-calc` and `paper-sizes`, each with pure logic and tests in `packages/tool-core`, a thin React UI, registry wiring and E2E coverage; then record the batch gate without starting a later phase.
+
+**Done:**
+- **Shared rounding** (`packages/tool-core/src/number/index.ts`): one `roundTo` helper; `px` re-exports it so existing imports and tests keep working.
+- **Unit converter** (`packages/tool-core/src/units/`): eleven categories (length, mass, temperature, area, volume, speed, time, data, angle, pressure, energy) with exact factors; temperature uses `(value - offset) * factor` so Celsius, Fahrenheit, Kelvin and Rankine round-trip; `convert` and `convertAll` with 0–12 decimal places and typed errors. UI: category, value, from/to, swap, precision, result and a full-unit table with the target row highlighted.
+- **Time calculator** (`packages/tool-core/src/time/`): `parseDuration` for `1h 30m`, `1:30`, `90s`, `2d 4h` and long unit names; `splitDuration`, `formatDuration`, `formatClock`; `difference`; zone-aware `parseZonedDateTime`, `formatZonedDateTime` and `formatOffset` using `Intl` (no dependency). Ambiguous wall-clock times resolve to the earlier instant; times inside the spring-forward gap move forward by the change. Tests cover both London DST days (23 h and 25 h). UI: duration arithmetic, a start/end comparison with an IANA zone field and a datalist, and a seconds breakdown.
+- **Line height** (`packages/tool-core/src/line-height/`): `fromRatio` and `fromBaseline` produce unitless, px and rem, with a WCAG 1.4.12 warning below 1.5 and a baseline table. UI shows the three values, a CSS snippet and the baseline table.
+- **Type scale** (`packages/tool-core/src/type-scale/`): eight named ratios, custom ratio, base and root sizes, steps up and down (capped at 16 sizes), px and rem per step, `--text-minus-N` / `--text-0` / `--text-N` custom properties and a `:root` CSS block. UI: preset picker, ratio, sizes, steps, table and CSS block.
+- **Paper sizes** (`packages/tool-core/src/paper/`): ISO A, B and C series (0–10) plus Letter, Legal, Tabloid, Executive, Half Letter and Junior Legal; conversion to inches, points and pixels at 72, 96 and 300 dpi. UI: series filter, full table and a plain-text export.
+- **Wiring:** `packages/tool-core/src/index.ts` exports the five modules; `apps/web/src/lib/tool-modules.ts` and its unit test list nineteen tools; the five registry rows gained the drafted descriptions (still `draft` in `docs/review/DESCRIPTIONS-DRAFT.md`, whose four affected drafts and intro were corrected to match what was built); `tests/e2e/batch2.spec.ts` gained fourteen tests, and `reset.spec.ts` and `a11y.spec.ts` cover the five new routes.
+- No dependency was added. No artwork, no emoji, British English throughout, 12 px floor kept.
+
+**Features touched:** `unit-converter`, `time-calc`, `line-height-calc`, `typo-calc`, `paper-sizes` ⬜ → ✅; PF-04 note updated to nineteen implemented tools.
+
+**Decisions:** none new. Description ownership stays with DEC-12; approval is still P2-10.
+
+**Verification:**
+- `pnpm lint`: pass (biome over 161 files plus design rules, 0 problems).
+- `pnpm typecheck`: pass across all five workspace projects.
+- `pnpm test`: **347 tests in 28 files** pass (was 288).
+- `pnpm build`: pass; **22 routes** prerendered plus `404.html`; PWA precache 46 entries / 893 KiB.
+- `pnpm check:budgets`: shell **156.6 kB gzip** (budget 200 kB), precache **949.1 kB** (budget 8 MiB), 73 build files, all checks passed.
+- `pnpm e2e --workers=4`: **116 passed** (Chromium). This includes 14 Batch 2 tests, Reset on all nineteen routes, axe in light and dark on the five new routes, the offline check and the unchanged visual baselines.
+- `pnpm exec playwright test tests/e2e/a11y.spec.ts tests/e2e/reset.spec.ts --workers=4`: 69 passed.
+
+**Not done / uncertain:**
+- Descriptions for all 97 tools remain `draft`; P2-10 and the Batch 2 gate approval are still human decisions.
+- `time-calc` does not convert Unix timestamps, which the original tool did; it covers durations, elapsed time between zoned date-times and a seconds breakdown.
+- `typo-calc` builds a modular scale rather than converting points, picas, ems and millimetres; the registry description was corrected to say so.
+- `line-height-calc` takes a font size and ratio or baseline, not a text measure; the draft description was corrected accordingly.
+- `paper-sizes` includes six common US sizes, not the full ANSI A–E set.
+- The project has no image-viewing tool, so the new UIs were checked structurally and through axe and Playwright, not visually reviewed by a human.
+- Visual baselines were not regenerated; none of the reviewed screens changed.
+- Session entries 009 and 010 are absent from this log even though `todo.md` cites Session 010 for the Morse, NATO and Braille work; that gap predates this session.
+- Nothing was committed or pushed.
+
+**Problems and risks found:**
+- The paper-size table overflowed at the 1280 px test viewport, and axe reported `scrollable-region-focusable`. `tabIndex` on the scroll container is rejected by Biome's `noNoninteractiveTabindex`, so the table cells were allowed to wrap instead, which removes the overflow rather than papering over it.
+- `getByLabel` matches substrings, so several E2E locators collided with the category rail and section headings; they now use roles or `exact: true`.
+- `DEFAULT_ROOT_FONT_SIZE` and `ConversionRow` already existed in `px`, so the new modules import the former rather than re-exporting it and rename the latter to `UnitConversionRow`; duplicate star exports would otherwise be ambiguous.
+
+**Next session should:** continue with the remaining P2 rows (`cron-builder`, `http-status`, `meta-tag-genny`, `regex-tester`, `request-builder`, `tailwind-cheatsheet`, `code-genny`, `decoder`, `markdown-writer`, the remaining calculators and the Turbo-nerd rows), or pause for the owner review of the 97 descriptions that P2-10 requires.
+
+**Human review:** [ ] diff read  [ ] approved
+
+### Session 012 — 2026-10-19 — P2 (design fix pass) — Buffy
+**Goal:** Fix the home and omnibox deviations in `docs/design/BUILT-VS-DESIGN.md` in one bounded change: single Marker selection, planned-tool handling, header/hero entry point, row anatomy, contrast, housekeeping. No new tools, dependencies or artwork.
+
+**Done:**
+- **One source of truth** (`apps/web/src/lib/tool-modules.ts`): `IMPLEMENTED_TOOL_IDS` and `IMPLEMENTED_TOOL_COUNT` derive from `TOOL_LOADERS`; `isToolImplemented`/`loadTool` use own-property checks. A new unit test compares the loader ids with the registry and fails on either mismatch.
+- **Home** (`pages/home.tsx`, `components/tool-row.tsx`): 19 built tools by default, 78 planned behind `Show planned tools (78)` / `Hide planned tools (78)` with `aria-expanded`/`aria-controls`. Hero reads “19 tools available, 78 planned”. Category headers and rail show available counts (rail adds an “Available” heading and the full available/planned text for assistive technology). Planned rows are non-focusable divs with a “Planned” badge only; “Not built yet — phase N” is gone. A planned-only category explains its empty state. Row anatomy: whole-row link, 16 px/500 name, description from the registry (omitted when empty), glyphs, 44 px minimum, 55 px desktop with a description (95 px mobile). `Show all` is 40 px.
+- **Omnibox** (`components/omnibox.tsx`, `components/ui/command.tsx`): Marker styling moved from `data-selected` presence to `[aria-selected="true"]`; `disablePointerSelection` keeps hover on `--surface-hover`; Tab is translated into arrow movement; Enter opens the selected built tool. Built results are grouped first; planned matches are a muted non-interactive `Planned (N)` group (not options, not focusable). Option rows are 40 px desktop / 54 px mobile at 6 px radius; footer says “Tab Move” and “N available, M planned”.
+- **Header** (`shell/header.tsx`): compact 177×40 px “Find tool Ctrl K” button; hero is the only full-width search control.
+- **Planned routes** (`app/router.tsx`, `pages/planned-tool.tsx`, `lib/document-meta.ts`): `/tools/<planned-id>` renders a planned page with a home link and `meta[name="robots"] = noindex` (restored on leave); unknown ids still 404.
+- **Prerender** (`scripts/prerender.mjs`): route list now comes from `tool-modules.ts`, with checks for missing directories and orphan directories; output reports `78 planned routes excluded`.
+- **Housekeeping:** `docs/design/built/` added to `.gitignore` and Biome's ignore list; lint is warning-free. Theme-toggle and toast-close radii corrected to 6 px. Visual baselines regenerated for the five changed dark shots.
+- **Docs:** `docs/design/BUILT-VS-DESIGN.md` gained a “Fix pass” section with before/after numbers for H1–H7 and every fixed row, the deferred list and the check results.
+
+**Features touched:** PF-01 (note: compact header), PF-02 (note: planned toggle, truthful counts), PF-05 (note: single Marker, planned group), PF-09 (precache 898 kB), PF-10 (note: planned routes excluded, noindex). No statuses changed.
+
+**Decisions:** the PLANNED and HEADER decisions in the prompt were applied as written. Three drafted descriptions (`image-converter`, `uuid-genny`, `qr-genny`) were moved into the registry so every built row has a purpose; they remain drafts under P2-10, following the Batch 1/2 precedent. C-18 (toast placement) and the tool-page stage/control geometry were not changed because they are outside this bounded scope.
+
+**Verification:**
+- `pnpm install --frozen-lockfile` pass; lockfile unchanged.
+- `pnpm lint` pass, **0 warnings** (165 files + design rules). `pnpm typecheck` pass.
+- `pnpm test:coverage`: **348 tests / 28 files**, 97.06% statements, 90.8% branches, 99.5% functions, 98.22% lines.
+- `pnpm build`: 22 routes + `404.html`, 78 planned routes excluded, precache 46 entries / 897.63 KiB. `pnpm check:budgets`: shell **157.5 kB gzip**, precache **953.4 kB**, 73 files.
+- `pnpm e2e --workers=4`: **133 passed**, including offline, no third-party request, the 50 axe runs in both themes (the planned page is included), and the new `design.spec.ts` and `omnibox.spec.ts`.
+- New E2E proves, in both themes, that Marker rows equal `aria-selected` rows and never exceed 1 in the empty, `pdf` and dropped-PNG states; that hover does not select; that Tab/arrows/Enter work; that omnibox text passes 4.5:1 in all three states; that the toggle/counts/planned labels are correct; that no `/not built|phase \d/i` text appears on any page or omnibox state; that planned routes are not prerendered; and that the planned page is noindex with a home link.
+- `pnpm lighthouse`: 22 mobile routes, accessibility/best practices/SEO **100**. The first run **failed** with `/tools/uuid-genny/` performance **86** (TBT 149 ms, LCP 3.31 s); an immediate repeat with no code change scored **90** and the whole suite 90–96, and the final build again scored 90–96 (LCP 2.26–3.11 s, CLS ≤ 0.011). The route is borderline; one of three runs failed the 90 threshold, so this is reported rather than claimed as a clean pass on every run.
+- Audit rerun: 45 screenshots (44 required + selected text) and 32 page states with 12 omnibox states. H1 1/1, 0/0, 1/1; row 55 px/16 px/500; 8 built rows in the first 900 px desktop; 0 enabled contrast failures; 0 roadmap strings.
+
+**Not done / uncertain:**
+- Planned descriptions for the other 78 tools are still empty; revealed rows show name + “Planned” only. P2-10 approval is still outstanding.
+- Three descriptions are now live as drafts without explicit owner approval.
+- C-12 (two-stage tool pages), the remaining D-09/D-13 tool-page control geometry and C-18 toast placement are deferred with reasons recorded in `BUILT-VS-DESIGN.md`.
+- The mobile omnibox option row is 54 px, not 40 px; it is above the 44 px touch target but taller than the desktop control spec.
+- Direct planned URLs can return the static 404 shell with a 404 status on Cloudflare Pages before hydration; the visible page is the planned page, and that shell is noindex.
+- No screenshot or Stitch image was viewed; no visual match is claimed.
+- Visual baselines only exist for Chromium on Linux.
+- **Nothing was committed.** The working tree still contains the uncommitted Batch 2 work from Session 011 (five untracked tool directories, `tool-core` exports and its specs). Committing only this fix would reference those untracked tools in `tool-modules.ts` and leave a broken checkout, so the changes are left in the working tree for the owner to review and commit together.
+
+**Problems and risks found:**
+- The rail’s first aria-label attempt failed axe `label-content-name-mismatch` because the visible “0” was not in the accessible name. The count now carries visually hidden “available, N planned” text instead of an overriding label.
+- The audit’s dark row-hover measurement was flaky until a settle delay was added; the after data now reads `rgb(32, 39, 51)`.
+- `rounded-control` alone lost to `rounded-lg` in the compiled CSS for the theme toggle; the two overrides use `rounded-control!`.
+- The new 40 px planned-tools toggle measured 40 px on mobile because `min-h-10` beat the coarse-pointer rule. Switched to `h-10`, and the planned-page home link to `h-11 md:h-10`; both now measure 44 px at 390×844.
+
+**Next session should:** get P2-10 approval for the descriptions, decide C-18 (toast position) and whether two-stage tool pages are allowed, and continue the remaining P2 tools.
+
+**Human review:** [ ] diff read  [ ] approved

@@ -1,6 +1,6 @@
 # Tool descriptions — draft for owner approval
 
-One sentence per tool, written in Omnitool's own words in British English, at most 100 characters. None of these is in the registry yet: `packages/tools-registry/data/registry.seed.json` is unchanged. Owner review under DEC-12; the eight Batch 1 descriptions already in the registry are repeated here so that all 97 can be reviewed together.
+One sentence per tool, written in Omnitool's own words in British English, at most 100 characters. Each description is entered in the registry when its tool ships, but every row stays `draft` until the owner approves the whole set under DEC-12 and P2-10; all 97 are repeated here so they can be reviewed together.
 
 Overlap check: no draft shares four or more consecutive words with the "Original description" column in `features.md` (checked by normalising case and punctuation, then comparing four-word runs).
 
@@ -61,11 +61,11 @@ Overlap check: no draft shares four or more consecutive words with the "Original
 | `font-explorer` | Font File Explorer | Inspect a font file's glyphs, metrics and naming details. | draft |
 | `glyph-browser` | Glyph Browser | Browse Unicode characters and copy the ones you need. | draft |
 | `large-type` | Large Type | Show a line of text at full-screen size for reading aloud. | draft |
-| `line-height-calc` | Line Height Calculator | Work out comfortable line heights for a given font size and measure. | draft |
-| `paper-sizes` | Paper Sizes | Look up international and US paper sizes in millimetres and inches. | draft |
+| `line-height-calc` | Line Height Calculator | Turn a font size and ratio, or a baseline grid, into a line height. | draft |
+| `paper-sizes` | Paper Sizes | Look up paper sizes in millimetres, inches, points and pixels. | draft |
 | `px-to-rem` | PX to REM | Convert pixel values to rem and back against a root font size you choose. | draft |
 | `text-diff` | Text Diff | Compare two pieces of text by line, word or character, with inline and side-by-side views. | draft |
-| `typo-calc` | Typography Calculator | Convert between points, picas, ems, rems and millimetres. | draft |
+| `typo-calc` | Typography Calculator | Build a modular type scale from a base size and ratio, with CSS variables. | draft |
 | `word-counter` | Word Counter | Count words, sentences and characters, and estimate reading and speaking time. | draft |
 | `pdf-preflight` | PDF Preflight | Check a PDF for missing fonts, low-resolution images and colour issues. | draft |
 | `pdf-organiser` | PDF Organiser | Reorder, merge, split and delete pages in a PDF. | draft |
@@ -94,7 +94,7 @@ Overlap check: no draft shares four or more consecutive words with the "Original
 | `encoder` | Encoding Tools | Convert text to and from Base64, URL, HTML entity and hexadecimal forms. | draft |
 | `graph-calc` | Graph Calculator | Plot mathematical functions on an adjustable graph. | draft |
 | `sci-calc` | Scientific Calculator | Run scientific calculations and keep a history of results. | draft |
-| `time-calc` | Time Calculator | Convert timestamps and add or subtract dates, times and time zones. | draft |
+| `time-calc` | Time Calculator | Add durations, compare times across zones and break seconds into days. | draft |
 | `unit-converter` | Unit Converter | Convert length, weight, temperature, data and other units. | draft |
 | `shavian-transliterator` | Shavian Transliterator | Rewrite English text in the Shavian alphabet. | draft |
 | `morse-code` | Morse Code | Turn text into Morse code, decode it, or play the beeps. | draft |

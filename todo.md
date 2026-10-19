@@ -52,6 +52,7 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] P1-15 DECIDED in Session 009: delete the `_redirects` SPA fallback. Removed; build and `wrangler pages dev` re-verified; runbook updated; F-015 closed (human)
 - [x] P1-16 Align the Phase 1 shell with the accepted Stitch layout reference (DEC-13..DEC-17): tokens, 12 px floor check, home, omnibox, tool frame, image-converter states, removals, dark screenshots and axe in both themes (agent, Session 008)
 - [x] DESC-01 Descriptions: only rows marked "approved" or "edited" in `docs/review/DESCRIPTIONS-DRAFT.md` are final. As at Session 009 all 97 rows are still `draft`, so the registry was not changed and every description in use is still awaiting approval (human)
+- [x] P1-17 Home/omnibox design fix pass (Session 012): one Marker row from `aria-selected`, planned tools behind a toggle, non-interactive Planned group, compact header, truthful counts, planned page with noindex, row anatomy, and `docs/design/built/` ignored by git and Biome (agent)
 
 ## P2 Text, dev & calculators — Batch 1 (eight tools; stop at the batch gate)
 - [x] P2-01 `json-formatter`: format, minify, validate with line/column errors; worker with progress and cancel above about 1 MB (agent)
@@ -68,13 +69,13 @@ Format: `- [ ] ID task (owner: human|agent)`
 ## P2 Text, dev & calculators — Batch 2 (eight tools; stop at the batch gate)
 - [x] P2-11 `morse-code`: ITU letters, digits and punctuation both ways, unknown-character and word-separator handling; Web Audio playback at a chosen words per minute with a visible Stop (agent, Session 010)
 - [x] P2-12 `nato-phonetic`: ICAO spelling alphabet including digit pronunciations, unknown characters passed through and flagged (agent, Session 010)
-- [ ] P2-13 `braille-converter`: Unicode braille patterns, English grade 1 both ways, with the contracted-braille limitation stated in the UI (agent)
-- [ ] P2-14 `unit-converter`: eleven categories with exact factors and offset temperature handling, precision setting, round-trip tests (agent)
-- [ ] P2-15 `time-calc`: duration arithmetic, date-time difference, seconds to days/hours/minutes/seconds, documented DST behaviour with a DST test (agent)
-- [ ] P2-16 `line-height-calc`: ratio or baseline grid to unitless, px and rem, with a WCAG text-spacing note below 1.5 (agent)
-- [ ] P2-17 `typo-calc`: modular type scale from a base size and ratio, presets and custom, output px, rem and CSS custom properties (agent)
-- [ ] P2-18 `paper-sizes`: ISO A, B and C series plus common US sizes, mm, inches, points and pixels at 72, 96 and 300 dpi (agent)
-- [ ] P2-19 Batch 2 gate: checks recorded and descriptions pending; awaiting owner review (human)
+- [x] P2-13 `braille-converter`: Unicode braille patterns, English grade 1 both ways, with the contracted-braille limitation stated in the UI (agent, Session 010)
+- [x] P2-14 `unit-converter`: eleven categories with exact factors and offset temperature handling, precision setting, round-trip tests (agent, Session 011)
+- [x] P2-15 `time-calc`: duration arithmetic, date-time difference, seconds to days/hours/minutes/seconds, documented DST behaviour with a DST test (agent, Session 011; no Unix timestamp conversion, see features.md)
+- [x] P2-16 `line-height-calc`: ratio or baseline grid to unitless, px and rem, with a WCAG text-spacing note below 1.5 (agent, Session 011)
+- [x] P2-17 `typo-calc`: modular type scale from a base size and ratio, presets and custom, output px, rem and CSS custom properties (agent, Session 011)
+- [x] P2-18 `paper-sizes`: ISO A, B and C series plus common US sizes, mm, inches, points and pixels at 72, 96 and 300 dpi (agent, Session 011)
+- [x] P2-19 Batch 2 gate: checks recorded; owner review of the descriptions still pending under DESC-01 and P2-10 (human)
 
 ## Later (do not start early)
 - [ ] P2 (rest) Text, dev & calculators — remaining `features.md` rows tagged P2

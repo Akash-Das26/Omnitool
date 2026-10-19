@@ -20,16 +20,16 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 
 | ID | Feature | What the original does | Phase | Status | Notes |
 |----|---------|------------------------|-------|--------|-------|
-| PF-01 | App shell & layout | Header, collapsible category sidebar, content area; responsive | P1 | ✅ | Header, collapsible rail, responsive to 320 px; skip link; Stitch-aligned in Session 008 (border-strong controls, 12 px floor) |
-| PF-02 | Home page | Hero, featured tools (Substrata, QR, Auto Subtitle, Background Remover), suites, tool grid by category | P1 | ✅ | Omnibox hero and category index of rows (not cards); section headers on `--surface-inset`, rows with accepts → produces chips; all 97 rows, unbuilt tools marked by phase |
+| PF-01 | App shell & layout | Header, collapsible category sidebar, content area; responsive | P1 | ✅ | Compact “Find tool” header button (40/44 px) with the hero as the only full-width search entry; collapsible rail with available counts; responsive to 320 px; skip link |
+| PF-02 | Home page | Hero, featured tools (Substrata, QR, Auto Subtitle, Background Remover), suites, tool grid by category | P1 | ✅ | Omnibox hero and category index of rows (not cards); 19 available tools by default, 78 planned behind “Show planned tools” (no phase strings); truthful available/planned counts; section headers on `--surface-inset`, rows with accepts → produces chips |
 | PF-03 | Tool registry | Single typed registry (id, name, description, icon, href, flags, accepts/produces) drives nav, grid, search and routing | P1 | ✅ | Valibot-validated seed; `produces` and some missing `accepts` added as provisional metadata |
-| PF-04 | Per-tool routes, lazy-loaded | `/tools/<id>` routes; each tool code-split | P1 | ✅ | Loader import map, `defaultPreload: 'intent'`; eleven tools implemented |
-| PF-05 | Omnibox / command search | Keyboard-driven search over tools (and accepted file types) | P1 | ✅ | Ctrl/Cmd+K, grouped results, underlined matches, Marker selected row, dropped-file chip with a "Tools that accept this file" group, key hints; planned tools disabled |
+| PF-04 | Per-tool routes, lazy-loaded | `/tools/<id>` routes; each tool code-split | P1 | ✅ | Loader import map, `defaultPreload: 'intent'`; nineteen tools implemented |
+| PF-05 | Omnibox / command search | Keyboard-driven search over tools (and accepted file types) | P1 | ✅ | Ctrl/Cmd+K; built results first, one Marker row driven only by `aria-selected`; arrows and Tab move it, hover uses the hover surface; muted non-interactive Planned group; dropped-file chip and key hints |
 | PF-06 | Theme toggle (light/dark) | Class-based dark mode with no-flash bootstrap; persists choice | P1 | ✅ | External pre-paint bootstrap, localStorage, system default |
 | PF-07 | 404 page | Not-found route | P1 | ✅ | Root not-found route plus static `404.html` |
 | PF-08 | Privacy page | States: no accounts, no data collection, runs locally | P1 | ✅ | `/privacy` written in British English |
-| PF-09 | Offline / PWA | Works with no internet after first load (service worker + cached assets) | P1 | ✅ | Workbox precache 882 kB, SW update prompt; offline E2E passes |
-| PF-10 | Static prerender / SEO | Per-route HTML + meta + OG image for discoverability | P1 | 🟨 | Postbuild HTML and meta for home/privacy/about/every built tool/404; no OG image or canonical URLs until Phase 9 (DEC-10, DEC-11) |
+| PF-09 | Offline / PWA | Works with no internet after first load (service worker + cached assets) | P1 | ✅ | Workbox precache 898 kB, SW update prompt; offline E2E passes |
+| PF-10 | Static prerender / SEO | Per-route HTML + meta + OG image for discoverability | P1 | 🟨 | Postbuild HTML and meta for home/privacy/about/19 built tool routes/404; planned routes are derived from the loader map and excluded; planned pages render with noindex; no OG image or canonical URLs until Phase 9 (DEC-10, DEC-11) |
 | PF-11 | Changelog popup | "What's new" with versioned entries | P7 | ⬜ |  |
 | PF-12 | Colour notation selector | Header-level preference (hex/rgb/hsl/oklch…) read by every colour tool | P3 | ⬜ |  |
 | PF-13 | Carry colour across tools | `?color=` query handoff between colour tools | P3 | ⬜ |  |
@@ -127,11 +127,11 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | `font-explorer` | Font File Explorer | Explore font file contents | – | T2 | P2 | opentype.js or similar | ⬜ | |
 | `glyph-browser` | Glyph Browser | Browse unicode glyphs | – | T2 | P2 | Font parsing | ⬜ | |
 | `large-type` | Large Type | Text, but big | – | T1 | P2 | CSS fullscreen | ⬜ | |
-| `line-height-calc` | Line Height Calculator | Calculate optimal line heights | – | T1 | P2 | tool-core | ⬜ | |
-| `paper-sizes` | Paper Sizes | Reference for paper dimensions | – | T1 | P2 | Own data table | ⬜ | |
+| `line-height-calc` | Line Height Calculator | Calculate optimal line heights | – | T1 | P2 | tool-core | ✅ | P2 Batch 2: ratio or baseline grid to unitless, px and rem; WCAG 1.4.12 note below 1.5 |
+| `paper-sizes` | Paper Sizes | Reference for paper dimensions | – | T1 | P2 | Own data table | ✅ | P2 Batch 2: ISO A, B and C plus six US sizes; mm, inches, points and pixels at 72/96/300 dpi |
 | `px-to-rem` | PX to REM | Convert pixels to rem units | – | T1 | P2 | tool-core | ✅ | P2 Batch 1: configurable root, px to rem and back, common-value table |
 | `text-diff` | Text Diff | Compare two texts and highlight differences | – | T1 | P2 | diff algorithm (jsdiff or own) | ✅ | P2 Batch 1: line, word and character Myers diff; inline and side-by-side views |
-| `typo-calc` | Typography Calculator | Convert between typographic units | – | T1 | P2 | tool-core | ⬜ | |
+| `typo-calc` | Typography Calculator | Convert between typographic units | – | T1 | P2 | tool-core | ✅ | P2 Batch 2: modular scale from a base size and ratio with presets, px, rem and CSS custom properties; the original's point and pica conversion is not included |
 | `word-counter` | Word Counter | Count words, characters and more | – | T1 | P2 | Intl.Segmenter | ✅ | P2 Batch 1: Intl.Segmenter words and sentences, characters, paragraphs and reading time |
 
 ### PDF (6)
@@ -185,8 +185,8 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | `encoder` | Encoding Tools | Base64, URL encoding, and hash generation | – | T1 | P2 | tool-core | ✅ | P2 Batch 1: Base64, URL, HTML entity and hex with correct UTF-8 round trips |
 | `graph-calc` | Graph Calculator | Plot and visualise mathematical functions | – | T2 | P2 | mathjs + Canvas | ⬜ | |
 | `sci-calc` | Scientific Calculator | Full-featured scientific calculator with history | – | T1 | P2 | mathjs | ⬜ | |
-| `time-calc` | Time Calculator | Unix timestamps, date arithmetic, timezone conversion | – | T1 | P2 | tool-core | ⬜ | |
-| `unit-converter` | Unit Converter | Convert between units of length, weight, data, and more | – | T1 | P2 | Own unit table | ⬜ | |
+| `time-calc` | Time Calculator | Unix timestamps, date arithmetic, timezone conversion | – | T1 | P2 | tool-core | ✅ | P2 Batch 2: duration arithmetic, elapsed time between zoned date-times with DST tests, seconds breakdown; Unix timestamp conversion is not included |
+| `unit-converter` | Unit Converter | Convert between units of length, weight, data, and more | – | T1 | P2 | Own unit table | ✅ | P2 Batch 2: eleven categories with exact factors, offset temperatures, 0–12 decimal places and a full-unit table |
 
 ### Turbo-nerd Shit (5)
 
@@ -194,7 +194,7 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 |----|------|----------------------|-------|------|-------|--------------------|--------|-------|
 | `shavian-transliterator` | Shavian Transliterator | Transliterate English text to the Shavian alphabet | – | T2 | P2 | Needs dictionary data; check CMU dict licence | ⬜ | |
 | `morse-code` | Morse Code | Encode, decode and play Morse code | new | T1 | P2 | tool-core | ✅ | Session 010 |
-| `braille-converter` | Braille Converter | Turn text into Braille cells | new | T1 | P2 | tool-core | ⬜ | |
+| `braille-converter` | Braille Converter | Turn text into Braille cells | new | T1 | P2 | tool-core | ✅ | Session 010; grade 1 only |
 | `ipa-transcriber` | IPA Transcription | Transcribe English text into IPA | new | T2 | P2 | tool-core + data | ⬜ | |
 | `nato-phonetic` | NATO Phonetic | Translate text to NATO or DIN-5009 calls | new | T1 | P2 | tool-core | ✅ | Session 010; DIN-5009 not implemented, ICAO only |
 
