@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { fileURLToPath, URL } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -14,6 +15,30 @@ import { VitePWA } from 'vite-plugin-pwa';
  * The mono keycap font and the latin-ext subset stay lazy on purpose; they
  * are small and not part of the LCP text.
  */
+/**
+ * Inline the pre-paint boot script.
+ *
+ * It was an external `/theme.js`: a render-blocking request for 784 bytes that
+ * Lighthouse charged 305 ms against, and it could not carry the rail preference
+ * because that was read after hydration. One inline script now does both, and
+ * `scripts/prerender.mjs` hashes its exact content into the CSP.
+ */
+function inlineBootScript(): Plugin {
+  const source = readFileSync(new URL('./boot/boot.js', import.meta.url), 'utf8').trim();
+  return {
+    name: 'inline-boot-script',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html) {
+        if (!html.includes('<!-- boot-script -->')) {
+          throw new Error('index.html is missing the <!-- boot-script --> placeholder');
+        }
+        return html.replace('<!-- boot-script -->', () => `<script>${source}</script>`);
+      },
+    },
+  };
+}
+
 function preloadPrimaryFont(): Plugin {
   return {
     name: 'preload-primary-font',
@@ -48,6 +73,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    inlineBootScript(),
     preloadPrimaryFont(),
     VitePWA({
       registerType: 'prompt',

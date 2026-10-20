@@ -1,17 +1,15 @@
+/**
+ * The theme is resolved once, before first paint, by the inline boot script
+ * (`apps/web/boot/boot.js`), which writes the `dark` class and `color-scheme` on
+ * `<html>`. The app only reads that class back, so there is no second resolver
+ * here that could disagree with what was painted.
+ */
 export type Theme = 'light' | 'dark';
 
 export const THEME_STORAGE_KEY = 'omnitool-theme';
 
 export function isTheme(value: string | null | undefined): value is Theme {
   return value === 'light' || value === 'dark';
-}
-
-export function resolveInitialTheme(
-  stored: string | null | undefined,
-  prefersDark: boolean,
-): Theme {
-  if (isTheme(stored)) return stored;
-  return prefersDark ? 'dark' : 'light';
 }
 
 export function applyTheme(
@@ -24,16 +22,4 @@ export function applyTheme(
   root.classList.toggle('dark', theme === 'dark');
   root.style.colorScheme = theme;
   storage?.setItem(THEME_STORAGE_KEY, theme);
-}
-
-export function readStoredTheme(
-  storage: Pick<Storage, 'getItem'> | null = typeof localStorage === 'undefined'
-    ? null
-    : localStorage,
-): string | null {
-  try {
-    return storage?.getItem(THEME_STORAGE_KEY) ?? null;
-  } catch {
-    return null;
-  }
 }

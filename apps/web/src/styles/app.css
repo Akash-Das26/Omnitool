@@ -4,6 +4,16 @@
 @import "@fontsource-variable/schibsted-grotesk/index.css";
 @import "@fontsource-variable/geist-mono/index.css";
 
+/*
+ * The inline boot script sets data-rail on <html> before first paint. The rail
+ * width follows that attribute, so the static markup in #root and the hydrated
+ * rail agree and a visitor who collapsed the rail sees no shift on boot. Kept
+ * unlayered because it has to beat the `w-14` / `w-60` utilities.
+ */
+html[data-rail="collapsed"] [data-slot="rail"] {
+  width: 3.5rem;
+}
+
 @layer base {
   #root {
     min-height: 100dvh;

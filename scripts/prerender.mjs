@@ -1,5 +1,6 @@
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname;
 const web = join(root, 'apps/web');
@@ -112,7 +113,7 @@ const TOOL_ACTIONS = `<div class="flex shrink-0 flex-wrap items-center gap-2" ar
 const NOSCRIPT = `<noscript><p class="mx-auto w-full max-w-[760px] px-4 py-4 text-sm text-muted-foreground md:px-8">Omnitool needs JavaScript to run its tools. Nothing is sent anywhere.</p></noscript>`;
 
 function shell(main) {
-  return `<div class="min-h-dvh"><header class="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur"><div class="flex h-14 items-center gap-3 px-3 md:px-5"><span class="rounded-control px-1 text-lg font-bold tracking-[-0.02em]">Omnitool</span></div></header><div class="flex"><aside aria-hidden="true" class="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-60 shrink-0 flex-col border-r border-border bg-background md:flex"></aside><div class="min-w-0 flex-1"><main id="main">${main}${NOSCRIPT}</main></div></div></div>`;
+  return `<div class="min-h-dvh"><header class="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur"><div class="flex h-14 items-center gap-3 px-3 md:px-5"><span class="rounded-control px-1 text-lg font-bold tracking-[-0.02em]">Omnitool</span></div></header><div class="flex"><aside aria-hidden="true" data-slot="rail" class="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-60 shrink-0 flex-col border-r border-border bg-background md:flex"></aside><div class="min-w-0 flex-1"><main id="main">${main}${NOSCRIPT}</main></div></div></div>`;
 }
 
 function toolBody(tool) {
@@ -212,27 +213,108 @@ const routes = [
   }),
 ];
 
+const writtenPages = [];
+
 for (const route of routes) {
   const html = render({ ...route.meta, body: route.body });
   if (route.path === '/') {
     writeFileSync(templatePath, html);
+    writtenPages.push(templatePath);
     continue;
   }
   const target = join(dist, route.path.slice(1), 'index.html');
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, html);
+  writtenPages.push(target);
 }
 
 // The static 404 shell is also what a direct planned-tool URL receives before
 // hydration. Keep its visible body empty and its metadata neutral; the router
 // renders either the planned page or the 404 copy once JavaScript runs.
+const notFoundPath = join(dist, '404.html');
 writeFileSync(
-  join(dist, '404.html'),
+  notFoundPath,
   render({ title: 'Omnitool', description: routeMeta.home.description, robots: true }),
 );
+writtenPages.push(notFoundPath);
+
+/**
+ * The inline boot script is a plain `<script>` in `<head>`; every other script tag
+ * in the build carries `src`. Its exact content is hashed into the CSP below, so
+ * the page stays runnable with `script-src 'self'` plus one hash and no
+ * `'unsafe-inline'`.
+ */
+const INLINE_SCRIPT = /<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g;
+
+function inlineScripts(html) {
+  return [...html.matchAll(INLINE_SCRIPT)].map((match) => match[1]);
+}
+
+function hashOf(script) {
+  return `sha256-${createHash('sha256').update(script, 'utf8').digest('base64')}`;
+}
+
+const hashes = new Set();
+for (const page of writtenPages) {
+  const html = readFileSync(page, 'utf8');
+  const name = relative(dist, page);
+  if (html.includes('theme.js')) {
+    throw new Error(`prerender: ${name} still references the removed external theme.js`);
+  }
+  const scripts = inlineScripts(html);
+  if (scripts.length !== 1) {
+    throw new Error(
+      `prerender: ${name} must contain exactly one inline script, found ${scripts.length}`,
+    );
+  }
+  hashes.add(hashOf(scripts[0]));
+}
+
+if (hashes.size !== 1) {
+  throw new Error(
+    `prerender: the pages disagree on the inline script (${hashes.size} hashes); the CSP can only cover one`,
+  );
+}
+
+const [digest] = hashes;
+// The pages must carry the boot script itself, not something that merely happens
+// to be identical across them: compare with the source the Vite plugin inlines.
+const bootSource = readFileSync(join(web, 'boot/boot.js'), 'utf8').trim();
+const bootDigest = hashOf(bootSource);
+if (digest !== bootDigest) {
+  throw new Error(
+    `prerender: the pages carry ${digest} but apps/web/boot/boot.js hashes to ${bootDigest}`,
+  );
+}
+
+const headersPath = join(dist, '_headers');
+if (!existsSync(headersPath)) {
+  throw new Error('prerender: dist/_headers is missing; the CSP cannot be written');
+}
+const headers = readFileSync(headersPath, 'utf8');
+if (!headers.includes('BOOT_SCRIPT_SHA256')) {
+  throw new Error('prerender: _headers has no BOOT_SCRIPT_SHA256 marker for the inline script');
+}
+const cspLine = headers.split('\n').find((line) => line.includes('Content-Security-Policy:'));
+if (!cspLine) throw new Error('prerender: _headers has no Content-Security-Policy line');
+const scriptSrc = cspLine
+  .split(';')
+  .map((part) => part.trim())
+  .find((part) => part.startsWith('script-src'));
+if (!scriptSrc) throw new Error('prerender: the CSP has no script-src directive');
+if (/'unsafe-inline'|'unsafe-eval'/.test(scriptSrc)) {
+  throw new Error(`prerender: script-src may not allow unsafe-inline or unsafe-eval: ${scriptSrc}`);
+}
+
+const hashedHeaders = headers.replace('BOOT_SCRIPT_SHA256', digest.slice('sha256-'.length));
+writeFileSync(headersPath, hashedHeaders);
+if (!hashedHeaders.includes(`'${digest}'`)) {
+  throw new Error('prerender: the inline script hash did not reach script-src in _headers');
+}
 
 console.log(
   `prerender: wrote ${routes.length} routes plus 404.html; ` +
     `${registry.tools.length - toolIds.length} planned routes excluded; ` +
-    'static first paint in #root for every written route (404.html stays empty, DEC-19)',
+    'static first paint in #root for every written route (404.html stays empty, DEC-19); ' +
+    `inline boot script ${digest} in script-src on all ${writtenPages.length} pages`,
 );

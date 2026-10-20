@@ -48,6 +48,7 @@ export function Rail() {
   return (
     <aside
       aria-label="Tool categories"
+      data-slot="rail"
       className={cn(
         'sticky top-14 hidden h-[calc(100dvh-3.5rem)] shrink-0 flex-col border-r border-border bg-background transition-[width] md:flex',
         collapsed ? 'w-14' : 'w-60',
