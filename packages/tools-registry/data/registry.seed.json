@@ -658,7 +658,7 @@
       "accepts": [".txt", ".md"],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Show a line of text at full-screen size for reading aloud.",
       "produces": ["text/html"]
     },
     {
@@ -838,7 +838,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Build or read a cron schedule with plain-language explanations.",
       "produces": ["text/plain"]
     },
     {
@@ -850,7 +850,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Look up HTTP status codes by number, name or meaning.",
       "produces": ["text/plain", "application/json"]
     },
     {
@@ -886,7 +886,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Compose meta tags for search results and social previews.",
       "produces": ["text/html"]
     },
     {
@@ -898,7 +898,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Try a regular expression against sample text and see each match.",
       "produces": ["application/json", "text/plain"]
     },
     {
@@ -958,7 +958,7 @@
       "accepts": [],
       "tier": 2,
       "phase": 2,
-      "description": "",
+      "description": "Decode classical ciphers by hand or let the tool guess the method.",
       "produces": ["text/plain"]
     },
     {

@@ -26,6 +26,12 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   'line-height-calc': () => import('@/tools/line-height-calc'),
   'typo-calc': () => import('@/tools/typo-calc'),
   'paper-sizes': () => import('@/tools/paper-sizes'),
+  'http-status': () => import('@/tools/http-status'),
+  'cron-builder': () => import('@/tools/cron-builder'),
+  'meta-tag-genny': () => import('@/tools/meta-tag-genny'),
+  decoder: () => import('@/tools/decoder'),
+  'large-type': () => import('@/tools/large-type'),
+  'regex-tester': () => import('@/tools/regex-tester'),
 };
 
 /**
