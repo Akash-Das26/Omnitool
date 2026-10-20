@@ -30,6 +30,12 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] DEC-25 Fix the collapsed-rail boot shift: the saved rail preference is applied before first paint, not after hydration (human, Session 017)
 - [x] DEC-26 Replace the external `/theme.js` with one inline boot script whose SHA-256 is computed at build time and added to `script-src`; no `'unsafe-inline'` (human, Session 017)
 - [x] DEC-27 The throwaway-branch push that exercises the CI workflow is done by the human, never by the agent (human, Session 017)
+- [x] DEC-28 F-022 stays open until the next independent audit; it is not closed or marked fixed here (human, Session 018)
+- [x] DEC-29 CI-RUN: no job results have been supplied, so the GitHub Actions workflow is still unrun and nothing in it is changed on the strength of a guessed failure (human, Session 018)
+- [x] DEC-30 LCP-8: diagnose the eight routes missing NFR-013 and fix the common cause; at most two fix attempts; if any route still exceeds a 2.5 s median, report the evidence and propose a change to NFR-013 without making it (human, Session 018)
+- [x] DEC-31 DESC: only rows marked "approved" or "edited" in `docs/review/DESCRIPTIONS-DRAFT.md` are final; "draft" rows are not applied and new tools carry their draft marked as pending approval (human, Session 018)
+- [x] DEC-32 Request Builder stays out of this batch: it makes outbound requests and needs its own review (human, Session 018)
+- [x] DEC-33 Cron next-run uses `Intl.DateTimeFormat` only, with a UTC fallback for zones the engine cannot name, so `tool-core` gains no node-only date dependency; DST tests pin 2027 dates (2026's UK and US transitions fall in different weeks) (agent, Session 018)
 
 ## P0 Planning (done in Sessions 000-001)
 - [x] P0-01 Analyse zip: structure, registry (97 tools), design doc, licence (agent)
@@ -96,6 +102,16 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] P2-17 `typo-calc`: modular type scale from a base size and ratio, presets and custom, output px, rem and CSS custom properties (agent, Session 011)
 - [x] P2-18 `paper-sizes`: ISO A, B and C series plus common US sizes, mm, inches, points and pixels at 72, 96 and 300 dpi (agent, Session 011)
 - [x] P2-19 Batch 2 gate: checks recorded; owner review of the descriptions still pending under DESC-01 and P2-10 (human)
+
+## P2 Text, dev & calculators — Batch 3 (six tools; stop at the batch gate)
+- [x] P2-20 `http-status`: 60 codes derived in our own words from the IANA registry and RFC 9110 (cited in code); search by code or words, filter by class, class = first digit (agent)
+- [x] P2-21 `cron-builder`: five fields with lists, ranges, steps, names and `@`-aliases; parse back with field-named errors; OR rule when both day fields are restricted; next 10 runs in UTC and any IANA zone via `Intl.DateTimeFormat`; DST spring-forward and fall-back tested in two zones (agent)
+- [x] P2-22 `meta-tag-genny`: escaped HTML snippet, absolute-https URL validation with no network request, OG and Twitter fields, length guidance shown as varying display limits (agent)
+- [x] P2-23 `decoder`: Caesar (all 25 shifts with an English-frequency ranking), ROT13, Atbash, Vigenère both ways, rail fence; non-letters kept in place; known vectors tested (agent)
+- [x] P2-24 `large-type`: per-character glyphs, flex-wrap, font size fitted to the viewport, copy and .txt download (agent)
+- [x] P2-25 `regex-tester`: flags, groups, live matches and test outcome; a worker is deferred until an ADR settles the structured-clone boundary (agent, see REVIEW-LOG 018)
+- [x] P2-26 Batch 3 checks: lint, typecheck, unit tests, three-browser E2E with axe in both themes, LCP-8 guard on every route including the six new ones; owner review of the descriptions still pending under DESC-01 and P2-10 (agent)
+- [ ] P2-27 Batch 3 gate: human review (human)
 
 ## Later (do not start early)
 - [ ] P2 (rest) Text, dev & calculators — remaining `features.md` rows tagged P2

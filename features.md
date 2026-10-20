@@ -126,7 +126,7 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | `text-editor` | Text Editor | Distraction-free Markdown writer | – | T3 | P2 | ProseMirror or TipTap (ADR) | ⬜ | |
 | `font-explorer` | Font File Explorer | Explore font file contents | – | T2 | P2 | opentype.js or similar | ⬜ | |
 | `glyph-browser` | Glyph Browser | Browse unicode glyphs | – | T2 | P2 | Font parsing | ⬜ | |
-| `large-type` | Large Type | Text, but big | – | T1 | P2 | CSS fullscreen | ⬜ | |
+| `large-type` | Large Type | Text, but big | – | T1 | P2 | tool-core + CSS fullscreen | ✅ | P2 Batch 3: per-character glyphs in flex wrap, font size fits the viewport, copy and .txt download; LCP 1,495 ms |
 | `line-height-calc` | Line Height Calculator | Calculate optimal line heights | – | T1 | P2 | tool-core | ✅ | P2 Batch 2: ratio or baseline grid to unitless, px and rem; WCAG 1.4.12 note below 1.5 |
 | `paper-sizes` | Paper Sizes | Reference for paper dimensions | – | T1 | P2 | Own data table | ✅ | P2 Batch 2: ISO A, B and C plus six US sizes; mm, inches, points and pixels at 72/96/300 dpi |
 | `px-to-rem` | PX to REM | Convert pixels to rem units | – | T1 | P2 | tool-core | ✅ | P2 Batch 1: configurable root, px to rem and back, common-value table |
@@ -156,12 +156,12 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 
 | ID | Tool | Original description | Flags | Tier | Phase | Suggested approach | Status | Notes |
 |----|------|----------------------|-------|------|-------|--------------------|--------|-------|
-| `cron-builder` | Cron Builder | Build a cron expression field by field or decode one | new | T1 | P2 | tool-core | ⬜ | |
-| `http-status` | HTTP Status | Search HTTP status codes with phrases and spec references | new | T1 | P2 | Own data table | ⬜ | |
+| `cron-builder` | Cron Builder | Build a cron expression field by field or decode one | new | T1 | P2 | tool-core | ✅ | P2 Batch 3: five fields with lists/ranges/steps, names and aliases; OR rule, field-named errors, next 10 runs in UTC and any IANA zone via Intl; LCP 1,961 ms |
+| `http-status` | HTTP Status | Search HTTP status codes with phrases and spec references | new | T1 | P2 | Own data table | ✅ | P2 Batch 3: 60 codes derived in our own words from IANA + RFC 9110 (cited in code); search and class filter; LCP 1,464 ms |
 | `json-formatter` | JSON Formatter | Format or minify JSON or look at it | new | T1 | P2 | tool-core | ✅ | P2 Batch 1: format, minify and validate with line and column; worker above 1 MB with progress and cancel |
 | `jwt-decoder` | JWT Decoder | Decode a JWT's header, payload & claims | new | T1 | P2 | tool-core (decode only, no verify keys stored) | ✅ | P2 Batch 1: header, payload and registered claims; decode only, no verification, storage or requests |
-| `meta-tag-genny` | Meta Tag Generator | Generate HTML meta tags | – | T1 | P2 | tool-core | ⬜ | |
-| `regex-tester` | Regex Tester | Test regular expressions | – | T1 | P2 | JS RegExp + Worker timeout guard | ⬜ | |
+| `meta-tag-genny` | Meta Tag Generator | Generate HTML meta tags | – | T1 | P2 | tool-core | ✅ | P2 Batch 3: escaped HTML snippet, https-only URL validation, OG/Twitter fields, length guidance as varying display limits; no network; LCP 1,511 ms |
+| `regex-tester` | Regex Tester | Test regular expressions | – | T1 | P2 | JS RegExp; worker deferred, see REVIEW-LOG 018 | ✅ | P2 Batch 3: flags, groups, live matches and test outcome, clear match/flag errors; catastrophic patterns stay a documented risk (worker needs an ADR); LCP 1,760 ms |
 | `request-builder` | Request Builder | Compose a cURL or HTTP request | new | T2 | P2 | fetch (user-initiated network only) | ⬜ | |
 | `tailwind-cheatsheet` | Tailwind Cheat Sheet | Quick reference for Tailwind classes | – | T1 | P2 | Own data | ⬜ | |
 | `uuid-genny` | UUID Generator | Generate bulk UUID v4 or v7 and Nano IDs | new | T1 | P2 | crypto.randomUUID | ✅ | P1 sample: v4/v7/Nano ID, copy and download; logic in tool-core with tests |
@@ -171,7 +171,7 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | ID | Tool | Original description | Flags | Tier | Phase | Suggested approach | Status | Notes |
 |----|------|----------------------|-------|------|-------|--------------------|--------|-------|
 | `code-genny` | Barcode Generator | Generate Data Matrix, Aztec, PDF417, Code 128, EAN-13, and more | – | T2 | P2 | bwip-js | ⬜ | |
-| `decoder` | Cipher Decoder | Decode classical ciphers manually or auto-detect the cipher | – | T2 | P2 | tool-core ciphers | ⬜ | |
+| `decoder` | Cipher Decoder | Decode classical ciphers manually or auto-detect the cipher | – | T2 | P2 | tool-core ciphers | ✅ | P2 Batch 3: Caesar (all shifts, frequency-ranked), ROT13, Atbash, Vigenère, rail fence; non-letters kept; LCP 1,931 ms |
 | `password-genny` | Password Generator | Generate strong passwords or multi-word passphrases | new | T1 | P2 | crypto.getRandomValues | ✅ | P2 Batch 1: passwords and passphrases; rejection sampling removes modulo bias, nothing stored |
 | `qr-genny` | QR Generator | Generate styled QR codes with custom colors, shapes, and logos | – | T2 | P2 | qr-code-styling | 🟨 | P1 sample: PNG/SVG, size, quiet zone, error correction. Styled shapes and logos still P2; used `qrcode` (MIT) instead of qr-code-styling |
 | `markdown-writer` | Text Scratchpad | Text editor with manipulation tools | – | T2 | P2 | Markdown editor | ⬜ | |
