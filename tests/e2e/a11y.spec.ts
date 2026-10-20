@@ -26,6 +26,12 @@ const routes = [
   '/tools/typo-calc',
   '/tools/paper-sizes',
   '/tools/colour-converter',
+  '/tools/http-status',
+  '/tools/cron-builder',
+  '/tools/meta-tag-genny',
+  '/tools/decoder',
+  '/tools/large-type',
+  '/tools/regex-tester',
 ];
 
 const themes = ['light', 'dark'] as const;

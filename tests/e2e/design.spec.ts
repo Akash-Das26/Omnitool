@@ -82,14 +82,14 @@ test('planned tools are hidden by default and the counts are truthful', async ({
       }),
     )
   ).filter((row) => row.available >= 0);
-  expect(railCounts.reduce((total, row) => total + row.available, 0)).toBe(19);
-  expect(railCounts.reduce((total, row) => total + row.planned, 0)).toBe(78);
+  expect(railCounts.reduce((total, row) => total + row.available, 0)).toBe(25);
+  expect(railCounts.reduce((total, row) => total + row.planned, 0)).toBe(72);
 
-  const toggle = page.getByRole('button', { name: /Show planned tools \(78\)/ });
+  const toggle = page.getByRole('button', { name: /Show planned tools \(72\)/ });
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.click();
 
-  await expect(page.getByRole('button', { name: /Hide planned tools \(78\)/ })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: /Hide planned tools \(72\)/ })).toHaveAttribute(
     'aria-expanded',
     'true',
   );
@@ -107,7 +107,7 @@ test('planned tools are hidden by default and the counts are truthful', async ({
 
   await page.getByRole('button', { name: /Hide planned tools/ }).click();
   await expect(page.getByRole('heading', { level: 2, name: 'Colour' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /Show planned tools \(78\)/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Show planned tools \(72\)/ })).toBeVisible();
 });
 
 test('a planned-only category explains the empty state', async ({ page }) => {
