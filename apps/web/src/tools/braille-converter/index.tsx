@@ -2,7 +2,7 @@ import { brailleToText, textToBraille } from '@omnitool/tool-core';
 import { useMemo, useState } from 'react';
 import { OutputActions } from '@/components/output-actions';
 import { TextArea } from '@/components/text-area';
-import { ToolFrame, ToolStage } from '@/components/tool-frame';
+import { ToolFrame, ToolHint, ToolStage } from '@/components/tool-frame';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -71,19 +71,15 @@ export default function BrailleConverterTool() {
             rows={8}
             value={input}
             spellCheck={false}
-            placeholder={
-              mode === 'encode'
-                ? 'Type or paste text; the braille cells appear as you go.'
-                : 'Paste braille characters (⠿-⣿); letters are the plain cells.'
-            }
+            placeholder={mode === 'encode' ? 'Type or paste text' : 'Paste braille cells'}
             onChange={(event) => setInput(event.target.value)}
           />
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">
+        <ToolHint>
           English grade 1 (uncontracted) braille in Unicode braille patterns: letters, the number
           sign, the capital sign and basic punctuation, following Unified English Braille.
           Contracted braille (grade 2) is not supported.
-        </p>
+        </ToolHint>
       </ToolStage>
 
       <ToolStage title={mode === 'encode' ? 'Braille' : 'Text'}>

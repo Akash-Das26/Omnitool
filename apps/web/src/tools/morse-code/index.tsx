@@ -10,7 +10,7 @@ import { PlayIcon, SquareIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { OutputActions } from '@/components/output-actions';
 import { TextArea } from '@/components/text-area';
-import { ToolFrame, ToolStage } from '@/components/tool-frame';
+import { ToolFrame, ToolHint, ToolStage } from '@/components/tool-frame';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -178,7 +178,7 @@ export default function MorseCodeTool() {
             onChange={(event) => setInput(event.target.value)}
           />
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">
+        <ToolHint>
           {mode === 'encode' ? (
             <>
               ITU Morse for letters and digits, plus common punctuation. Letters within a word are
@@ -190,7 +190,7 @@ export default function MorseCodeTool() {
               three spaces.
             </>
           )}
-        </p>
+        </ToolHint>
       </ToolStage>
 
       <ToolStage title={mode === 'encode' ? 'Morse' : 'Text'}>
@@ -246,11 +246,11 @@ export default function MorseCodeTool() {
             {wpmError}
           </p>
         ) : null}
-        <p className="mt-3 text-sm text-muted-foreground">
+        <ToolHint>
           {mode === 'decode'
             ? 'The beeps play the Morse you pasted, at the standard timing: a dot one unit, a dash three, three units between letters and seven between words.'
             : 'The beeps use a 600 Hz tone at the standard timing: a dot one unit, a dash three, three units between letters and seven between words.'}
-        </p>
+        </ToolHint>
       </ToolStage>
     </ToolFrame>
   );

@@ -11,7 +11,7 @@ import {
 } from '@omnitool/tool-core';
 import { useMemo, useState } from 'react';
 import { OutputActions } from '@/components/output-actions';
-import { ToolFrame, ToolStage } from '@/components/tool-frame';
+import { ToolFrame, ToolHint, ToolStage } from '@/components/tool-frame';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -214,10 +214,10 @@ export default function TimeCalcTool() {
           </div>
         ) : null}
 
-        <p className="mt-4 text-sm text-muted-foreground">
+        <ToolHint className="mt-4">
           Write durations as <code>1h 30m</code>, <code>1:30</code>, <code>90s</code> or{' '}
           <code>2d 4h</code>. Units run from milliseconds to weeks, and a result can be negative.
-        </p>
+        </ToolHint>
       </ToolStage>
 
       <ToolStage title="Between two times">
@@ -277,12 +277,12 @@ export default function TimeCalcTool() {
           </div>
         ) : null}
 
-        <p className="mt-4 text-sm text-muted-foreground">
+        <ToolHint className="mt-4">
           Times are wall-clock readings in the named IANA zone, such as <code>Europe/London</code>.
           The answer is the absolute time between the two instants, so when a zone changes its
           clocks a calendar day lasts 23 or 25 hours. An hour that repeats when the clocks go back
           is read as its first occurrence.
-        </p>
+        </ToolHint>
       </ToolStage>
 
       <ToolStage title="Seconds to days, hours, minutes">

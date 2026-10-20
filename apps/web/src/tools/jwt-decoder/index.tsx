@@ -2,7 +2,7 @@ import { type DecodedJwt, decodeJwt, JwtError } from '@omnitool/tool-core';
 import { useState } from 'react';
 import { OutputActions } from '@/components/output-actions';
 import { TextArea } from '@/components/text-area';
-import { ToolFrame, ToolStage } from '@/components/tool-frame';
+import { ToolFrame, ToolHint, ToolStage } from '@/components/tool-frame';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { requireTool } from '@/lib/tool';
@@ -82,10 +82,10 @@ export default function JwtDecoderTool() {
             Clear
           </Button>
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">
+        <ToolHint>
           The token is decoded in this tab only. It is never sent anywhere, stored, or used to check
           the signature, and no keys are kept.
-        </p>
+        </ToolHint>
       </ToolStage>
 
       <ToolStage title="Decoded">

@@ -2,7 +2,7 @@ import { spellOut } from '@omnitool/tool-core';
 import { useMemo, useState } from 'react';
 import { OutputActions } from '@/components/output-actions';
 import { TextArea } from '@/components/text-area';
-import { ToolFrame, ToolStage } from '@/components/tool-frame';
+import { ToolFrame, ToolHint, ToolStage } from '@/components/tool-frame';
 import { Label } from '@/components/ui/label';
 import { requireTool } from '@/lib/tool';
 
@@ -36,11 +36,11 @@ export default function NatoPhoneticTool() {
           placeholder="Type or paste letters and digits; the spelling appears as you go."
           onChange={(event) => setText(event.target.value)}
         />
-        <p className="mt-3 text-sm text-muted-foreground">
+        <ToolHint>
           The ICAO spelling alphabet, the one NATO and civil aviation use. Letters are spelled with
           their words (Alfa, Bravo, Charlie…); digits use the ICAO pronunciation (Wun, Too, Tree,
           Fower, Fife). Words in the output are separated by a slash.
-        </p>
+        </ToolHint>
       </ToolStage>
 
       <ToolStage title="Spelled out">

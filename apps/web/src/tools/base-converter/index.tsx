@@ -1,7 +1,7 @@
 import { BaseConversionError, convertBase } from '@omnitool/tool-core';
 import { useMemo, useState } from 'react';
 import { OutputActions } from '@/components/output-actions';
-import { ToolFrame, ToolStage } from '@/components/tool-frame';
+import { ToolFrame, ToolHint, ToolStage } from '@/components/tool-frame';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { requireTool } from '@/lib/tool';
@@ -78,10 +78,10 @@ export default function BaseConverterTool() {
             />
           </div>
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">
+        <ToolHint>
           Bases run from 2 to 36. Digits above 9 use A to Z, in either case. Whole numbers are
           converted exactly, however large.
-        </p>
+        </ToolHint>
       </ToolStage>
 
       <ToolStage title="Result">

@@ -2,7 +2,7 @@ import { countText } from '@omnitool/tool-core';
 import { useMemo, useState } from 'react';
 import { OutputActions } from '@/components/output-actions';
 import { TextArea } from '@/components/text-area';
-import { ToolFrame, ToolStage } from '@/components/tool-frame';
+import { ToolFrame, ToolHint, ToolStage } from '@/components/tool-frame';
 import { Label } from '@/components/ui/label';
 import { requireTool } from '@/lib/tool';
 
@@ -54,11 +54,11 @@ export default function WordCounterTool() {
           placeholder="Type or paste text; the counts update as you go."
           onChange={(event) => setText(event.target.value)}
         />
-        <p className="mt-3 text-sm text-muted-foreground">
+        <ToolHint>
           Words and sentences use the browser's text segmentation for en-GB, so numbers,
           contractions and punctuation are counted sensibly. Reading time assumes 200 words a
           minute; speaking time 130.
-        </p>
+        </ToolHint>
       </ToolStage>
 
       <ToolStage title="Counts">

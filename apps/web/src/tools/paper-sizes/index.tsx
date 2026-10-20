@@ -1,7 +1,7 @@
 import { dimensions, PAPER_SERIES, type PaperSize, paperSizeTable } from '@omnitool/tool-core';
 import { useMemo, useState } from 'react';
 import { OutputActions } from '@/components/output-actions';
-import { ToolFrame, ToolStage } from '@/components/tool-frame';
+import { ToolFrame, ToolHint, ToolStage } from '@/components/tool-frame';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -85,10 +85,10 @@ export default function PaperSizesTool() {
             </SelectContent>
           </Select>
         </div>
-        <p className="mt-4 text-sm text-muted-foreground">
+        <ToolHint className="mt-4">
           ISO 216 sizes share one aspect ratio of 1:√2, so folding or halving a sheet gives the next
           size down. C series envelopes are sized to hold the matching A sheet.
-        </p>
+        </ToolHint>
       </ToolStage>
 
       <ToolStage title="Dimensions">
@@ -140,11 +140,11 @@ export default function PaperSizesTool() {
           </table>
         </div>
 
-        <p className="mt-4 text-sm text-muted-foreground">
+        <ToolHint className="mt-4">
           Points here are PostScript points, 1/72 inch, which is also the pixel grid of a PDF at 72
           dpi. CSS treats one pixel as 1/96 inch; 300 dpi is the usual print resolution. Values are
           rounded to three decimal places.
-        </p>
+        </ToolHint>
       </ToolStage>
     </ToolFrame>
   );
