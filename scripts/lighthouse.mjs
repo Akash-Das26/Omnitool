@@ -39,7 +39,23 @@ const REPORT_DIR = resolve('reports/lighthouse');
  * `os.loadavg()` is always zero on Windows, where the guard cannot fire; the
  * sweep then behaves as before. Run it on Linux or macOS to get the guard.
  */
-const LOAD_SHARE_OF_CORES = 0.25;
+/**
+ * The share of the cores the 1-minute load average may reach before the sweep
+ * refuses to report. Local runs keep 0.25: a quiet machine is the gate. CI sets
+ * `LIGHTHOUSE_LOAD_SHARE=0.75` because a GitHub runner is shared and the job is
+ * non-blocking there anyway (see `.github/workflows/ci.yml`).
+ */
+function loadShare() {
+  const raw = process.env.LIGHTHOUSE_LOAD_SHARE;
+  if (raw === undefined || raw === '') return 0.25;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0 || value > 4) {
+    throw new Error(`LIGHTHOUSE_LOAD_SHARE must be a number above 0 and at most 4, got “${raw}”`);
+  }
+  return value;
+}
+
+const LOAD_SHARE_OF_CORES = loadShare();
 const CORES = availableParallelism();
 const LOAD_LIMIT = CORES * LOAD_SHARE_OF_CORES;
 const EXIT_HOST_BUSY = 3;
@@ -248,12 +264,12 @@ async function main() {
     throw new Error('apps/web/dist is missing; run `pnpm build` first.');
   }
   const routes = routesForDist();
+  await mkdir(REPORT_DIR, { recursive: true });
   const startLoad = assertQuietHost('start of sweep');
   console.log(
     `host: ${CORES} cores, load limit ${LOAD_LIMIT.toFixed(2)} (${LOAD_SHARE_OF_CORES * 100}%), ` +
       `1m/5m ${printLoad(startLoad)} at start · ${routes.length} routes × ${RUNS} runs`,
   );
-  await mkdir(REPORT_DIR, { recursive: true });
 
   const server = await startServer();
   const { port } = server.address();
@@ -381,6 +397,31 @@ async function main() {
     );
   }
 
+  const table = [
+    '| Route | Perf med/min | A11y med/min | Best med/min | SEO med/min | LCP med | TBT med | CLS med | Load 1m max |',
+    '|---|---|---|---|---|---|---|---|---|',
+    ...rows.map((row) => {
+      const pair = (category) => `${row.medians[category]}/${row.minimums[category]}`;
+      return `| \`${row.route}\` | ${pair('performance')} | ${pair('accessibility')} | ${pair(
+        'best-practices',
+      )} | ${pair('seo')} | ${row.lcp} | ${row.tbt} | ${row.cls} | ${row.load} |`;
+    }),
+  ].join('\n');
+  await writeFile(
+    resolve(REPORT_DIR, 'summary.md'),
+    [
+      '# Lighthouse',
+      '',
+      `Host: ${CORES} cores · load limit ${LOAD_LIMIT.toFixed(2)} (${LOAD_SHARE_OF_CORES * 100}%) · ` +
+        `1m/5m ${printLoad(startLoad)} at start`,
+      '',
+      `${routes.length} routes × ${RUNS} runs. Budgets use the median; the minimum is reported next to it.`,
+      '',
+      table,
+      '',
+    ].join('\n'),
+  );
+
   await writeFile(
     resolve(REPORT_DIR, 'summary.json'),
     `${JSON.stringify(
@@ -425,11 +466,27 @@ async function main() {
   if (errors.length > 0) process.exitCode = 1;
 }
 
-main().catch((error) => {
+main().catch(async (error) => {
   if (error instanceof HostBusy) {
     console.error(error.message);
     console.error('NOT TESTED: no score can be trusted on this host. Re-run when it is quiet.');
     process.exitCode = EXIT_HOST_BUSY;
+    // Leave the verdict where a CI job summary can find it.
+    try {
+      await writeFile(
+        resolve(REPORT_DIR, 'summary.md'),
+        [
+          '# Lighthouse — NOT TESTED',
+          '',
+          error.message,
+          '',
+          'No score from this run can be trusted: a busy host is not a pass and not a fail.',
+          '',
+        ].join('\n'),
+      );
+    } catch {
+      // Reporting the verdict in the markdown file is best effort.
+    }
     return;
   }
   console.error(error);

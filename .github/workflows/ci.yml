@@ -83,10 +83,18 @@ jobs:
           retention-days: 7
 
   lighthouse:
-    name: Lighthouse (3 runs per route)
+    name: Lighthouse (3 runs per route, non-blocking)
     runs-on: ubuntu-24.04
     needs: quality
     timeout-minutes: 45
+    # Advisory only: a shared runner is a poor place to judge performance, so a
+    # budget miss or an INVALID (busy host) verdict is reported, not enforced.
+    # The gate stays the quiet-host local run at the default 0.25 share.
+    continue-on-error: true
+    env:
+      # A GitHub runner is shared and small: allow three quarters of its cores
+      # before declaring the host too busy to measure. Locally the default is 0.25.
+      LIGHTHOUSE_LOAD_SHARE: '0.75'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Enable corepack
@@ -104,6 +112,14 @@ jobs:
       # with "INVALID: host busy" when the runner is too loaded to measure on, in
       # which case the run is NOT TESTED and must be repeated.
       - run: pnpm lighthouse
+      - name: Write the Lighthouse summary
+        if: always()
+        run: |
+          if [ -f reports/lighthouse/summary.md ]; then
+            cat reports/lighthouse/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Lighthouse produced no summary; see the job log.' >> "$GITHUB_STEP_SUMMARY"
+          fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
