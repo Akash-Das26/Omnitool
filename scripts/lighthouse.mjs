@@ -9,11 +9,16 @@
  *
  * Exits non-zero if a median error-level assertion fails. HTML and JSON reports
  * for every run are written to `reports/lighthouse/` for CI.
+ *
+ * Exit codes: 0 every route met its budget, 1 an error-level budget failed,
+ * 3 the host was too busy to measure (see the guard below), so the run is
+ * NOT TESTED rather than passed or failed.
  */
 
 import { readdirSync } from 'node:fs';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
+import { availableParallelism, loadavg } from 'node:os';
 import { extname, resolve, sep } from 'node:path';
 import { promisify } from 'node:util';
 import { brotliCompress, gzip } from 'node:zlib';
@@ -22,6 +27,46 @@ import lighthouse from 'lighthouse';
 
 const DIST = resolve('apps/web/dist');
 const REPORT_DIR = resolve('reports/lighthouse');
+
+/**
+ * A loaded host produces meaningless scores: the same tree scored 90-100 on a
+ * quiet machine and 54-72 with roughly one second of blocking time while the
+ * load average sat at 5-7 on 16 cores. Rather than report either number, the
+ * sweep checks the 1-minute load average before and after every single run and
+ * refuses to report at all when it exceeds 25% of the core count. A busy host is
+ * NOT TESTED: never a pass, never a fail.
+ *
+ * `os.loadavg()` is always zero on Windows, where the guard cannot fire; the
+ * sweep then behaves as before. Run it on Linux or macOS to get the guard.
+ */
+const LOAD_SHARE_OF_CORES = 0.25;
+const CORES = availableParallelism();
+const LOAD_LIMIT = CORES * LOAD_SHARE_OF_CORES;
+const EXIT_HOST_BUSY = 3;
+
+class HostBusy extends Error {}
+
+/** The three load averages plus the limit they are compared against. */
+function hostLoad() {
+  const [one, five, fifteen] = loadavg();
+  return { one, five, fifteen, limit: LOAD_LIMIT, cores: CORES };
+}
+
+/** Ask a question and throw only if the host is too busy to measure on. */
+function assertQuietHost(stage) {
+  const load = hostLoad();
+  if (load.one > LOAD_LIMIT) {
+    throw new HostBusy(
+      `INVALID: host busy — ${stage}: 1-minute load ${load.one.toFixed(2)} > ${LOAD_LIMIT.toFixed(2)} ` +
+        `(${CORES} cores at ${LOAD_SHARE_OF_CORES * 100}%)`,
+    );
+  }
+  return load;
+}
+
+function printLoad(load) {
+  return `${load.one.toFixed(2)}/${load.five.toFixed(2)}`;
+}
 
 // Every prerendered tool directory is a built route; planned tools have no
 // directory and are intentionally absent. Read after the dist check so a
@@ -203,6 +248,11 @@ async function main() {
     throw new Error('apps/web/dist is missing; run `pnpm build` first.');
   }
   const routes = routesForDist();
+  const startLoad = assertQuietHost('start of sweep');
+  console.log(
+    `host: ${CORES} cores, load limit ${LOAD_LIMIT.toFixed(2)} (${LOAD_SHARE_OF_CORES * 100}%), ` +
+      `1m/5m ${printLoad(startLoad)} at start · ${routes.length} routes × ${RUNS} runs`,
+  );
   await mkdir(REPORT_DIR, { recursive: true });
 
   const server = await startServer();
@@ -218,19 +268,26 @@ async function main() {
     for (const route of routes) {
       const runs = [];
       for (let run = 1; run <= RUNS; run += 1) {
+        const before = assertQuietHost(`before ${route.path} run ${run} of ${RUNS}`);
         const result = await lighthouse(`http://127.0.0.1:${port}${route.path}`, {
           port: chrome.port,
           output: ['json', 'html'],
           logLevel: 'error',
           onlyCategories: Object.keys(ASSERTIONS),
         });
+        const after = assertQuietHost(`after ${route.path} run ${run} of ${RUNS}`);
         if (!result) throw new Error(`Lighthouse returned no result for ${route.path}`);
 
         const { lhr, report } = result;
         const [json, html] = report;
         await writeFile(resolve(REPORT_DIR, `${route.name}-run${run}.report.json`), json);
         await writeFile(resolve(REPORT_DIR, `${route.name}-run${run}.report.html`), html);
-        runs.push({ lhr, json, html });
+        runs.push({ lhr, json, html, loads: { before, after } });
+        console.log(
+          `  ${route.path} run ${run}/${RUNS}: load 1m ${printLoad(before)} → ` +
+            `${printLoad(after)} (limit ${LOAD_LIMIT.toFixed(2)}) · ` +
+            `perf ${score(lhr.categories.performance?.score)}`,
+        );
       }
 
       const scores = Object.fromEntries(
@@ -285,6 +342,9 @@ async function main() {
           runs.map(({ lhr }) => lhr),
           'cumulative-layout-shift',
         ),
+        load: Math.max(...runs.flatMap(({ loads }) => [loads.before.one, loads.after.one])).toFixed(
+          2,
+        ),
         lowest: {
           score: score(lowest.lhr.categories.performance?.score),
           lcp: Math.round(metricValue(lowest.lhr, 'largest-contentful-paint') ?? 0),
@@ -301,7 +361,7 @@ async function main() {
   }
 
   console.log(
-    'route                        perf med/min  a11y med/min  best med/min  seo med/min  LCP med    TBT med    CLS med',
+    'route                        perf med/min  a11y med/min  best med/min  seo med/min  LCP med    TBT med    CLS med  load 1m max',
   );
   for (const row of rows) {
     const pair = (category) =>
@@ -316,9 +376,23 @@ async function main() {
         row.lcp.padStart(9),
         row.tbt.padStart(10),
         row.cls.padStart(8),
+        row.load.padStart(13),
       ].join(' '),
     );
   }
+
+  await writeFile(
+    resolve(REPORT_DIR, 'summary.json'),
+    `${JSON.stringify(
+      {
+        host: { cores: CORES, loadLimit: LOAD_LIMIT, startLoad },
+        runsPerRoute: RUNS,
+        routes: rows,
+      },
+      null,
+      2,
+    )}\n`,
+  );
 
   const uuid = rows.find((row) => row.name === 'tool-uuid-genny');
   if (uuid) {
@@ -352,6 +426,12 @@ async function main() {
 }
 
 main().catch((error) => {
+  if (error instanceof HostBusy) {
+    console.error(error.message);
+    console.error('NOT TESTED: no score can be trusted on this host. Re-run when it is quiet.');
+    process.exitCode = EXIT_HOST_BUSY;
+    return;
+  }
   console.error(error);
   process.exitCode = 1;
 });
