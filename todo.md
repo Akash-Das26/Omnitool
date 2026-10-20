@@ -57,6 +57,11 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] DESC-01 Descriptions: only rows marked "approved" or "edited" in `docs/review/DESCRIPTIONS-DRAFT.md` are final. As at Session 009 all 97 rows are still `draft`, so the registry was not changed and every description in use is still awaiting approval (human)
 - [x] P1-17 Home/omnibox design fix pass (Session 012): one Marker row from `aria-selected`, planned tools behind a toggle, non-interactive Planned group, compact header, truthful counts, planned page with noindex, row anatomy, and `docs/design/built/` ignored by git and Biome (agent)
 - [x] P1-18 Follow-up fixes (Session 013): toast placement, planned-URL 404 shell, mobile row note, three-run Lighthouse medians, and isolated-commit verification (agent)
+- [x] P1-19 Test-infrastructure stabilisation (Session 015): `html[data-app-ready]` boot marker, `tests/e2e/helpers.ts` `gotoApp`, every fixed sleep removed from the guard specs, the roadmap guard split to one test per route, Playwright workers at half the cores locally and 2 on CI (agent)
+- [x] P1-20 Lighthouse host guard (Session 015): 1-minute load average before and after every run, exit 3 and `INVALID: host busy` above 25% of the core count, load printed per run, `summary.json` written (agent)
+- [x] P1-21 CI workflow (Session 015): pull requests only, actions pinned by commit SHA, Node from `.nvmrc` and pnpm from `package.json` via corepack, Playwright matrix chromium/firefox/webkit with `--with-deps`, reports and traces uploaded on failure, separate Lighthouse job (agent; **never executed** — nothing pushed)
+- [x] P1-22 LCP diagnosis on tool pages (Session 015): the built HTML ships an empty `#root`, the app uses `createRoot` (no hydration), nothing paints without JavaScript, and LCP equals FCP at the first React paint. Fix proposal recorded in `docs/design/BUILT-VS-DESIGN.md` section 10, **not implemented** (agent)
+- [ ] P1-23 Decide the LCP route: render the tool header as static markup inside `#root`, or go to real SSR plus `hydrateRoot` (human)
 
 ## P2 Text, dev & calculators — Batch 1 (eight tools; stop at the batch gate)
 - [x] P2-01 `json-formatter`: format, minify, validate with line/column errors; worker with progress and cancel above about 1 MB (agent)

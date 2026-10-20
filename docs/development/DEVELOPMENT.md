@@ -39,6 +39,14 @@ Node >= 22.19 (`nvm use`), pnpm via `corepack enable`, a current Chromium for Pl
 | A11y | axe via Playwright | zero serious/critical |
 | Performance | Lighthouse (`pnpm lighthouse`), bundle budget | NFR-002/003 |
 
+E2E rules, so a loaded machine cannot turn into a false verdict:
+- Navigate with `gotoApp(page, path)` from `tests/e2e/helpers.ts`, not `page.goto`. It waits for `html[data-app-ready]`, which `apps/web/src/main.tsx` sets after the first React commit (the shell's keyboard listener and stores are live by then). It is a boot signal only — never styled, never read by the app.
+- No `waitForTimeout` and no fixed sleeps in a guard. Wait on the state the assertion needs: the dialog is visible, the filtered result list has the expected count, the file chip is rendered.
+- One test per route for a cross-route guard. A single test that walks 20+ routes spends a whole timeout navigating and reports a timeout instead of a verdict.
+- Playwright workers default to half the available cores locally and 2 on CI (`playwright.config.ts`). CI retries are 0, so a flake is reported rather than hidden.
+
+Lighthouse: `scripts/lighthouse.mjs` measures every prerendered route three times and prints the median and the minimum. It reads the 1-minute load average before and after each run and aborts with exit code 3 and `INVALID: host busy` when it is above 25% of the core count; that result is NOT TESTED, not a pass and not a fail. Exit 0 means every route met its budget, exit 1 means an error-level budget failed.
+
 ## 6. Definition of Done
 Same as `plan.md` section 7, plus: lint/typecheck/test green; docs updated; no new dependency without a licence note.
 

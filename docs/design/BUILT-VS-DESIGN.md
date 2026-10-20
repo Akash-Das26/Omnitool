@@ -406,3 +406,30 @@ To separate code from environment, the **unmodified HEAD** was then rebuilt and 
 
 Three routes, one machine, headless Chrome with emulated mobile network/CPU; medians of three runs. The before and after runs were taken minutes apart on the same machine while it was quiet (TTFB 3–4 ms in both trees) and are comparable to each other; they are not a substitute for the full gate. Report artefacts are in `reports/lighthouse/` (git-ignored).
 
+### Diagnosis — Session 015 (evidence, no fix applied)
+
+The questions below were answered on the production build served by `vite preview`, with a throwaway Playwright + CDP probe (mobile profile: 1.6 Mbit/s, 150 ms RTT, 4x CPU throttle). The probe was deleted afterwards; the numbers are transcribed here.
+
+**(a) Does the prerendered HTML contain the description paragraph?** No. `apps/web/dist/tools/uuid-genny/index.html` is 1,661 bytes and its body is `<div id="root"></div>` — 51 characters of markup once the scripts are stripped, for every route (`index.html`, `about/index.html` and `404.html` are the same). `scripts/prerender.mjs` rewrites `<title>`, the meta description, the OG tags and the preload links; it never renders component output. "Prerendered" in this project means per-route head and preloads, not per-route content. The description string does appear in `<meta name="description">` and `og:description`, which paint nothing.
+
+**(b) `hydrateRoot` or `createRoot`?** `apps/web/src/main.tsx` calls `createRoot(root).render(...)`, never `hydrateRoot`. There is no hydration in this app: React builds the tree from scratch once the entry chunk has executed. So there is no prerendered markup being replaced — there is no markup at all until the script runs.
+
+**(c) With JavaScript disabled, is the paragraph painted, and when?** No. Measured twice — with every `*.js` request aborted, and with `javaScriptEnabled: false` — the only paint entry is `first-paint` at 560 ms and 544 ms respectively (the body background from CSS). No `first-contentful-paint` entry, no LCP entry, and no element inside `<main>`.
+
+**(d) Render-blocking work and the main thread.** With JavaScript enabled:
+
+| Signal | Value |
+|---|---|
+| TTFB / DOMContentLoaded / load | 2 ms / 1,651 ms / 1,652 ms |
+| first-paint / first-contentful-paint | 680 ms / 1,864 ms |
+| LCP | 1,864 ms — `H1` "UUID Generator", 11,046 px² |
+| Long tasks | 90 ms at 1,562 ms, 108 ms at 1,679 ms (198 ms total) |
+| Entry JS | `assets/index-*.js` 383,345 B raw, **121,797 B gzip** |
+| CSS | `assets/index-*.css` 57,270 B raw, 10,640 B gzip (render-blocking) |
+| Primary font | preloaded, 46,752 B, `swap` |
+
+**At 1280×720 the probe's LCP is exactly its FCP** (1,864 ms, the `H1`), and the two long tasks just before it are React rendering the shell and the route. Under Lighthouse's 412×823 mobile profile the same build shows **two React paints**: FCP 2,341–2,362 ms, then a 109–124 ms long task at 2,563–2,606 ms, then the LCP at 2,720–2,762 ms — and there the LCP element is the description paragraph, because at that width the paragraph is the larger box. That second task is the lazily imported route chunk evaluating. So the probe and Lighthouse name different elements for the same reason: whichever React paint is largest wins, and both are script. The document itself answers in 2 ms (1.6 kB), so neither the server nor the markup is the cost.
+
+**Cause:** the document ships no content. The LCP text exists only after the entry chunk (121.8 kB gzip) and the route chunk chain have downloaded, parsed and executed and React has committed.
+
+**Smallest fix I would propose (not implemented, awaiting a decision):** have `scripts/prerender.mjs` emit the tool header — `<h1>` plus the description `<p>` — as static markup inside `#root`, from the registry row it already reads. The text would then paint with the document instead of after the script, which is worth roughly the 1.2 s between first-paint and FCP under this profile. Because the app uses `createRoot`, React clears that container on its first commit, so there is no hydration mismatch; but three things must be verified first: the layout shift when the live tree replaces the static one (CLS is currently 0.000), React's development-mode warning about a non-empty container, and a double paint if the static and live text differ by a pixel. The structurally correct fix is real SSR plus `hydrateRoot`, which needs SSR-safe components and is a much larger change. No fix was applied in this session.

@@ -16,13 +16,15 @@ Audits happen at each phase gate (A1..A9) using `CHECKLISTS.md`. Findings have a
 | F-010 | A0.1 | Should (P1) | COOP/COEP can break cross-origin model/WASM fetches; only needed for SharedArrayBuffer | Closed in Session 004: headers deliberately absent, CSP in `_headers`, policy in ADR 0003 | agent |
 | F-011 | A0.1 | Info | nuqs + TanStack Router duplicates URL-state handling; nuqs marks its TanStack adapter experimental | Closed: nuqs rejected | agent |
 | F-012 | A1 pre-check | Should | `pnpm audit` reported 4 high, 2 moderate and 1 low advisories, all from `@lhci/cli` transitive dependencies (`tmp`, `extract-zip`, `basic-ftp`, `uuid`, `sprintf-js`) | Closed in Session 005: Lighthouse runs from `scripts/lighthouse.mjs` using `lighthouse` + `chrome-launcher`; `pnpm audit` reports 0 vulnerabilities | agent |
-| F-013 | A1 | Should | Browser matrix limited to Chromium; Firefox, WebKit, Safari, iOS Safari and Android Chrome have not been exercised | Open: A2/Phase 9 | agent |
+| F-013 | A1 | Should | Browser matrix limited to Chromium; Firefox, WebKit, Safari, iOS Safari and Android Chrome have not been exercised | Open: Firefox now exercised at A1.1 (133 pass, 5 skipped, 0 fail); WebKit NOT TESTED on this host (missing libavif16/libmanette-0.2-0, needs interactive sudo apt-get); Safari/iOS/Android not testable here | agent |
 | F-014 | A1 | Should | No screen-reader spot check (NVDA or VoiceOver) has been done | Open: A2 | human+agent |
 | F-015 | A1 | Should | `apps/web/public/_redirects` (`/* /index.html 200`) produces an infinite loop warning under Wrangler / Cloudflare Pages and will be ignored at deploy; needs removal before first deploy | Closed in Session 009: P1-15 decided — file deleted, build and `wrangler@4.151.1 pages dev` re-verified (prerendered routes 200/308, unknown paths 404 with `404.html`, 5 header rules, 0 redirect rules), runbook section 3 updated | human |
-| F-016 | A1 | Info | Working tree has uncommitted edits to `docs/design/DESIGN.md` and untracked Stitch review/prompt archives at `62bd5e1` | Closed in Session 008/009: the design docs were committed; `docs/design/stitch/` stays untracked by intent (`.gitignore`) | human |
+| F-016 | A1 | Info | Working tree has uncommitted edits to `docs/design/DESIGN.md` and untracked Stitch review/prompt archives at `62bd5e1` | Verified fixed at A1.1: `git status` clean; `apps/web/public/_redirects` deleted (P1-15); working tree matches HEAD | human |
 | F-017 | P2 batch 1 gate | Should | Browser matrix outside Chromium (F-013): Firefox and WebKit are now runnable through an optional Playwright project, but their results are not yet part of the gate | Partly closed in Session 009: Firefox now runs the whole suite clean (73 pass, 5 skipped = Chromium-only pixel baselines) after one trivial test-config fix — `grantPermissions(['clipboard-read','clipboard-write'])` is Chromium-only, so the grant is now conditional on `browserName`. WebKit still cannot run on this host (F-019). Open for WebKit at A2 | agent |
 | F-018 | P2 batch 2 | Should | No screen-reader spot check (F-014) and no Firefox/WebKit sign-off for the eight Batch 2 tools | Open: A2 | human+agent |
-| F-019 | P2 batch 2 | Should | WebKit E2E cannot run on this host: `playwright install webkit` downloads the browser but every launch fails with "Host system is missing dependencies" — `libavif16` and `libmanette-0.2-0` are not installed and installing them needs interactive `sudo apt-get`, which the agent cannot perform | Open: A2 (needs the owner to run the apt install, then re-run `pnpm e2e --project=webkit`) | agent |
+| F-019 | P2 batch 2 | Should | WebKit E2E cannot run on this host: `playwright install webkit` downloads the browser but every launch fails with "Host system is missing dependencies" — `libavif16` and `libmanette-0.2-0` are not installed and installing them needs interactive `sudo apt-get`, which the agent cannot perform | Fix proposed, awaiting re-verification (Session 015): the PR workflow now runs a `webkit` matrix job on `ubuntu-24.04` with `playwright install --with-deps webkit`, so the two missing libraries are provisioned by the runner. The local host is still blocked by the same interactive `apt-get`. **Not executed** — the workflow has never run (nothing pushed). | agent |
+| F-020 | A1.1 | Should | Lighthouse mobile performance medians 58–70 on all 22 routes (under the 92 flag); measured under system load (load avg 5–7 on 16 cores); A1 baseline home was 96. Uniformly depressed scores indicate CPU throttling, not a design-alignment regression. Lighthouse accessibility = 100 on all routes. | Fix proposed, awaiting re-verification (Session 015): `scripts/lighthouse.mjs` now reads the 1-minute load average before and after every run and aborts with exit code 3 and `INVALID: host busy` when it exceeds 25% of the core count; a busy host is recorded as NOT TESTED, never passed or failed, and every run prints its load. Guard verified by pushing load to 12.23 on 16 cores (limit 4.00) → exit 3. The 22-route score table itself still needs the clean-host run. | agent |
+| F-021 | A1.1 | Should | E2E `tests/e2e/design.spec.ts:204` ("no roadmap strings") fails consistently under the Chromium full parallel suite but passes in isolation and on Firefox (133 pass, 5 skipped, 0 fail). Test-isolation/timing under parallel load, not a design regression. | Fix proposed, awaiting re-verification (Session 015): two causes found — the guard pressed Ctrl+K before the shell's keydown listener existed (nothing to wait on, so a fixed 150 ms sleep), and one test walked 43 routes inside a single 30 s timeout. Fixed with an `html[data-app-ready]` boot marker, web-first waits on the omnibox filter state, and one test per route. Proof: 30 repeats × 25 guard tests under deliberate load (up to 46 on 16 cores) passed 750/750 on Chromium and 750/750 on Firefox, 0 retries. | agent |
 
 ## Pre-audit evidence for A1 — collected 2026-10-18 — not a verdict
 
@@ -175,3 +177,67 @@ Evidence only; A1 itself is still unrun and unapproved. Re-run these commands at
 3. F-003 (own branding & artwork) remains Open under human decision DEC-11 (deferred to Phase 9).
 4. Clean up or commit working tree modifications (`docs/design/DESIGN.md` and untracked Stitch review files) before starting subsequent phase work.
 Phase 2 may proceed from a code and quality perspective subject to the above conditions.
+
+---
+
+### Audit A1.1 — 2026-10-20 — Phase 1.5 design-alignment delta audit — Independent Auditor
+**Scope / commit:** `git diff 62bd5e1..HEAD` (HEAD `2391cd8`, design-alignment change across 109 files). Read-only audit; nothing fixed, refactored, reformatted or pushed.
+
+**Checklists run:** Sections 1–8 of `docs/audit/CHECKLISTS.md`, plus the design-alignment success criteria in `docs/design/04-DESIGN-ALIGNMENT-PROMPT.md` and the DEC-16 radius decision in `docs/design/STITCH-REVIEW-2.md`.
+
+#### Gate command results (re-run, recorded)
+- `pnpm install --frozen-lockfile`: PASS (Already up to date, 3.5s; pnpm 11.24.0, node 22.22.1).
+- `pnpm lint` (`biome check . && node scripts/check-design-rules.mjs`): PASS (167 files, 0 errors, 0 fixes; design rules: all checks passed — text floor, no all-caps, one shadow, no gradients, no icon fonts, no meta strings).
+- `pnpm typecheck` (`tsc --noEmit` across workspaces): PASS (5 workspace projects, 0 errors).
+- `pnpm test:coverage` (`vitest run --coverage`): PASS (28 test files, 348 tests passed, 0 failures; coverage: lines 98.22% [≥90], branches 90.8% [≥85], functions 99.5%). Includes `packages/ui/src/contrast.test.ts`: 64 passed.
+- `pnpm build`: PASS (Vite client build; 46 precache entries / 897.96 KiB; prerendered 22 routes + 404.html).
+- `node scripts/check-build-budget.mjs`: PASS (Shell JS 157.6 kB gzip [budget 200 kB]; precache 69 files / 964.2 kB [budget 8 MiB]; 73 build files [limit 20,000]; no file > 20 MiB).
+- `pnpm e2e` (Chromium, 8 workers): 137 passed, 1 failed — `tests/e2e/design.spec.ts:204` "no roadmap strings" (dialog not visible after Ctrl+K following route navigation). Passes in isolation and on Firefox → test-isolation flakiness under parallel Chromium load (finding F-021), not a design regression.
+- `axe-core` (light + dark): 50 passed, 0 serious/critical violations across 23 routes + omnibox in both themes (home, about, privacy, all 19 built tools).
+- `pnpm lighthouse` (mobile, 3 runs/route, medians): process stalled under load after writing all route reports; medians computed from run reports — home **68**, about **70**, privacy **70**, tools **58–70**. Accessibility **100** on all 22 routes. ALL routes under the 92 flag — see finding F-020 (measured under system load avg 5–7 on 16 cores; A1 baseline home was 96; uniformly depressed scores indicate throttling).
+
+#### Alignment criteria (evidence)
+- **Tokens match DESIGN.md exactly** (`packages/ui/src/tokens.css` vs `docs/design/DESIGN.md`, light and dark): `--border-strong` #6B7686/#6C7A90, `--success` #067A52/#4ADE9B, `--warning` #8A5A00/#F5B93A, `--surface-inset` #EDF0F3/#161B23, `--surface-hover` #EDF0F3/#202733 — all byte-for-byte (case-insensitive hex). `--input` retargeted to --border-strong.
+- **Contrast test computes WCAG for every pair in both themes and passes**: `packages/ui/src/contrast.test.ts` reads tokens from `tokens.css` (not hardcoded), asserts text tokens (foreground, muted-foreground, primary, destructive, success, warning) on all 4 surfaces ≥4.5:1, foreground/background pairs ≥4.5:1, `--border-strong` on all surfaces ≥3:1, decorative `--border` intentionally <3:1 — 64 tests passed.
+- **No text under 12 px**: minimum text scale used is `text-xs` (0.75rem = 12px); no `text-2xs`/sub-12px anywhere; design-rule `text-floor` passed; Firefox computed-style test (`tests/e2e/visual.spec.ts`) passed for home, uuid-genny, image-converter, omnibox in light and dark.
+- **No icon fonts**: only `@fontsource-variable/schibsted-grotesk` and `@fontsource-variable/geist-mono` (bundled locally) + Lucide icons; no `material-symbols`, `font-awesome`, `fonts.googleapis` (design rule passed).
+- **No gradients**: zero `linear/radial/conic-gradient()` or `bg-gradient-` anywhere (design rule passed); none needed as no colour-data tool (colour-converter) is built yet.
+- **No shadows other than popover**: only `--shadow-popover` (design rule `one-shadow` passed).
+- **No uppercase section tags**: no all-caps labels (design rule `no-all-caps` passed); no literal all-caps section tags found.
+- **No version/engine badges**: no `Core v`, `v4.8`, `v2.4.0`, `engine v` etc. (uuid-genny `Version` type is a legitimate tool option, not a badge).
+- **No row IDs**: no `#0x1B`-style row IDs; only legitimate form/heading `id` attributes.
+- **No Marker-filled status badges**: only a `New` badge using `--highlight` — DESIGN.md permits Marker for selection/"new"; no `ACTIVE RUN`/`Standby`/`Buffer: Idle` status badges.
+- **Omnibox**: matching text underlined (`underline decoration-2 underline-offset-2`, `omnibox.tsx:54`); selected row Marker-yellow (`rgb(255,216,77)` = #FFD84D, verified in `omnibox.spec.ts`); dropped-file chip with "Tools that accept this file" group (a11y.spec.ts); footer key hints ("arrow keys or Tab … Enter … Escape", `omnibox.tsx:166-167`).
+- **Tool frame**: stages unnumbered (`tool-frame.tsx:10` comment; `ToolStage` renders `{title}` only); header name/Share/Reset; per-row Copy button (`output-row.tsx:61-75`, mono values wrapping, no ellipsis); Copy all/Download via actions; sticky mobile action bar (`max-md:fixed max-md:bottom-0`, `tool-frame.tsx:67`).
+- **Corner radius DEC-16**: `--radius-control` 6px, `--radius-panel` 10px, `--radius-pill` 9999px — matches DESIGN.md (6/10/pill), keeping the identity radius hierarchy over Stitch's square corners.
+
+#### Stitch code.html absence (check #3)
+`docs/design/stitch/` contains only a `.gitkeep` placeholder — no `code.html` was ever committed to the repo (stitch screens were reviewed locally per `STITCH-REVIEW.md`, not imported). Searched `apps/` and `packages/` for distinctive stitch markers: no Google Fonts/Tailwind CDN hosts, no `material-symbols`/`font-awesome`, no remote images (`lh3.googleusercontent` etc.), no Tailwind CDN script. Nothing from stitch code.html appears in `apps/` or `packages/`. PASS.
+
+#### A1 condition re-check
+- **P1-15 (`_redirects` removed)**: VERIFIED FIXED — `apps/web/public/_redirects` deleted; `docs/deployment/CLOUDFLARE-PAGES.md` §3 documents the decision (wrangler rejects the `/* /index.html 200` infinite-loop rule).
+- **F-016 (working tree clean)**: VERIFIED FIXED — `git status` clean; working tree matches HEAD.
+
+#### Browser matrix (section 8)
+- **Firefox** (temp Playwright config `/tmp/kilo/playwright.a11.config.ts`, repo config untouched): 133 passed, 5 skipped (Chromium-only pixel baselines), 0 failed — PASS.
+- **WebKit**: NOT TESTED — `webkit.launch()` fails with "Host system is missing dependencies" (`libavif16`, `libmanette-0.2-0` absent; installing needs interactive `sudo apt-get`, which the agent cannot perform). Matches F-019.
+- Safari desktop, iOS Safari, Android Chrome: NOT TESTED (not available in this environment).
+
+#### New findings
+- F-020 (Should): Lighthouse performance medians 58–70 on all 22 routes (under 92 flag) under system load; accessibility 100 everywhere; not a confirmed regression (A1 baseline home 96).
+- F-021 (Should): `design.spec.ts:204` roadmap test flaky under Chromium parallel load; passes in isolation and on Firefox.
+
+#### Closed findings
+- F-015 (Should, _redirects): verified fixed — file deleted (A1.1 condition check).
+- F-016 (Info, working tree): verified fixed — `git status` clean (A1.1 condition check).
+- F-013 (Should, browser matrix): partly exercised — Firefox passes; WebKit not testable on this host.
+
+**Verdict:** PASS WITH CONDITIONS
+
+**Conditions / next actions:**
+1. Re-verify Lighthouse on an idle machine before treating any sub-92 score as real (F-020); do not block Phase 2 batch 2 on load-throttled numbers.
+2. Investigate the `design.spec.ts:204` parallel-Chromium flakiness (F-021); re-run the E2E gate serially to confirm green.
+3. WebKit remains NOT TESTED — needs the owner to install `libavif16`/`libmanette-0.2-0` (interactive `sudo apt-get`) then run `pnpm e2e --project=webkit` (F-019).
+4. F-014 (screen-reader spot check) and F-003 (branding/artwork) remain open, deferred per prior decisions.
+
+Phase 2 batch 2 may proceed from a code, quality and design-alignment perspective, subject to conditions 1–3 above.
