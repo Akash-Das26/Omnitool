@@ -23,6 +23,9 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] DEC-18 Toasts sit bottom-right on desktop and above the sticky action bar on mobile; they never cover the rail or its Collapse control (human, Session 013)
 - [x] DEC-19 Direct planned-tool URLs keep a 404 status; the static shell has no visible 404 or Page not found text and the hydrated page explains that the tool is planned (human, Session 013)
 - [x] DEC-20 Lighthouse is the median of three runs per route with every score at least 90; the minimum is reported and thresholds are unchanged (human, Session 013)
+- [x] DEC-21 LCP route: prerender each tool page's name and description into `#root` with the same classes as the hydrated markup, keep `createRoot`, add a `<noscript>` notice; postpone `hydrateRoot`/SSR (human, Session 016)
+- [x] DEC-22 CI Lighthouse is advisory: `continue-on-error`, load limit 0.75 × cores, median and minimum per route in the job summary; the quiet-host local run at 0.25 × cores stays the gate (human, Session 016)
+- [x] DEC-23 SRS NFR-013 (Should): median LCP of 2.5 s or better on tool pages in the Lighthouse mobile profile (human, Session 016)
 
 ## P0 Planning (done in Sessions 000-001)
 - [x] P0-01 Analyse zip: structure, registry (97 tools), design doc, licence (agent)
@@ -61,7 +64,9 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] P1-20 Lighthouse host guard (Session 015): 1-minute load average before and after every run, exit 3 and `INVALID: host busy` above 25% of the core count, load printed per run, `summary.json` written (agent)
 - [x] P1-21 CI workflow (Session 015): pull requests only, actions pinned by commit SHA, Node from `.nvmrc` and pnpm from `package.json` via corepack, Playwright matrix chromium/firefox/webkit with `--with-deps`, reports and traces uploaded on failure, separate Lighthouse job (agent; **never executed** — nothing pushed)
 - [x] P1-22 LCP diagnosis on tool pages (Session 015): the built HTML ships an empty `#root`, the app uses `createRoot` (no hydration), nothing paints without JavaScript, and LCP equals FCP at the first React paint. Fix proposal recorded in `docs/design/BUILT-VS-DESIGN.md` section 10, **not implemented** (agent)
-- [ ] P1-23 Decide the LCP route: render the tool header as static markup inside `#root`, or go to real SSR plus `hydrateRoot` (human)
+- [x] P1-23 Decide the LCP route (DEC-21): static header markup in `#root`, `createRoot` kept, no SSR (human)
+- [x] P1-24 Static first paint (Session 016): `scripts/prerender.mjs` writes the tool name, description and action placeholders inside the shell skeleton in `#root`, plus a `<noscript>` notice on every written route; home, about and privacy get equivalent minimal content; `404.html` stays empty (DEC-19). Guarded by `tests/e2e/prerender.spec.ts` (static text, no-JS visibility, ≤1 px hydration geometry at two viewports, CLS ≤ 0.01, planned-URL shell, static-text-survives-hydration). Four-route Lighthouse: FCP 2,369 → 1,073 ms, LCP 2,773 → 1,665 ms, performance 93 → 99 (agent)
+- [x] P1-25 CI Lighthouse policy (DEC-22): load share parameterised through `LIGHTHOUSE_LOAD_SHARE` (local default 0.25, CI 0.75), `summary.md` written for the job summary, workflow job `continue-on-error` (agent; **workflow not executed**)
 
 ## P2 Text, dev & calculators — Batch 1 (eight tools; stop at the batch gate)
 - [x] P2-01 `json-formatter`: format, minify, validate with line/column errors; worker with progress and cancel above about 1 MB (agent)

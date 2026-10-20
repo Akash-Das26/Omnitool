@@ -433,3 +433,33 @@ The questions below were answered on the production build served by `vite previe
 **Cause:** the document ships no content. The LCP text exists only after the entry chunk (121.8 kB gzip) and the route chunk chain have downloaded, parsed and executed and React has committed.
 
 **Smallest fix I would propose (not implemented, awaiting a decision):** have `scripts/prerender.mjs` emit the tool header — `<h1>` plus the description `<p>` — as static markup inside `#root`, from the registry row it already reads. The text would then paint with the document instead of after the script, which is worth roughly the 1.2 s between first-paint and FCP under this profile. Because the app uses `createRoot`, React clears that container on its first commit, so there is no hydration mismatch; but three things must be verified first: the layout shift when the live tree replaces the static one (CLS is currently 0.000), React's development-mode warning about a non-empty container, and a double paint if the static and live text differ by a pixel. The structurally correct fix is real SSR plus `hydrateRoot`, which needs SSR-safe components and is a much larger change. No fix was applied in this session.
+### Fix applied — Session 016
+
+**What the first paint depended on (diagnosed before changing anything).** From the baseline Lighthouse 13.5.0 run on `/tools/uuid-genny/` (quiet host, median of three):
+
+| Question | Answer |
+|---|---|
+| Render-blocking requests | `assets/index-*.css` 9,615 B transfer, **455 ms**; `/theme.js` 784 B, **305 ms** (a classic `<script>` in `<head>`, no `defer`) |
+| Critical chain | HTML 13 ms → CSS 65 ms → `geist-mono` woff2 632 ms; entry `index-*.js` 105,834 B transfer ends 538 ms |
+| What first paint waited for | First the CSS, then `theme.js` (both blocking), then React: FCP 2,369 ms, ie. the first *contentful* paint existed only after the entry chunk ran |
+| CSS size | 57,270 B raw / **10,640 B gzip**, one file for the whole app; Lighthouse's unused-CSS audit reports no per-route split |
+| Total page weight | 245 KiB; unused JavaScript 47 KiB |
+
+So CSS and `theme.js` block the *background* paint, but the reason FCP and LCP were late was simpler: the document had no content to paint. Inlining critical CSS would have bought at most the 455 ms the CSS already costs on a path that now finishes in about a second; it would not have moved the LCP element. No CSS change was made — the measured gain after the content fix did not justify a second, riskier change (see the table below).
+
+**What changed.** `scripts/prerender.mjs` writes, inside `#root`, the shell skeleton and the tool header: `<h1>` with the registry name, the description paragraph (omitted when empty), and `aria-hidden` placeholders the size of the Share and Reset buttons so the paragraph wraps identically. Classes and nesting mirror `components/tool-frame.tsx`, `shell/header.tsx` and `shell/rail.tsx` exactly; the rail spacer is what keeps the text in the same column (240 px). Home gets the hero label and the live counts, About and Privacy get their heading and first paragraph, and every written route gets `<noscript>Omnitool needs JavaScript to run its tools. Nothing is sent anywhere.</noscript>`. `404.html` deliberately stays empty (DEC-19). `createRoot` is unchanged: React clears the container on its first commit, and a probe at 1280×720 and 390×844 measured **0.00 px** change in x, y, width and height for the heading and the paragraph, with **CLS 0.000**.
+
+**Before and after (Lighthouse mobile, median of three per route, quiet host, both sweeps exit 0):**
+
+| Route | Perf | FCP | LCP | TBT | CLS |
+|---|---|---|---|---|---|
+| `/` | 96 → **98** | 1,885 → **909 ms** | 2,409 → 2,413 ms | 25 → 27 ms | 0.000 → 0.000 |
+| `/tools/uuid-genny/` | 93 → **99** | 2,369 → **1,073 ms** | 2,773 → **1,665 ms** | 74 → 80 ms | 0.000 → 0.000 |
+| `/tools/json-formatter/` | 93 → **99** | 2,366 → **1,366 ms** | 2,768 → **1,666 ms** | 69 → 60 ms | 0.000 → 0.000 |
+| `/tools/qr-genny/` | 93 → **99** | 2,196 → **1,074 ms** | 2,726 → **1,663 ms** | 126 → 88 ms | 0.000 → 0.000 |
+
+Minimums: performance 98 / 99 / 99 / 99; LCP minimums 2,318 / 1,664 / 1,515 / 1,516 ms.
+
+**Target met.** NFR-013 asks for a median LCP of 2.5 s or better on tool pages: 1,663–1,666 ms. Home's LCP is unchanged at 2.41 s because its largest element is the tool index panel, which only exists after hydration; its FCP halved to 909 ms and it was already inside the target.
+
+**What remains.** Lighthouse still places about 590 ms between FCP (1,073 ms) and LCP (1,665 ms) on tool pages. A local probe with the same mobile profile (412×823, 4× CPU, 1.6 Mbit/s) shows `first-paint = FCP = LCP = 752 ms`, with the static description paragraph as the LCP element — so the gap is Lighthouse's simulation model re-pricing the hydration paint, not a second blocking resource. Nothing further is proposed: the next step would be real SSR with `hydrateRoot`, which is out of scope under DEC-21.

@@ -588,3 +588,49 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 **Next session should:** get the P1-23 decision, then (a) push a throwaway branch to exercise the workflow once and fix whatever the first run exposes, and (b) if the static-header fix is approved, implement it and re-measure with the same harness, watching CLS and the double paint.
 
 **Human review:** [ ] diff read  [ ] approved
+
+### Session 016 — 2026-10-20 — P1-23 (static first paint) and CI Lighthouse policy — Buffy
+**Goal:** Reduce first paint and LCP on tool pages with a measured, minimal change (DEC-21), settle the CI Lighthouse policy (DEC-22) and add the LCP target to the SRS (DEC-23). No new tools, no dependencies, no tool UI or logic changes.
+
+**Done:**
+- **Baseline first, quiet host.** `LIGHTHOUSE_LOAD_SHARE` default 0.25, host at 1m 2.48 / 16 cores, so the guard allowed the run: three runs on each of `/`, `/tools/uuid-genny/`, `/tools/json-formatter/`, `/tools/qr-genny/`, exit 0, maximum load during the sweep 2.63.
+- **Diagnosed the first-paint block before changing anything** (Lighthouse 13.5.0 JSON, `/tools/uuid-genny/` median run): render-blocking `assets/index-*.css` 9,615 B transfer / **455 ms** and `/theme.js` 784 B / **305 ms** (classic `<script>` in `<head>`, not deferred); critical chain HTML 13 ms → CSS 65 ms → `geist-mono` woff2 632 ms with the entry `index-*.js` (105,834 B transfer) finishing at 538 ms; CSS 57,270 B raw / **10,640 B gzip** in one file for the whole app; page weight 245 KiB, unused JS 47 KiB. Conclusion: CSS and `theme.js` delay the *background* paint, but FCP and LCP were late because the document had no content to paint — so the fix is content, not CSS. No CSS split, no critical-CSS inlining: reported with the numbers instead (see `docs/design/BUILT-VS-DESIGN.md` section 10, "Fix applied — Session 016").
+- **Implemented DEC-21** in `scripts/prerender.mjs`: inside `#root` it now writes the shell skeleton (header bar, 240 px rail spacer, `main`) plus the tool's `<h1>` and description paragraph from the registry (escaped, paragraph omitted when empty, `aria-hidden` placeholders sized like the Share and Reset buttons so the text wraps identically), and `<noscript>` with "Omnitool needs JavaScript to run its tools. Nothing is sent anywhere.". Home gets the hero label and the live counts, About and Privacy their heading and first paragraph; `404.html` stays empty (DEC-19 unchanged). `createRoot` and the app are untouched — no component, no tool, no copy in the app changed.
+- **Guard tests** (`tests/e2e/prerender.spec.ts`, 10 tests, web-first assertions, no sleeps): built HTML carries the registry name and description and the exact `h1`/`p` classes; every written page carries the no-JS notice; with `javaScriptEnabled: false` the heading, description and notice are visible; at 1280×720 **and** 390×844 the heading and description bounding boxes before (all scripts refused) and after hydration differ by **0.00 px** in x, y, width and height with **CLS 0.000** ≤ 0.01; `404.html` keeps an empty `#root` with no "Page not found"/`404`; the static text of `/`, `/about`, `/privacy` and the tool page still appears in the hydrated DOM (drift guard for the duplicated page copy).
+- **Re-measured** the same four routes on a quiet host (exit 0, max load 2.67): performance 96→98, 93→99, 93→99, 93→99; FCP 1,885→909, 2,369→1,073, 2,366→1,366, 2,196→1,074 ms; LCP 2,409→2,413, 2,773→**1,665**, 2,768→**1,666**, 2,726→**1,663** ms; TBT 25→27, 74→80, 69→60, 126→88 ms; CLS 0.000 everywhere. **NFR-013 (median LCP ≤ 2.5 s on tool pages) is met at 1.663–1.666 s.**
+- **CI-LH (DEC-22):** `LIGHTHOUSE_LOAD_SHARE` parameterises the guard (default 0.25, validated: non-numeric rejected, `> 4` rejected); CI sets `0.75` (12.00 on 16 cores), the job is `continue-on-error`, every sweep writes `reports/lighthouse/summary.md` and the workflow appends it to `$GITHUB_STEP_SUMMARY`. Action SHAs unchanged (`checkout v7.0.1`, `setup-node v7.1.0`, `upload-artifact v7.0.2`); actionlint 1.7.12 exit 0.
+- **SRS:** NFR-013 added as a **Should** requirement with its Lighthouse verification. `docs/development/DEVELOPMENT.md` records the static-first-paint contract and the load-share policy. `docs/design/BUILT-VS-DESIGN.md` section 10 gains the diagnosis, the markup description and the before/after table.
+
+**Features touched:** none. No registry row, tool component, UI copy or app logic changed.
+
+**Decisions:** DEC-21 (static markup in `#root`, `createRoot` kept, SSR deferred), DEC-22 (CI Lighthouse advisory at 0.75 × cores; local 0.25 is the gate), DEC-23 (NFR-013: median LCP ≤ 2.5 s on tool pages) — all recorded in `todo.md`. Thresholds unchanged; no retries, no skips, no fixed sleeps added.
+
+**Verification:**
+- `pnpm install --frozen-lockfile`: pass.
+- `pnpm lint`: pass, 0 warnings, **169 files** + design rules.
+- `pnpm typecheck`: pass.
+- `pnpm test:coverage`: **348 passed / 28 files**; statements 97.06%, branches 90.8%, functions 99.5%, lines 98.22%.
+- `pnpm build`: exit 0; 22 routes + `404.html`; the tool page HTML grew from 1,661 B to 3,546 B (static content) and the prerender step fails loudly if `dist/index.html` has no empty `#root`.
+- `pnpm check:budgets`: pass — shell **157.6 kB gzip** (budget 200), precache **997.1 kB** (up from 964.3 kB because 22 pages carry static content), 73 files.
+- `pnpm e2e` (Chromium): **172 passed** in 41.6 s, including the 50 axe runs in both themes.
+- `--project=firefox`: **167 passed, 5 skipped, 0 failed** in 1.4 min (the 5 skips are the pre-existing Chromium-only pixel baselines).
+- `--project=webkit`: **NOT TESTED** — launch still fails with "Host system is missing dependencies" (F-019).
+- Lighthouse before/after: see the table in the Done section; both sweeps exit 0 with the busy-host guard silent.
+- GitHub Actions: **not executed** — nothing pushed.
+
+**Not done / uncertain:**
+- **Home LCP is unchanged** (2,409 → 2,413 ms): its largest element is the tool index panel, which only exists after hydration. FCP halved (1,885 → 909 ms). Home was already inside NFR-013's target, which is about tool pages.
+- Lighthouse still shows a ~590 ms FCP→LCP gap on tool pages (FCP 1,073, LCP 1,665). A local probe with the same mobile profile measures `first-paint = FCP = LCP = 752 ms` with the static paragraph as the LCP element, so the gap is Lighthouse's simulation model re-pricing the hydration paint, not another blocking resource. Not investigated further because the target is met.
+- The static copy for `/`, `/about` and `/privacy` is duplicated in `scripts/prerender.mjs` because the build cannot render React. The new drift test fails if it disagrees with the hydrated DOM, but the fix is manual.
+- The static skeleton always paints the rail **expanded** (240 px). A visitor whose stored preference is a collapsed rail will see content move 184 px left when the app boots. The geometry guard runs on a fresh profile, so it does not catch this; using localStorage in the static markup would mean an inline script and a CSP change.
+- With JavaScript off, the "Share"/"Reset" placeholders render as inert text (they are `aria-hidden` spans, not controls). They are replaced by real buttons on boot.
+- `theme.js` (305 ms) and the CSS (455 ms) are still render-blocking. Not changed: with content in the HTML the page is inside the target, and inlining either would mean a CSP change (`script-src 'self'`) or a critical-CSS split for an unmeasured gain.
+- The CI workflow has still never run; corepack/setup-node are the steps most likely to need adjustment on the first run.
+
+**Problems and risks found:**
+- The old "prerender" was head-only, which is why FCP and LCP depended entirely on JavaScript; `docs/design/BUILT-VS-DESIGN.md` had recorded the empty `#root` but the name implied otherwise. The step now writes content, and the comment in `scripts/prerender.mjs` says what it mirrors.
+- The reference `theme.js` is a synchronous head script; it is small but costs a full round trip before paint. Left alone deliberately.
+
+**Next session should:** push a throwaway branch to exercise the workflow once (still unverified), and decide whether the collapsed-rail mismatch and the head-only `theme.js` are worth fixing.
+
+**Human review:** [ ] diff read  [ ] approved

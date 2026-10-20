@@ -88,6 +88,7 @@ Specific editor requirements are written at P8 start in `docs/srs/editors.md` (l
 | NFR-010 | Internationalisation | UI copy in en-GB; strings centralised to allow translation later | Review |
 | NFR-011 | Portability | Output is static files deployable to any static host; no file over 20 MiB in the build; <= 20,000 files | CI check |
 | NFR-012 | Offline budget | Precached assets (shell + all tool chunks) within a budget set at P1 and re-checked each phase; each precached file < 2 MiB | CI check |
+| NFR-013 | Performance | **Should.** Median LCP of 2.5 s or better on tool pages in the Lighthouse mobile profile (median of three runs on a quiet host; the busy-host guard marks a loaded run NOT TESTED rather than failed) | Lighthouse, `pnpm lighthouse`: median and minimum reported per route |
 
 ## 5. External interfaces
 - **User interface:** per `docs/design/DESIGN-BRIEF.md` and `DESIGN.md`.
