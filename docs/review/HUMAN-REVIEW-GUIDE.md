@@ -55,7 +55,8 @@ Run `pnpm dev` (or `pnpm build && pnpm preview` for the production bundle) and w
 
 ### Theme and shell
 - [ ] The theme toggle switches light and dark, and the choice survives a reload.
-- [ ] Reloading in dark mode does not flash light first (the pre-paint `theme.js` runs before React).
+- [ ] Reloading in dark mode does not flash light first (the inline pre-paint boot script runs before React).
+- [ ] Collapsing the category rail and reloading does not shift the content sideways.
 - [ ] Tab from the top of the page reveals "Skip to content"; the focus ring is visible.
 - [ ] At 320 px wide there is no horizontal scrolling; controls remain at least 44 px tall on touch.
 

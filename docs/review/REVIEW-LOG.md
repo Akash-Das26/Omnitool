@@ -635,3 +635,64 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 **Next session should:** push a throwaway branch to exercise the workflow once (still unverified), and decide whether the collapsed-rail mismatch and the head-only `theme.js` are worth fixing.
 
 **Human review:** [ ] diff read  [ ] approved
+
+### Session 017 — 2026-10-20 — P2 batch 2 follow-up (inline boot script) — Buffy
+**Goal:** Replace the render-blocking `/theme.js` with one hashed inline boot script that also applies the saved rail-collapsed preference before first paint (DEC-25, DEC-26), leaving the home LCP decision as accepted (DEC-24). No new dependencies, no tool UI or logic changes.
+
+**Done:**
+- **Baseline before the change.** `pnpm build` on the committed tree (`git stash push -u`, build, `cp -a apps/web/dist /tmp/dist-before`) gave a dist with `theme.js` and `script-src 'self'`. The same working tree built after the change. Both sets were measured with one harness (a copy of `scripts/lighthouse.mjs` with an `LH_ROUTES` filter and `LH_OUT`, deleted afterwards), four routes × three runs each, host guard silent throughout.
+- **One boot script** (`apps/web/boot/boot.js`, ~30 lines): resolves the theme from `omnitool-theme` else `prefers-color-scheme`, sets the `dark` class and `color-scheme` on `<html>`, reads `omnitool-ui` for `state.railCollapsed` and sets `data-rail="collapsed|expanded"`. Every storage read and the JSON parse sit inside one `try/catch`; the defaults are light and expanded. No `eval`, no `Function`, no `document.write`.
+- **Single source of truth.** `apps/web/src/lib/preferences.ts` holds the storage keys, the attribute name and its two values; `preferences.test.ts` parses `boot.js` and fails if any of them, or the `classList.toggle('dark')`/`colorScheme` contract, drifts. `stores.ts` now seeds the UI store from `initialRailState()` and the theme store from the class the script set — the post-mount correction block is gone. The duplicate resolvers `resolveInitialTheme`/`readStoredTheme` were removed from `packages/ui` (nothing else used them).
+- **CSS:** `html[data-rail="collapsed"] [data-slot="rail"] { width: 3.5rem }` (unlayered, so it beats `w-14`/`w-60`), and the rail gained `data-slot="rail"`. The static markup in `#root` and the hydrated rail are now the same width from first paint.
+- **Inline + hashed.** `apps/web/vite.config.ts` has an `inlineBootScript()` plugin that replaces the `<!-- boot-script -->` placeholder in `index.html` (dev and build). `scripts/prerender.mjs` reads the single inline script from every written page (22 routes plus `404.html`), hashes its exact bytes with SHA-256, checks that the pages agree *and* that the digest equals the trimmed `boot.js` source, refuses `'unsafe-inline'`/`'unsafe-eval'`, and substitutes the digest into `'sha256-BOOT_SCRIPT_SHA256'` in `_headers`. `public/theme.js` and its `_headers` rule are deleted; the PWA precache no longer contains it.
+- **Proof the build fails** (each restored immediately, tree clean afterwards): an extra `<script>void 0</script>` in the template → `prerender: index.html must contain exactly one inline script, found 2`; `_headers` without the marker → `prerender: _headers has no BOOT_SCRIPT_SHA256 marker`; a whitespace change in `boot.js` after `vite build` → `the pages carry sha256-AY0Beq… but apps/web/boot/boot.js hashes to sha256-0MRRuK…`.
+- **Tests** (`tests/e2e/boot-script.spec.ts`, 4 tests, no sleeps, no retries): every built page has exactly one inline script and no `theme.js`, all pages share one hash, that hash is in `script-src`, `script-src` has `'self'` and no `'unsafe-inline'`/`'unsafe-eval'`; a browser run over `/`, `/tools/uuid-genny/`, `/about/`, `/privacy/`, a planned URL and a 404 with dark theme and a collapsed rail saved asserts `dark` and `data-rail="collapsed"` on every route with **zero** `securitypolicyviolation` events and **zero** console errors; `/tools/uuid-genny/` at 1280×720 and 390×844 compares `main` (x, y, width) and `h1` (all four edges) at first paint (module entry aborted) with the hydrated layout, at most 1 px, and CLS ≤ 0.01.
+- **The guard catches the old build.** Running the same spec against `/tmp/dist-before` fails with `Expected: <= 1, Received: 184` on `main x` at 1280×720, plus `inline scripts: 0` and `rail: undefined`. That is the 184 px shift DEC-25 was about, now measured.
+- **Measured, paired A/B** (median of three, mobile Lighthouse profile, guard silent, maximum 1-minute load 3.39):
+
+| Route | perf med before → after | FCP med before → after | LCP med before → after | TBT med before → after |
+|---|---|---|---|---|
+| `/` | 98 → 98 | 910 → 914 ms | 2457 → 2460 ms | 32 → 32 ms |
+| `/tools/json-formatter/` | 100 → 100 | 1075 → 1082 ms | 1667 → 1521 ms | 63 → 71 ms |
+| `/tools/qr-genny/` | 99 → 99 | 1363 → 1075 ms | 1663 → 1517 ms | 76 → 83 ms |
+| `/tools/uuid-genny/` | 99 → 100 | 1073 → 1082 ms | 1665 → 1521 ms | 70 → 68 ms |
+
+  CLS was 0.000 everywhere. FCP is unchanged within noise (minimum over three runs 1070–1074 ms in both sets); the ~145 ms LCP difference on three tool routes did not reproduce as an FCP change and is treated as noise, not a gain. The change is kept for DEC-25 and DEC-26, as the brief allows when the paint gain is under 50 ms.
+- **One pre-existing slow route checked separately** with the same harness: `/tools/base-converter/` LCP 2716 → 2569 ms, performance 96 → 97 (three runs each), so routes whose LCP element is not the prerendered paragraph behave the same way before and after.
+- **Full 22-route sweep on the final build:** exit 0, 66 runs, host 16 cores, limit 4.00, 1m/5m 2.98/8.75 at start, maximum 1-minute load **3.22**. Every performance median **96–100** (minimum 95), accessibility, best-practices and SEO **100** on all 22 routes, CLS **0.000** everywhere. LCP: `/about/` 1361, `/` 2418, `/privacy/` 2416, tool pages 1509–2738 ms.
+- **`wrangler@4.151.1 pages dev apps/web/dist`** on port 8796: every route (home, tool, about, privacy, unknown path) returns the hashed CSP — `script-src 'self' 'sha256-AY0BeqXPBY3Z4IZ0v82BLgRyGWyLU0dz6XOiIkg8JO0='` — with no `'unsafe-inline'`; unknown paths still return 404 with `text/html`; a Playwright pass over five routes with dark theme and a collapsed rail saved showed `dark=true rail=collapsed inlineScripts=1 railWidth=56px` and **0** CSP violations. The only console entry was the 404 document itself on `/not-a-page`.
+- **Docs:** `IMPLEMENTATION.md` section 8 (boot script, single source, hash generation and verification), `CHECKLISTS.md` section 2 (inline script allowed only if hashed), `DEVELOPMENT.md`, `CLOUDFLARE-PAGES.md` (the CSP check now includes the digest, plus a rail-reload step), `HUMAN-REVIEW-GUIDE.md`, new `F-022` in `AUDIT-LOG.md` marked *fix applied, awaiting re-verification*, and DEC-24..27 plus P1-26 and the recurring P1-27 in `todo.md`.
+
+**Features touched:** none. No registry row, tool component, UI copy or tool logic changed; `features.md` is unchanged.
+
+**Decisions:** DEC-24 (home LCP accepted as is; NFR-013 stays scoped to tool pages; re-measure home at every batch gate), DEC-25 (fix the collapsed-rail boot shift), DEC-26 (inline boot script with a build-time CSP hash), DEC-27 (the human pushes the throwaway branch). All four recorded in `todo.md`.
+
+**Verification:**
+- `pnpm install --frozen-lockfile`: pass.
+- `pnpm lint`: pass, **172 files**, 0 warnings, design rules pass.
+- `pnpm typecheck`: pass (all workspace projects).
+- `pnpm test:coverage`: **351 passed / 29 files**; statements 97.06%, branches 90.8%, functions 99.5%, lines 98.22%.
+- `pnpm build`: exit 0; 22 routes + `404.html`; one inline script on all 23 pages, `sha256-AY0BeqXPBY3Z4IZ0v82BLgRyGWyLU0dz6XOiIkg8JO0=`; the inline script is at line 14 of the built `<head>`, the stylesheet at line 41.
+- `pnpm check:budgets`: pass — shell **157.5 kB gzip** (budget 200), shell chunks `index-DqVIHzds.js`, `rolldown-runtime-WkwZ5CU-.js`, `button-DWm2V7sS.js`; precache **68 files / 1017.5 kB** (budget 8192); **72 build files** (limit 20,000).
+- `pnpm e2e` (Chromium): **176 passed** in 44.3 s, including the 50 axe runs in both themes and the 4 new boot-script tests.
+- `PLAYWRIGHT_BROWSERS=all --project=firefox`: **171 passed, 5 skipped, 0 failed** in 1.0 min (the 5 skips are the Chromium-only pixel baselines).
+- `--project=webkit`: **NOT TESTED** — every launch still fails with "Host system is missing dependencies" (F-019: `libavif16`, `libmanette-0.2-0`).
+- `pnpm lighthouse` on the final build: exit 0, table above. An earlier attempt at the same sweep aborted with exit 3 (`INVALID: host busy — start of sweep: 1-minute load 17.37 > 4.00`) and is recorded as NOT TESTED rather than averaged in.
+- GitHub Actions: **not executed** — nothing was pushed (DEC-27 leaves the throwaway-branch push to the owner).
+
+**Not done / uncertain:**
+- **No paint-time gain is claimed.** FCP and LCP medians did not move beyond noise in the paired A/B, even though Lighthouse's render-blocking audit charged `/theme.js` 305 ms on a cold profile. The harness reuses one Chrome for a whole sweep, so runs 2–3 of each route hit the HTTP cache; a cold-profile A/B would be needed to isolate that cost, and it was not run.
+- **NFR-013 is not met on every tool page, and this predates the change.** The full sweep shows 8 of 19 tool routes at 2.56–2.74 s median LCP (`base-converter`, `braille-converter`, `jwt-decoder`, `morse-code`, `nato-phonetic`, `paper-sizes`, `time-calc`, `word-counter`); the other 11 are 1.51–1.52 s. `/tools/base-converter/` measured 2716 ms on the old build and 2569 ms on the new one, so the split is a property of the static-first-paint work (Session 016 measured only four routes, all in the fast group), not of this session. Reported, not fixed.
+- The boot script duplicates the theme resolution in plain JavaScript because it must run before any module loads; the TS copy was deleted so there is only one implementation, but it is still untested JavaScript — `preferences.test.ts` checks its keys and values textually, not its behaviour. The browser guards cover the behaviour.
+- `dark`/`light` is still system-or-stored only: there is no explicit "follow system" option, so the `matchMedia` branch in the boot script is the only place the system preference is read.
+- Historical documents (`BUILT-VS-DESIGN.md` section 10, earlier entries in this log, the A1 evidence block) still mention `theme.js` on purpose: they record what was measured then. `AUDIT-LOG.md` carries a one-line note pointing at F-022.
+- Only one machine, headless Chrome, emulated mobile, single session. The host hit load 17 once during the session for reasons outside this work; every number above comes from a sweep where the guard stayed silent.
+
+**Problems and risks found:**
+- The first full-sweep attempt aborted at load 17.37 while no process of mine was running — the host is shared and can spike without warning, which is exactly why the guard exists. Two orphaned Lighthouse Chrome instances from an earlier session and a leftover `wrangler pages dev` plus its `workerd` children were found and killed before the successful sweeps.
+- The inline script is now a build-time CSP dependency: any formatting change to `boot.js` changes the hash, and a deployment that serves stale `_headers` with a new HTML would be blocked. The build guards catch the local case; a mismatched deployment would show up as a page that paints unstyled (light, expanded) plus a CSP error.
+- Removing `resolveInitialTheme`/`readStoredTheme` from `packages/ui` is a small API change inside the repo; both were unused after the switch, but any future code should read the DOM class instead.
+
+**Next session should:** hand the owner the three commits and F-022 for re-verification, then continue the remaining P2 tools. No phase gate is claimed.
+
+**Human review:** [ ] diff read  [ ] approved

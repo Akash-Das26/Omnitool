@@ -26,6 +26,10 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] DEC-21 LCP route: prerender each tool page's name and description into `#root` with the same classes as the hydrated markup, keep `createRoot`, add a `<noscript>` notice; postpone `hydrateRoot`/SSR (human, Session 016)
 - [x] DEC-22 CI Lighthouse is advisory: `continue-on-error`, load limit 0.75 × cores, median and minimum per route in the job summary; the quiet-host local run at 0.25 × cores stays the gate (human, Session 016)
 - [x] DEC-23 SRS NFR-013 (Should): median LCP of 2.5 s or better on tool pages in the Lighthouse mobile profile (human, Session 016)
+- [x] DEC-24 Home LCP (about 2.41 s) is accepted as it is: NFR-013 stays scoped to tool pages, home is re-measured at every batch gate and acted on only if its median LCP exceeds 2.5 s (human, Session 017)
+- [x] DEC-25 Fix the collapsed-rail boot shift: the saved rail preference is applied before first paint, not after hydration (human, Session 017)
+- [x] DEC-26 Replace the external `/theme.js` with one inline boot script whose SHA-256 is computed at build time and added to `script-src`; no `'unsafe-inline'` (human, Session 017)
+- [x] DEC-27 The throwaway-branch push that exercises the CI workflow is done by the human, never by the agent (human, Session 017)
 
 ## P0 Planning (done in Sessions 000-001)
 - [x] P0-01 Analyse zip: structure, registry (97 tools), design doc, licence (agent)
@@ -67,6 +71,8 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] P1-23 Decide the LCP route (DEC-21): static header markup in `#root`, `createRoot` kept, no SSR (human)
 - [x] P1-24 Static first paint (Session 016): `scripts/prerender.mjs` writes the tool name, description and action placeholders inside the shell skeleton in `#root`, plus a `<noscript>` notice on every written route; home, about and privacy get equivalent minimal content; `404.html` stays empty (DEC-19). Guarded by `tests/e2e/prerender.spec.ts` (static text, no-JS visibility, ≤1 px hydration geometry at two viewports, CLS ≤ 0.01, planned-URL shell, static-text-survives-hydration). Four-route Lighthouse: FCP 2,369 → 1,073 ms, LCP 2,773 → 1,665 ms, performance 93 → 99 (agent)
 - [x] P1-25 CI Lighthouse policy (DEC-22): load share parameterised through `LIGHTHOUSE_LOAD_SHARE` (local default 0.25, CI 0.75), `summary.md` written for the job summary, workflow job `continue-on-error` (agent; **workflow not executed**)
+- [x] P1-26 Inline boot script (DEC-25, DEC-26): `apps/web/boot/boot.js` sets the theme and the rail preference before first paint; the stores read what it left on `<html>`; `scripts/prerender.mjs` hashes the one inline script into `script-src` and fails the build on any mismatch; `public/theme.js` deleted; CSS pins the collapsed rail width to `data-rail` (agent, Session 017)
+- [ ] P1-27 Re-measure home LCP at every batch gate (median of three, Lighthouse mobile) and act only if it exceeds 2.5 s (agent, recurring per DEC-24)
 
 ## P2 Text, dev & calculators — Batch 1 (eight tools; stop at the batch gate)
 - [x] P2-01 `json-formatter`: format, minify, validate with line/column errors; worker with progress and cancel above about 1 MB (agent)

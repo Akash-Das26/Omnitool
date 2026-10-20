@@ -9,7 +9,7 @@ Tick per audit; copy the relevant sections into the audit entry. Evidence beats 
 - [ ] Files are not persisted without explicit user action; IndexedDB handoff cleared
 
 ## 2. Security (NFR-007)
-- [ ] CSP set; no `eval`/inline script except the hashed theme bootstrap
+- [ ] CSP set; no `eval`; the only inline script is the pre-paint boot script, allowed by its SHA-256 in `script-src` (never `'unsafe-inline'`), and every built page's hash matches `_headers`
 - [ ] `pnpm audit` reviewed; no high/critical unresolved
 - [ ] File parsers handle malformed input without hanging (fuzz a few samples)
 - [ ] Regex tester and any user-code evaluation sandboxed with timeout

@@ -116,7 +116,7 @@ curl -sS -o /dev/null -w '%{http_code} %{content_type}\n' "$SITE/not-a-page"
 
 Expected:
 
-- `content-security-policy` contains `script-src 'self'` and `frame-ancestors 'none'`; the other four headers are present.
+- `content-security-policy` contains `script-src 'self' 'sha256-…'` (the digest of the inline boot script, written by the build), no `'unsafe-inline'` or `'unsafe-eval'`, and `frame-ancestors 'none'`; the other four headers are present. Compare the digest with the inline script in `/`: `curl -sS "$SITE/" | grep -o '<script>[^<]*</script>'` and `printf '%s' "<script body>" | openssl dgst -sha256 -binary | base64`.
 - No COOP/COEP.
 - `cache-control: public, max-age=31536000, immutable` for `/assets/*`; `no-cache` for `/sw.js`.
 - `robots.txt` is plain text (`User-agent: *`), not HTML.
@@ -130,7 +130,8 @@ Expected:
 Open DevTools → Console on the home page and on a tool. There should be no "Refused to…" or "Content Security Policy" messages. Then:
 
 - run a tool that uses Web Crypto (Password Generator) and one that uses a worker (Image Converter or a JSON file over 1 MB);
-- confirm the theme toggle works (the CSP allows inline styles because React and Radix set style attributes; scripts remain `'self'` only);
+- confirm the theme toggle works and that a reload with dark mode saved paints dark with no flash (the CSP allows inline styles because React and Radix set style attributes; scripts are `'self'` plus the one boot-script hash);
+- collapse the category rail, reload, and confirm the content does not jump as the app boots;
 - confirm the manifest loads and the console shows no failed font or asset requests.
 
 ### Offline check

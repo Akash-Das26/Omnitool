@@ -18,7 +18,7 @@ Node >= 22.19 (`nvm use`), pnpm via `corepack enable`, a current Chromium for Pl
 - Tool ids kebab-case; React components PascalCase; files kebab-case.
 - Conventional Commits (`feat(colour-converter): …`). One logical change per commit.
 - British English in UI copy; strings in one module per tool for later i18n.
-- No `eval`, no inline scripts, no third-party runtime requests.
+- No `eval`; the single inline script is the pre-paint boot script in `apps/web/boot/boot.js`, whose SHA-256 goes into the CSP at build time (see `docs/implementation/IMPLEMENTATION.md` section 8). No third-party runtime requests.
 - Pure logic: `packages/tool-core/src/<tool-id>/` with `*.test.ts` beside it.
 
 ## 4. How to add a tool (checklist)
