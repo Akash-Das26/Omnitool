@@ -13,6 +13,29 @@ if (!existsSync(templatePath)) {
 
 const template = readFileSync(templatePath, 'utf8');
 const routeMeta = JSON.parse(readFileSync(join(web, 'src/app/route-meta.json'), 'utf8'));
+// The Vite manifest maps each lazy tool route to its chunk and shared imports;
+// Lighthouse shows the tool description (the LCP element) painting about
+// 470 ms after FCP while those chunks download, so each prerendered tool page
+// preloads its own chunk chain.
+const manifestPath = join(dist, '.vite/manifest.json');
+const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : {};
+
+function chunkChain(key, seen = new Set()) {
+  const entry = manifest[key];
+  if (!entry || seen.has(key)) return [];
+  seen.add(key);
+  return [entry.file, ...(entry.imports ?? []).flatMap((child) => chunkChain(child, seen))];
+}
+
+function preloadTags(ids) {
+  const tags = [];
+  for (const id of ids) {
+    const href = `/${id}`;
+    if (template.includes(`href="${href}"`) || template.includes(`src="${href}"`)) continue;
+    tags.push(`<link rel="modulepreload" crossorigin href="${href}" />`);
+  }
+  return tags;
+}
 const registry = JSON.parse(
   readFileSync(join(root, 'packages/tools-registry/data/registry.seed.json'), 'utf8'),
 );
@@ -54,6 +77,12 @@ for (const id of toolDirectories) {
   }
 }
 
+for (const id of toolIds) {
+  if (!manifest[`src/tools/${id}/index.tsx`]) {
+    throw new Error(`prerender: ${id} is missing from the Vite manifest`);
+  }
+}
+
 function escapeHtml(value) {
   return value
     .replaceAll('&', '&amp;')
@@ -62,13 +91,18 @@ function escapeHtml(value) {
     .replaceAll('"', '&quot;');
 }
 
-function render({ title, description, robots = false }) {
+function render({ title, description, robots = false, preloads = [] }) {
   const html = template
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(title)}</title>`)
     .replace(
       /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/,
       `<meta name="description" content="${escapeHtml(description)}" />`,
     );
+
+  const preloadHtml = preloadTags(preloads).join('\n    ');
+  const withPreloads = preloadHtml
+    ? html.replace('</head>', `    ${preloadHtml}\n  </head>`)
+    : html;
 
   const extra = [
     `<meta property="og:title" content="${escapeHtml(title)}" />`,
@@ -81,7 +115,7 @@ function render({ title, description, robots = false }) {
     .filter(Boolean)
     .join('\n    ');
 
-  return html.replace('</head>', `    ${extra}\n  </head>`);
+  return withPreloads.replace('</head>', `    ${extra}\n  </head>`);
 }
 
 const routes = [
@@ -96,6 +130,7 @@ const routes = [
       meta: {
         title: `${tool.name} — Omnitool`,
         description: tool.description || `${tool.name} is a local-only browser tool from Omnitool.`,
+        preloads: [...new Set(chunkChain(`src/tools/${id}/index.tsx`))],
       },
     };
   }),

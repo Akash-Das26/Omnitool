@@ -496,3 +496,43 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 **Next session should:** get owner review of the commits and DEC-18–20, then continue the remaining P2 tools. No phase gate is claimed.
 
 **Human review:** [ ] diff read  [ ] approved
+
+### Session 014 — 2026-10-20 — P1 follow-up (LCP investigation) — Buffy
+**Goal:** Explain the LCP on tool pages without touching thresholds: report the LCP element, its subparts and the primary font's loading for `/tools/uuid-genny/` and two other tool routes; apply the smallest fix if render delay or font loading dominates; measure three runs per route before and after.
+
+**Done:**
+- Measured the committed tree and the fixed tree with one harness (a temporary copy of `scripts/lighthouse.mjs`'s server and Chrome flags; deleted afterwards). Three runs per route, medians reported.
+- LCP element on all three routes is the registry description paragraph (`article.mx-auto > header.mb-4 > div.min-w-0 > p.prose-measure`), i.e. text. Load delay and load time are 0 ms; the gap was TTFB (3–4 ms) plus 680–706 ms of element render delay.
+- Font audit: Schibsted Grotesk Variable latin, 46,752 bytes, `font-display: swap`, variable 400–900. It was **not** preloaded and only requested at 687 ms, after the shell's CSS and JS.
+- `apps/web/vite.config.ts`: added a `preloadPrimaryFont()` plugin that emits `<link rel="preload" as="font" type="font/woff2" crossorigin>` for the latin Schibsted file. The font now starts at 11 ms. On its own this moved FCP by about 150 ms but **did not move LCP** (3043–3053 ms), so font loading was not the LCP driver.
+- `scripts/prerender.mjs`: each tool page now emits `modulepreload` links for its route chunk and shared imports from `.vite/manifest.json`. Chunks were previously requested at ~565 ms (after the shell evaluated its dynamic import) and now start with the HTML at ~20 ms. The script throws if a route in `tool-modules.ts` is missing from the manifest.
+- Wrote the investigation up in `docs/design/BUILT-VS-DESIGN.md` section 10, including the failed gate attempt.
+
+**Features touched:** none; no feature status changes.
+
+**Decisions:** none. Thresholds unchanged (DEC-20 still stands).
+
+**Verification:**
+- `pnpm lint`: pass, 0 warnings (167 files + design rules).
+- `pnpm typecheck`: pass.
+- `pnpm test`: **348 passed / 28 files**.
+- `pnpm build`: 22 routes + `404.html`; font preload present in every page, route `modulepreload` chain on tool pages only.
+- `pnpm check:budgets`: shell 157.6 kB gzip (budget 200), precache 964.2 kB, 73 files — pass.
+- Focused Lighthouse, median of three, before → after: `uuid-genny` LCP 3049 → 2720 ms, performance 90 → 93; `json-formatter` 3044 → 2724 ms, 90 → 93; `qr-genny` 2744 → 2719 ms, 93 → 93. Element render delay fell 691 → 574, 680 → 579, 706 → 593 ms.
+- **`pnpm lighthouse` (22 routes) did not pass on this machine.** Every route scored 58–72 performance with TBT 900–1200 ms, versus 90–93 minutes earlier; the same reports show document response time 73–90 ms (normally 3–4 ms) and Script Evaluation ~1525 ms (normally ~195 ms). A control run of the unmodified HEAD under the same conditions scored `uuid-genny` **54** with LCP 3650 ms, so the collapse is host contention, not the change. It is recorded as not passed and needs a re-run on a quiet host.
+
+**Not done / uncertain:**
+- LCP is still 2719–2724 ms, above the 2500 ms "good" threshold. About 574–593 ms is render delay caused by the shared shell (`index-*.js`, 105 kB gzip) evaluating and hydrating before the route text paints. Splitting the shell is a larger change and was not attempted.
+- The full gate has not been re-run successfully; no phase gate is claimed.
+- TBT rose (29 → 49 ms on `uuid-genny`, 70 → 111 ms on `qr-genny`) because route-chunk work now happens earlier. Still far under 200 ms.
+- Only three routes were measured in the paired before/after runs; the other 19 were only in the (environmentally invalid) gate attempt.
+- Measurement is one machine, headless Chrome, emulated mobile; the fail/retry state of the host was not under my control.
+
+**Problems and risks found:**
+- The host's performance became unusable for Lighthouse during the session (same build, 7x script-evaluation time, server TTFB ~20x). Any future gate run should check for this before trusting the scores; the control-run method above distinguishes environment from code.
+- Preloading the route chunk chain duplicates information already in the Vite manifest, so the prerender step now fails loudly if the manifest and `tool-modules.ts` disagree — deliberate, but it makes the build stricter.
+- The font preload is kept even though it does not improve LCP: it removes a 687 ms font fetch from FCP and the 45.7 kB file is fetched once, but it is one more head tag on every page.
+
+**Next session should:** re-run `pnpm lighthouse` on a quiet machine and confirm the 22-route table; then decide whether splitting the shell is worth a measured attempt.
+
+**Human review:** [ ] diff read  [ ] approved

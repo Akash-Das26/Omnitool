@@ -337,3 +337,72 @@ The three runs were stable at 90/90/90 with LCP 3042–3047 ms and TBT 30–31 m
 | `pnpm build` | 22 routes + `404.html`; 78 planned routes excluded; precache 46 entries / 897.83 KiB |
 | `pnpm check:budgets` | shell 157.6 kB gzip; precache 953.6 kB; 73 files |
 | `pnpm e2e --workers=4` | 138 passed, including offline, no third-party request, 50 axe runs and the new toast/planned-URL tests |
+
+## 10. LCP investigation on tool pages — 2026-10-20
+
+Scope: LCP on three tool routes only (`/tools/uuid-genny/`, `/tools/json-formatter/`, `/tools/qr-genny/`). Thresholds are unchanged, no dependency was added, and no tool UI changed. The three-route rows in section 9 are superseded by the medians below; the other 19 routes were re-measured by the full gate afterwards and are reported at the end of this section.
+
+### Method
+
+The same built `apps/web/dist`, the same throwaway Brotli/gzip static server and the same Chrome flags as `scripts/lighthouse.mjs`, run through a temporary copy of its harness (deleted afterwards). Lighthouse 13.5.0 mobile emulation, three runs per route per tree; the table reports the median of the three. "Before" is the committed tree built without the fix; "after" is the fixed tree. Each run's LCP element, LCP subparts and font request were read from the JSON report (`lcp-breakdown-insight`, `network-requests`).
+
+### The LCP element is the same text on all three routes
+
+`article.mx-auto > header.mb-4 > div.min-w-0 > p.prose-measure` — the registry description under the tool name, e.g. “Make UUID v4, v7 or Nano IDs in bulk and copy them.” It is plain text, not an image or a background.
+
+### LCP subparts (median of three runs)
+
+| Route | Tree | TTFB | Load delay | Load time | Element render delay | LCP |
+|---|---|---|---|---|---|---|
+| `/tools/uuid-genny/` | before | 4 ms | 0 ms | 0 ms | 691 ms | 3049 ms |
+| `/tools/uuid-genny/` | after | 4 ms | 0 ms | 0 ms | 574 ms | 2720 ms |
+| `/tools/json-formatter/` | before | 3 ms | 0 ms | 0 ms | 680 ms | 3044 ms |
+| `/tools/json-formatter/` | after | 4 ms | 0 ms | 0 ms | 579 ms | 2724 ms |
+| `/tools/qr-genny/` | before | 4 ms | 0 ms | 0 ms | 706 ms | 2744 ms |
+| `/tools/qr-genny/` | after | 4 ms | 0 ms | 0 ms | 593 ms | 2719 ms |
+
+Load delay and load time are 0 for a text LCP: there is no image request to wait for, so the whole metric is TTFB plus render delay. The render delay is dominated by waiting for the route's JavaScript — the description lives in the lazily loaded route component, and the shell renders an empty `#root` until that chunk has executed and React has painted.
+
+### Font audit
+
+| Question | Answer |
+|---|---|
+| Primary font | Schibsted Grotesk Variable (self-hosted Fontsource 5.3.0), variable weight 400–900 |
+| Preloaded before? | **No.** The font was only discovered after the shell's CSS and JS, at 687 ms (median) |
+| Preloaded after? | **Yes**, on every page: `<link rel="preload" as="font" type="font/woff2" crossorigin>` in the document head. Request starts at 11 ms and finishes at 15 ms (median) |
+| `font-display` | `swap`, set by Fontsource |
+| File and size | `schibsted-grotesk-latin-wght-normal-Bb8VGrTG.woff2`, **46,752 bytes** (45.7 KiB), woff2 variable |
+| Subset | `latin`: `U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD` |
+| Other fonts | Schibsted `latin-ext` 20,924 bytes (only fetched when needed) and Geist Mono `latin` 23,128 bytes (`swap`); both stay lazy |
+
+So font loading was a real cost (687 ms) but **not the LCP driver**: preloading it alone moved FCP by about 150 ms and left LCP at 3043–3053 ms. The LCP text is painted only after the route chunk runs.
+
+### The fix (two small changes, no dependencies)
+
+1. `apps/web/vite.config.ts` — a `preloadPrimaryFont()` plugin adds the font preload to the built HTML for the latin Schibsted file. It removes the font from the FCP critical path (request 687 ms → 11 ms) but, as measured above, does not move LCP on its own.
+2. `scripts/prerender.mjs` — each prerendered tool page reads its chunk and shared imports from `.vite/manifest.json` and emits `modulepreload` links for that chain. Before, those chunks were only requested at ~565 ms, after the shell JS had evaluated its dynamic `import()`; now they start with the HTML at ~20 ms. The script fails the build if a route listed in `tool-modules.ts` is missing from the manifest, so the preload cannot silently go stale.
+
+### Medians before and after
+
+| Route | Perf before → after | LCP before → after | Δ LCP | FCP before → after | TBT before → after |
+|---|---|---|---|---|---|
+| `/tools/uuid-genny/` | 90 → 93 | 3049 → 2720 ms | −329 ms (−10.8%) | 2578 → 2342 ms | 29 → 49 ms |
+| `/tools/json-formatter/` | 90 → 93 | 3044 → 2724 ms | −320 ms (−10.5%) | 2576 → 2345 ms | 30 → 40 ms |
+| `/tools/qr-genny/` | 93 → 93 | 2744 → 2719 ms | −25 ms (−0.9%) | 2425 → 2191 ms | 70 → 111 ms |
+
+TBT rises because route-chunk evaluation now happens earlier, inside the TBT window, instead of after it. All three values stay well below the 200 ms "good" threshold and the route budgets still pass.
+
+### What remains
+
+LCP is now 2719–2724 ms, still above the 2500 ms "good" threshold, and about 574–593 ms of it is element render delay. That remainder is the shared shell: `index-*.js` is 105 kB gzip and its evaluation plus hydration is the last thing between FCP and the text painting. Cutting it means splitting the shell (router, omnibox, stores) so a tool page does not need all of it — a larger change than this pass allowed, and one that should be measured against the same harness before being adopted.
+
+### The full gate attempt failed on host contention, not on the change
+
+The 22-route gate was run on the fixed build afterwards. It exited 1: every route scored **58–72** performance with TBT 900–1200 ms, while the focused runs minutes earlier scored 90–93 with TBT 29–111 ms. The same reports show the local server's document response time rising from 3–4 ms to 73–90 ms and Script Evaluation from about 195 ms to about 1525 ms — the whole machine was slow, not one route.
+
+To separate code from environment, the **unmodified HEAD** was then rebuilt and measured with the same harness: `/tools/uuid-genny/` scored **54** with LCP 3650 ms and TBT 900 ms under the same conditions. The unmodified tree collapses in the same way, so this gate run says nothing about the change. It is recorded as **not passed**; it must be re-run on a quiet host before any gate claim is made. No gate is claimed in this section.
+
+### Limits of this measurement
+
+Three routes, one machine, headless Chrome with emulated mobile network/CPU; medians of three runs. The before and after runs were taken minutes apart on the same machine while it was quiet (TTFB 3–4 ms in both trees) and are comparable to each other; they are not a substitute for the full gate. Report artefacts are in `reports/lighthouse/` (git-ignored).
+
