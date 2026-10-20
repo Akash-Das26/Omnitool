@@ -422,10 +422,43 @@ function collectPageMeasurements() {
     return results;
   }
 
+  const headerHeading = document.querySelector('header h1, article h1') ?? null;
+  const firstStage = document.querySelector('article section') ?? null;
+  const headerRect = headerHeading?.getBoundingClientRect() ?? null;
+  const headerHeight = headerRect ? Math.round(headerRect.height) : null;
+  const stageRect = firstStage?.getBoundingClientRect() ?? null;
+
   return {
     title: document.title,
     url: location.pathname + location.search,
     viewport: { width: innerWidth, height: innerHeight },
+    firstViewport:
+      headerHeading && headerRect
+        ? {
+            heading: headerHeading.textContent?.trim() ?? '',
+            headingSelector: headerHeading.closest('header') ? 'header h1' : 'article h1',
+            headingBottom: Math.round(headerRect.bottom),
+            headingHeight: headerHeight,
+            tallestAboveBaseline: (() => {
+              let tallest = { height: 0, selector: '' };
+              for (const element of document.querySelectorAll('h2, h3, p, li, label, td, button')) {
+                if (headerHeading.contains(element)) continue;
+                const rect = element.getBoundingClientRect();
+                if (rect.top >= headerRect.bottom || rect.bottom <= 0 || rect.height <= 1) continue;
+                if (Math.round(rect.height) > tallest.height) {
+                  tallest = { height: Math.round(rect.height), selector: selectorFor(element) };
+                }
+              }
+              return tallest;
+            })(),
+            bodyOverlapsHeading:
+              stageRect !== null &&
+              headerRect !== null &&
+              stageRect.top < headerRect.bottom &&
+              stageRect.bottom > headerRect.top,
+            headerRectBelowFold: headerRect.top >= innerHeight,
+          }
+        : null,
     tokens: tokenColors(),
     surfaces: surfaceProbes(),
     fonts: fontInfo(),
