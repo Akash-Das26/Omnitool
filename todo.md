@@ -109,7 +109,7 @@ Format: `- [ ] ID task (owner: human|agent)`
 - [x] P2-22 `meta-tag-genny`: escaped HTML snippet, absolute-https URL validation with no network request, OG and Twitter fields, length guidance shown as varying display limits (agent)
 - [x] P2-23 `decoder`: Caesar (all 25 shifts with an English-frequency ranking), ROT13, Atbash, Vigenère both ways, rail fence; non-letters kept in place; known vectors tested (agent)
 - [x] P2-24 `large-type`: per-character glyphs, flex-wrap, font size fitted to the viewport, copy and .txt download (agent)
-- [x] P2-25 `regex-tester`: flags, groups, live matches and test outcome; a worker is deferred until an ADR settles the structured-clone boundary (agent, see REVIEW-LOG 018)
+- [x] P2-25 `regex-tester`: flags, groups, live matches and test outcome; each run happens in a fresh Comlink worker the UI terminates on a deadline, so a backtracking pattern cannot freeze the page (agent)
 - [x] P2-26 Batch 3 checks: lint, typecheck, unit tests, three-browser E2E with axe in both themes, LCP-8 guard on every route including the six new ones; owner review of the descriptions still pending under DESC-01 and P2-10 (agent)
 - [ ] P2-27 Batch 3 gate: human review (human)
 

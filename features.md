@@ -21,15 +21,15 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | ID | Feature | What the original does | Phase | Status | Notes |
 |----|---------|------------------------|-------|--------|-------|
 | PF-01 | App shell & layout | Header, collapsible category sidebar, content area; responsive | P1 | ✅ | Compact “Find tool” header button (40/44 px) with the hero as the only full-width search entry; collapsible rail with available counts; responsive to 320 px; skip link |
-| PF-02 | Home page | Hero, featured tools (Substrata, QR, Auto Subtitle, Background Remover), suites, tool grid by category | P1 | ✅ | Omnibox hero and category index of rows (not cards); 19 available tools by default, 78 planned behind “Show planned tools” (no phase strings); truthful available/planned counts; section headers on `--surface-inset`, rows with accepts → produces chips |
+| PF-02 | Home page | Hero, featured tools (Substrata, QR, Auto Subtitle, Background Remover), suites, tool grid by category | P1 | ✅ | Omnibox hero and category index of rows (not cards); 25 available tools by default, 72 planned behind “Show planned tools” (no phase strings); truthful available/planned counts; section headers on `--surface-inset`, rows with accepts → produces chips |
 | PF-03 | Tool registry | Single typed registry (id, name, description, icon, href, flags, accepts/produces) drives nav, grid, search and routing | P1 | ✅ | Valibot-validated seed; `produces` and some missing `accepts` added as provisional metadata |
-| PF-04 | Per-tool routes, lazy-loaded | `/tools/<id>` routes; each tool code-split | P1 | ✅ | Loader import map, `defaultPreload: 'intent'`; nineteen tools implemented |
+| PF-04 | Per-tool routes, lazy-loaded | `/tools/<id>` routes; each tool code-split | P1 | ✅ | Loader import map, `defaultPreload: 'intent'`; twenty-five tools implemented |
 | PF-05 | Omnibox / command search | Keyboard-driven search over tools (and accepted file types) | P1 | ✅ | Ctrl/Cmd+K; built results first, one Marker row driven only by `aria-selected`; arrows and Tab move it, hover uses the hover surface; muted non-interactive Planned group; dropped-file chip and key hints |
-| PF-06 | Theme toggle (light/dark) | Class-based dark mode with no-flash bootstrap; persists choice | P1 | ✅ | External pre-paint bootstrap, localStorage, system default |
+| PF-06 | Theme toggle (light/dark) | Class-based dark mode with no-flash bootstrap; persists choice | P1 | ✅ | Inline pre-paint boot script hashed into CSP `script-src` (DEC-26), localStorage, system default |
 | PF-07 | 404 page | Not-found route | P1 | ✅ | Root not-found route plus static `404.html` |
 | PF-08 | Privacy page | States: no accounts, no data collection, runs locally | P1 | ✅ | `/privacy` written in British English |
 | PF-09 | Offline / PWA | Works with no internet after first load (service worker + cached assets) | P1 | ✅ | Workbox precache 898 kB, SW update prompt; offline E2E passes |
-| PF-10 | Static prerender / SEO | Per-route HTML + meta + OG image for discoverability | P1 | 🟨 | Postbuild HTML and meta for home/privacy/about/19 built tool routes/404; planned routes are derived from the loader map and excluded; planned pages render with noindex; no OG image or canonical URLs until Phase 9 (DEC-10, DEC-11) |
+| PF-10 | Static prerender / SEO | Per-route HTML + meta + OG image for discoverability | P1 | 🟨 | Postbuild HTML and meta for home/privacy/about/25 built tool routes/404; every route meets NFR-013 (median LCP ≤ 2.5 s) after the Session 018 fold-aware tool header; planned routes are derived from the loader map and excluded; planned pages render with noindex; no OG image or canonical URLs until Phase 9 (DEC-10, DEC-11) |
 | PF-11 | Changelog popup | "What's new" with versioned entries | P7 | ⬜ |  |
 | PF-12 | Colour notation selector | Header-level preference (hex/rgb/hsl/oklch…) read by every colour tool | P3 | ⬜ |  |
 | PF-13 | Carry colour across tools | `?color=` query handoff between colour tools | P3 | ⬜ |  |
@@ -126,7 +126,7 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | `text-editor` | Text Editor | Distraction-free Markdown writer | – | T3 | P2 | ProseMirror or TipTap (ADR) | ⬜ | |
 | `font-explorer` | Font File Explorer | Explore font file contents | – | T2 | P2 | opentype.js or similar | ⬜ | |
 | `glyph-browser` | Glyph Browser | Browse unicode glyphs | – | T2 | P2 | Font parsing | ⬜ | |
-| `large-type` | Large Type | Text, but big | – | T1 | P2 | tool-core + CSS fullscreen | ✅ | P2 Batch 3: per-character glyphs in flex wrap, font size fits the viewport, copy and .txt download; LCP 1,495 ms |
+| `large-type` | Large Type | Text, but big | – | T1 | P2 | tool-core + CSS fullscreen | ✅ | P2 Batch 3: per-character glyphs in flex wrap, font size fits the viewport, copy and .txt download; LCP 2,419 ms (smallest margin of the batch) |
 | `line-height-calc` | Line Height Calculator | Calculate optimal line heights | – | T1 | P2 | tool-core | ✅ | P2 Batch 2: ratio or baseline grid to unitless, px and rem; WCAG 1.4.12 note below 1.5 |
 | `paper-sizes` | Paper Sizes | Reference for paper dimensions | – | T1 | P2 | Own data table | ✅ | P2 Batch 2: ISO A, B and C plus six US sizes; mm, inches, points and pixels at 72/96/300 dpi |
 | `px-to-rem` | PX to REM | Convert pixels to rem units | – | T1 | P2 | tool-core | ✅ | P2 Batch 1: configurable root, px to rem and back, common-value table |
@@ -156,12 +156,12 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 
 | ID | Tool | Original description | Flags | Tier | Phase | Suggested approach | Status | Notes |
 |----|------|----------------------|-------|------|-------|--------------------|--------|-------|
-| `cron-builder` | Cron Builder | Build a cron expression field by field or decode one | new | T1 | P2 | tool-core | ✅ | P2 Batch 3: five fields with lists/ranges/steps, names and aliases; OR rule, field-named errors, next 10 runs in UTC and any IANA zone via Intl; LCP 1,961 ms |
-| `http-status` | HTTP Status | Search HTTP status codes with phrases and spec references | new | T1 | P2 | Own data table | ✅ | P2 Batch 3: 60 codes derived in our own words from IANA + RFC 9110 (cited in code); search and class filter; LCP 1,464 ms |
+| `cron-builder` | Cron Builder | Build a cron expression field by field or decode one | new | T1 | P2 | tool-core | ✅ | P2 Batch 3: five fields with lists/ranges/steps, names and aliases; OR rule, field-named errors, next 10 runs in UTC and any IANA zone via Intl; LCP 1,673 ms |
+| `http-status` | HTTP Status | Search HTTP status codes with phrases and spec references | new | T1 | P2 | Own data table | ✅ | P2 Batch 3: 60 codes derived in our own words from IANA + RFC 9110 (cited in code); search and class filter; LCP 1,512 ms |
 | `json-formatter` | JSON Formatter | Format or minify JSON or look at it | new | T1 | P2 | tool-core | ✅ | P2 Batch 1: format, minify and validate with line and column; worker above 1 MB with progress and cancel |
 | `jwt-decoder` | JWT Decoder | Decode a JWT's header, payload & claims | new | T1 | P2 | tool-core (decode only, no verify keys stored) | ✅ | P2 Batch 1: header, payload and registered claims; decode only, no verification, storage or requests |
-| `meta-tag-genny` | Meta Tag Generator | Generate HTML meta tags | – | T1 | P2 | tool-core | ✅ | P2 Batch 3: escaped HTML snippet, https-only URL validation, OG/Twitter fields, length guidance as varying display limits; no network; LCP 1,511 ms |
-| `regex-tester` | Regex Tester | Test regular expressions | – | T1 | P2 | JS RegExp; worker deferred, see REVIEW-LOG 018 | ✅ | P2 Batch 3: flags, groups, live matches and test outcome, clear match/flag errors; catastrophic patterns stay a documented risk (worker needs an ADR); LCP 1,760 ms |
+| `meta-tag-genny` | Meta Tag Generator | Generate HTML meta tags | – | T1 | P2 | tool-core | ✅ | P2 Batch 3: escaped HTML snippet, https-only URL validation, OG/Twitter fields, length guidance as varying display limits; no network; LCP 1,663 ms |
+| `regex-tester` | Regex Tester | Test regular expressions | – | T1 | P2 | JS RegExp + one-shot worker | ✅ | P2 Batch 3: flags, groups, live matches and test outcome, clear match/flag errors; each run happens in a fresh worker the UI terminates on a deadline, so backtracking cannot freeze the page; LCP 1,659 ms |
 | `request-builder` | Request Builder | Compose a cURL or HTTP request | new | T2 | P2 | fetch (user-initiated network only) | ⬜ | |
 | `tailwind-cheatsheet` | Tailwind Cheat Sheet | Quick reference for Tailwind classes | – | T1 | P2 | Own data | ⬜ | |
 | `uuid-genny` | UUID Generator | Generate bulk UUID v4 or v7 and Nano IDs | new | T1 | P2 | crypto.randomUUID | ✅ | P1 sample: v4/v7/Nano ID, copy and download; logic in tool-core with tests |
@@ -171,7 +171,7 @@ Run `pnpm features:progress` for live counts. Baseline at planning time:
 | ID | Tool | Original description | Flags | Tier | Phase | Suggested approach | Status | Notes |
 |----|------|----------------------|-------|------|-------|--------------------|--------|-------|
 | `code-genny` | Barcode Generator | Generate Data Matrix, Aztec, PDF417, Code 128, EAN-13, and more | – | T2 | P2 | bwip-js | ⬜ | |
-| `decoder` | Cipher Decoder | Decode classical ciphers manually or auto-detect the cipher | – | T2 | P2 | tool-core ciphers | ✅ | P2 Batch 3: Caesar (all shifts, frequency-ranked), ROT13, Atbash, Vigenère, rail fence; non-letters kept; LCP 1,931 ms |
+| `decoder` | Cipher Decoder | Decode classical ciphers manually or auto-detect the cipher | – | T2 | P2 | tool-core ciphers | ✅ | P2 Batch 3: Caesar (all shifts, frequency-ranked), ROT13, Atbash, Vigenère, rail fence; non-letters kept; LCP 1,667 ms |
 | `password-genny` | Password Generator | Generate strong passwords or multi-word passphrases | new | T1 | P2 | crypto.getRandomValues | ✅ | P2 Batch 1: passwords and passphrases; rejection sampling removes modulo bias, nothing stored |
 | `qr-genny` | QR Generator | Generate styled QR codes with custom colors, shapes, and logos | – | T2 | P2 | qr-code-styling | 🟨 | P1 sample: PNG/SVG, size, quiet zone, error correction. Styled shapes and logos still P2; used `qrcode` (MIT) instead of qr-code-styling |
 | `markdown-writer` | Text Scratchpad | Text editor with manipulation tools | – | T2 | P2 | Markdown editor | ⬜ | |
