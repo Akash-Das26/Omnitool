@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { expect, type Page, test } from '@playwright/test';
+import { gotoApp } from './helpers';
 
 const THEMES = ['light', 'dark'] as const;
 
@@ -29,7 +30,7 @@ async function start(page: Page, theme: 'light' | 'dark') {
   await page.addInitScript((value) => {
     window.localStorage.setItem('omnitool-theme', value);
   }, theme);
-  await page.goto('/');
+  await gotoApp(page, '/');
   if (theme === 'dark') await expect(page.locator('html')).toHaveClass(/dark/);
 }
 
@@ -47,7 +48,7 @@ function tokenProbe(page: Page, token: string) {
 }
 
 test('planned tools are hidden by default and the counts are truthful', async ({ page }) => {
-  await page.goto('/');
+  await gotoApp(page, '/');
 
   await expect(page.getByText(/tools available, \d+ planned/)).toBeVisible();
   const summary = await page.getByText(/tools available, \d+ planned/).innerText();
@@ -180,7 +181,7 @@ for (const theme of THEMES) {
 }
 
 test('a planned tool has a readable page, noindex and a way home', async ({ page }) => {
-  await page.goto('/tools/colour-converter');
+  await gotoApp(page, '/tools/colour-converter');
 
   await expect(page.getByRole('heading', { level: 1, name: 'Colour Converter' })).toBeVisible();
   await expect(page.getByText('Planned', { exact: true })).toBeVisible();
@@ -201,26 +202,40 @@ test('planned routes are not prerendered', () => {
   expect(existsSync('apps/web/dist/tools/uuid-genny/index.html')).toBe(true);
 });
 
-test('no roadmap strings on any page or omnibox state', async ({ page }) => {
-  const routes = [
+const ROADMAP_STRINGS = /not built|phase \d/i;
+
+/**
+ * One test per route rather than one test walking every route: the walk was a
+ * single 43-navigation test, so a loaded host spent its whole 30 s timeout
+ * navigating and the guard reported a timeout instead of a verdict.
+ */
+test.describe('no roadmap strings on any page or omnibox state', () => {
+  for (const route of [
     '/',
     '/about',
     '/privacy',
     '/tools/colour-converter',
     '/tools/does-not-exist',
     ...BUILT_ROUTES,
-  ];
-  for (const route of routes) {
-    await page.goto(route);
-    expect(await page.locator('body').innerText(), route).not.toMatch(/not built|phase \d/i);
+  ]) {
+    test(`${route}`, async ({ page }) => {
+      await gotoApp(page, route);
+      expect(await page.locator('body').innerText()).not.toMatch(ROADMAP_STRINGS);
+    });
   }
 
-  await page.goto('/');
-  await page.keyboard.press('Control+K');
-  await expect(page.getByRole('dialog')).toBeVisible();
-  expect(await page.getByRole('dialog').innerText()).not.toMatch(/not built|phase \d/i);
+  test('omnibox, empty and filtered', async ({ page }) => {
+    await gotoApp(page, '/');
+    await page.keyboard.press('Control+K');
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    expect(await dialog.innerText()).not.toMatch(ROADMAP_STRINGS);
 
-  await page.locator('[data-slot="command-input"]').fill('pdf');
-  await page.waitForTimeout(150);
-  expect(await page.getByRole('dialog').innerText()).not.toMatch(/not built|phase \d/i);
+    // The query is only meaningful once cmdk has applied it: with "pdf" no built
+    // tool matches, so the built rows disappear and the planned ones stay.
+    await page.locator('[data-slot="command-input"]').fill('pdf');
+    await expect(dialog.locator('[cmdk-item]')).toHaveCount(0);
+    await expect(dialog.locator('[data-planned-tool]').first()).toBeVisible();
+    expect(await dialog.innerText()).not.toMatch(ROADMAP_STRINGS);
+  });
 });

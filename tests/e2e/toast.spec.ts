@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { expectAppReady, gotoApp } from './helpers';
 
 const THEMES = ['light', 'dark'] as const;
 
@@ -6,7 +7,7 @@ async function openWithToast(page: Page, theme: (typeof THEMES)[number]) {
   await page.addInitScript((value) => {
     window.localStorage.setItem('omnitool-theme', value);
   }, theme);
-  await page.goto('/');
+  await gotoApp(page, '/');
   if (theme === 'dark') await expect(page.locator('html')).toHaveClass(/dark/);
 
   // The notice is real PWA state: wait for the worker's precache to finish
@@ -52,6 +53,7 @@ for (const theme of THEMES) {
     const toast = await openWithToast(page, theme);
 
     // SPA navigation keeps the toast mounted; image-converter has the sticky bar.
+    await expectAppReady(page);
     await page.locator('main section li > a[href]').first().click();
     await expect(page).toHaveURL(/\/tools\/image-converter$/);
     const actions = page.locator('[data-slot="tool-actions"]');

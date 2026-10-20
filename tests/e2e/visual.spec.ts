@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { gotoApp } from './helpers';
 
 /**
  * A small tolerance for anti-aliasing between runs. It is far below the size of
@@ -15,7 +16,7 @@ async function openDark(page: Page, route: string) {
   await page.addInitScript(() => {
     window.localStorage.setItem('omnitool-theme', 'dark');
   });
-  await page.goto(route);
+  await gotoApp(page, route);
   await expect(page.locator('html')).toHaveClass(/dark/);
   // Fonts and the theme class settle before the shot.
   await page.evaluate(() => document.fonts.ready);
@@ -83,7 +84,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.addInitScript((value) => {
         window.localStorage.setItem('omnitool-theme', value);
       }, theme);
-      await page.goto(route);
+      await gotoApp(page, route);
       if (theme === 'dark') await expect(page.locator('html')).toHaveClass(/dark/);
       if (route === '/tools/image-converter') {
         await page.locator('input[type="file"]').setInputFiles('tests/fixtures/sample.png');
@@ -97,7 +98,7 @@ for (const theme of ['light', 'dark'] as const) {
     await page.addInitScript((value) => {
       window.localStorage.setItem('omnitool-theme', value);
     }, theme);
-    await page.goto('/');
+    await gotoApp(page, '/');
     await page.keyboard.press('Control+K');
     await expect(page.getByRole('dialog')).toBeVisible();
 

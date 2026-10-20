@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
+import { gotoApp } from './helpers';
 
 const routes = [
   '/',
@@ -33,8 +34,7 @@ async function openInTheme(page: Page, route: string, theme: 'light' | 'dark') {
   await page.addInitScript((value) => {
     window.localStorage.setItem('omnitool-theme', value);
   }, theme);
-  await page.goto(route);
-  await page.waitForTimeout(300);
+  await gotoApp(page, route);
   if (theme === 'dark') await expect(page.locator('html')).toHaveClass(/dark/);
 }
 

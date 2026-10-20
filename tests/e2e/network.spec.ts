@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { gotoApp } from './helpers';
 
 test('no third-party requests during normal use', async ({ page }) => {
   const external: string[] = [];
@@ -10,7 +11,7 @@ test('no third-party requests during normal use', async ({ page }) => {
     }
   });
 
-  await page.goto('/');
+  await gotoApp(page, '/');
   await page
     .getByRole('main')
     .getByRole('button', { name: /Find a tool/ })
@@ -19,16 +20,18 @@ test('no third-party requests during normal use', async ({ page }) => {
   await page.getByRole('option', { name: /UUID Generator/ }).click();
   await page.getByRole('button', { name: 'Generate' }).click();
 
-  await page.goto('/tools/qr-genny');
+  await gotoApp(page, '/tools/qr-genny');
   await expect(page.getByRole('img', { name: /QR code/ })).toBeVisible();
 
-  await page.goto('/tools/image-converter');
+  await gotoApp(page, '/tools/image-converter');
   await page.locator('input[type="file"]').setInputFiles('tests/fixtures/sample.png');
   await page.getByRole('button', { name: 'Convert' }).click();
   await expect(page.getByRole('button', { name: 'Download PNG' })).toBeVisible({
     timeout: 20_000,
   });
 
-  await page.waitForTimeout(500);
+  // No fixed grace period: wait until nothing is in flight, so a late request
+  // would still be caught, then assert the list.
+  await page.waitForLoadState('networkidle');
   expect(external).toEqual([]);
 });

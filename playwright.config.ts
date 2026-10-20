@@ -1,4 +1,12 @@
+import { availableParallelism } from 'node:os';
 import { defineConfig, devices } from '@playwright/test';
+
+/**
+ * Half the cores locally: the suite is CPU-bound (React hydration, canvas, axe)
+ * and oversubscribing it makes every assertion race the scheduler. CI runners are
+ * smaller and shared, so they get a fixed two.
+ */
+const localWorkers = Math.max(1, Math.floor(availableParallelism() / 2));
 
 /**
  * Chromium is the default gate. Set `PLAYWRIGHT_BROWSERS=all` to add Firefox and
@@ -20,7 +28,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  workers: process.env.CI ? 2 : localWorkers,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: 'http://127.0.0.1:4173',

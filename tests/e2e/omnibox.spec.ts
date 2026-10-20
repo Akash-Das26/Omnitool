@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { expectAppReady, gotoApp } from './helpers';
 
 const THEMES = ['light', 'dark'] as const;
 type Theme = (typeof THEMES)[number];
@@ -7,17 +8,26 @@ async function start(page: Page, theme: Theme) {
   await page.addInitScript((value) => {
     window.localStorage.setItem('omnitool-theme', value);
   }, theme);
-  await page.goto('/');
+  await gotoApp(page, '/');
   if (theme === 'dark') await expect(page.locator('html')).toHaveClass(/dark/);
 }
 
+/**
+ * The shortcut only exists once the shell's keydown listener is attached, and
+ * the first result is only selected once cmdk has grouped the registry. Wait for
+ * both, rather than for a fixed number of milliseconds.
+ */
 async function openOmnibox(page: Page) {
+  await expectAppReady(page);
   await page.keyboard.press('Control+K');
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await page.waitForTimeout(150);
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('[cmdk-item][aria-selected="true"]')).toHaveCount(1);
 }
 
+/** Accept a dropped file and wait for the chip that proves it was handled. */
 async function dropPng(page: Page) {
+  await expectAppReady(page);
   await page.evaluate(() => {
     const file = new File([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])], 'sample.png', {
       type: 'image/png',
@@ -30,8 +40,19 @@ async function dropPng(page: Page) {
         new DragEvent('drop', { dataTransfer: transfer, bubbles: true, cancelable: true }),
       );
   });
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await page.waitForTimeout(200);
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('sample.png')).toBeVisible();
+  await expect(dialog.locator('[data-planned-tool]').first()).toBeVisible();
+}
+
+/** Fill the omnibox and wait for cmdk to apply the query to the result list. */
+async function filterTo(page: Page, query: string) {
+  const dialog = page.getByRole('dialog');
+  await dialog.locator('[data-slot="command-input"]').fill(query);
+  await expect(dialog.getByRole('combobox')).toHaveValue(query);
+  await expect(dialog.locator('[cmdk-item]')).toHaveCount(0);
+  await expect(dialog.locator('[data-planned-tool]').first()).toBeVisible();
 }
 
 /**
@@ -158,8 +179,7 @@ for (const theme of THEMES) {
     expect(empty.plannedSelected).toBe(0);
 
     // A query that only matches planned tools has no interactive options.
-    await page.locator('[data-slot="command-input"]').fill('pdf');
-    await page.waitForTimeout(150);
+    await filterTo(page, 'pdf');
     const pdf = await markerState(page);
     expect(pdf.options).toBe(0);
     expect(pdf.selected).toBe(0);
@@ -229,8 +249,7 @@ for (const theme of THEMES) {
     await openOmnibox(page);
     expect(await lowContrastText(page)).toEqual([]);
 
-    await page.locator('[data-slot="command-input"]').fill('pdf');
-    await page.waitForTimeout(150);
+    await filterTo(page, 'pdf');
     expect(await lowContrastText(page)).toEqual([]);
 
     await page.keyboard.press('Escape');
