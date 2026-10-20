@@ -56,6 +56,13 @@ function loadShare() {
 }
 
 const LOAD_SHARE_OF_CORES = loadShare();
+/**
+ * NFR-013 (DEC-23): median LCP of 2.5 s or better on tool pages, in this mobile
+ * profile. The sweep reports it instead of asserting it: the budget assertions
+ * above are unchanged, so a miss is visible in the summary and in CI's job
+ * summary without silently turning into a build failure.
+ */
+const LCP_TARGET_MS = 2500;
 const CORES = availableParallelism();
 const LOAD_LIMIT = CORES * LOAD_SHARE_OF_CORES;
 const EXIT_HOST_BUSY = 3;
@@ -341,11 +348,26 @@ async function main() {
       await writeFile(resolve(REPORT_DIR, `${route.name}.report.json`), lowest.json);
       await writeFile(resolve(REPORT_DIR, `${route.name}.report.html`), lowest.html);
 
+      // The element reported for a route is the one from the median LCP run, so
+      // the selector and the number describe the same paint.
+      const lcpRuns = runs
+        .filter(({ lhr }) => metricValue(lhr, 'largest-contentful-paint') !== null)
+        .sort(
+          (a, b) =>
+            (metricValue(a.lhr, 'largest-contentful-paint') ?? 0) -
+            (metricValue(b.lhr, 'largest-contentful-paint') ?? 0),
+        );
+      const lcpMedianRun = lcpRuns[Math.floor(lcpRuns.length / 2)] ?? lowest;
+      const lcpMs = Math.round(metricValue(lcpMedianRun.lhr, 'largest-contentful-paint') ?? 0);
+
       rows.push({
         route: route.path,
         name: route.name,
         medians,
         minimums,
+        lcpMs,
+        lcpElement: lcpElement(lcpMedianRun.lhr),
+        lcpOverTarget: lcpMs > LCP_TARGET_MS,
         lcp: metric(
           runs.map(({ lhr }) => lhr),
           'largest-contentful-paint',
@@ -397,14 +419,31 @@ async function main() {
     );
   }
 
+  const overTarget = rows.filter((row) => row.lcpOverTarget);
+  console.log(
+    overTarget.length === 0
+      ? `\nNFR-013 (median LCP ≤ ${LCP_TARGET_MS} ms): every route is within the target`
+      : `\nNFR-013 (median LCP ≤ ${LCP_TARGET_MS} ms): ${overTarget.length} route(s) over target`,
+  );
+  for (const row of rows) {
+    if (row.lcpOverTarget) {
+      console.log(
+        `  OVER ${String(row.lcpMs).padStart(5)} ms  ${row.route.padEnd(28)} ` +
+          `${row.lcpElement?.selector ?? 'LCP element not reported'}`,
+      );
+    }
+  }
+
   const table = [
-    '| Route | Perf med/min | A11y med/min | Best med/min | SEO med/min | LCP med | TBT med | CLS med | Load 1m max |',
-    '|---|---|---|---|---|---|---|---|---|',
+    '| Route | Perf med/min | A11y med/min | Best med/min | SEO med/min | LCP med | NFR-013 | LCP element | TBT med | CLS med | Load 1m max |',
+    '|---|---|---|---|---|---|---|---|---|---|---|',
     ...rows.map((row) => {
       const pair = (category) => `${row.medians[category]}/${row.minimums[category]}`;
       return `| \`${row.route}\` | ${pair('performance')} | ${pair('accessibility')} | ${pair(
         'best-practices',
-      )} | ${pair('seo')} | ${row.lcp} | ${row.tbt} | ${row.cls} | ${row.load} |`;
+      )} | ${pair('seo')} | ${row.lcp} | ${row.lcpOverTarget ? '**over**' : 'ok'} | \`${
+        row.lcpElement?.selector ?? 'not reported'
+      }\` | ${row.tbt} | ${row.cls} | ${row.load} |`;
     }),
   ].join('\n');
   await writeFile(
@@ -416,6 +455,17 @@ async function main() {
         `1m/5m ${printLoad(startLoad)} at start`,
       '',
       `${routes.length} routes × ${RUNS} runs. Budgets use the median; the minimum is reported next to it.`,
+      '',
+      `NFR-013 (median LCP ≤ ${LCP_TARGET_MS} ms): ` +
+        (overTarget.length === 0
+          ? 'every route is within the target.'
+          : `${overTarget.length} route(s) over target — ` +
+            overTarget
+              .map(
+                (row) =>
+                  `\`${row.route}\` ${row.lcpMs} ms (\`${row.lcpElement?.selector ?? 'element not reported'}\`)`,
+              )
+              .join(', ')),
       '',
       table,
       '',
