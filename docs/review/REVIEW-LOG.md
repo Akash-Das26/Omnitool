@@ -610,11 +610,12 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 - `pnpm lint`: pass, 0 warnings, **169 files** + design rules.
 - `pnpm typecheck`: pass.
 - `pnpm test:coverage`: **348 passed / 28 files**; statements 97.06%, branches 90.8%, functions 99.5%, lines 98.22%.
-- `pnpm build`: exit 0; 22 routes + `404.html`; the tool page HTML grew from 1,661 B to 3,546 B (static content) and the prerender step fails loudly if `dist/index.html` has no empty `#root`.
+- `pnpm build`: exit 0; 22 routes + `404.html`; the tool page HTML grew from 1,661 B to 3,550 B / 3,546 characters (static content) and the prerender step fails loudly if `dist/index.html` has no empty `#root`.
 - `pnpm check:budgets`: pass — shell **157.6 kB gzip** (budget 200), precache **997.1 kB** (up from 964.3 kB because 22 pages carry static content), 73 files.
 - `pnpm e2e` (Chromium): **172 passed** in 41.6 s, including the 50 axe runs in both themes.
 - `--project=firefox`: **167 passed, 5 skipped, 0 failed** in 1.4 min (the 5 skips are the pre-existing Chromium-only pixel baselines).
 - `--project=webkit`: **NOT TESTED** — launch still fails with "Host system is missing dependencies" (F-019).
+- Empty-description branch verified by hand: with `uuid-genny`'s description temporarily blanked in the registry seed, `pnpm build` emitted the `<h1>` with **no** `p.prose-measure` in `#root` and the generic `meta[name="description"]` fallback. The seed was restored byte-for-byte from a backup and the tree rebuilt; `git status` was clean afterwards. All 19 built tools currently have descriptions, so no test exercises this path.
 - Lighthouse before/after: see the table in the Done section; both sweeps exit 0 with the busy-host guard silent.
 - GitHub Actions: **not executed** — nothing pushed.
 
