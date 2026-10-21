@@ -32,6 +32,7 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   decoder: () => import('@/tools/decoder'),
   'large-type': () => import('@/tools/large-type'),
   'regex-tester': () => import('@/tools/regex-tester'),
+  'sci-calc': () => import('@/tools/sci-calc'),
 };
 
 /**

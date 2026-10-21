@@ -922,7 +922,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Find Tailwind utility classes with a quick, searchable reference.",
       "produces": ["text/plain"]
     },
     {
@@ -1054,7 +1054,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Run scientific calculations and keep a history of results.",
       "produces": ["text/plain"]
     },
     {
@@ -1150,7 +1150,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Convert ordinary measurements into playful, absurd units.",
       "produces": ["text/plain"]
     },
     {
@@ -1162,7 +1162,7 @@
       "accepts": [],
       "tier": 1,
       "phase": 2,
-      "description": "",
+      "description": "Turn a recipe into a table of ingredients and steps.",
       "produces": ["text/plain"]
     }
   ]

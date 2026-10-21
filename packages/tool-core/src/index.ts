@@ -1,5 +1,6 @@
 export * from './base/index';
 export * from './braille/index';
+export * from './calc/index';
 export * from './ciphers/index';
 export * from './cron/index';
 export * from './diff/index';

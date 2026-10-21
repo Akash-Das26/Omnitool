@@ -97,7 +97,13 @@ export function Rail() {
 
       <div className="border-t border-border p-2">
         {!collapsed ? (
-          <nav aria-label="About Omnitool" className="mb-2 space-y-0.5 text-sm">
+          <nav aria-label="More pages" className="mb-2 space-y-0.5 text-sm">
+            <Link
+              to="/experiments"
+              className="block rounded-control px-2 py-2 hover:bg-surface-hover"
+            >
+              Experiments
+            </Link>
             <Link to="/privacy" className="block rounded-control px-2 py-2 hover:bg-surface-hover">
               Privacy
             </Link>

@@ -31,6 +31,7 @@ describe('tool modules', () => {
         'px-to-rem',
         'qr-genny',
         'regex-tester',
+        'sci-calc',
         'text-diff',
         'time-calc',
         'typo-calc',

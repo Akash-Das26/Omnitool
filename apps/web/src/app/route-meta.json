@@ -11,6 +11,10 @@
     "title": "Acknowledgements — Omnitool",
     "description": "The open-source projects and licences that make Omnitool possible."
   },
+  "experiments": {
+    "title": "Experiments — Omnitool",
+    "description": "Unfinished Omnitool sketches, each one listing what it does not do yet."
+  },
   "not-found": {
     "title": "Page not found — Omnitool",
     "description": "That page does not exist. Search the tool index instead."

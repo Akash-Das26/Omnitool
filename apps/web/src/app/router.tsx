@@ -5,6 +5,7 @@ import { useDocumentMeta } from '@/lib/document-meta';
 import { validateSharedSearch } from '@/lib/search-params';
 import { loadTool } from '@/lib/tool-modules';
 import { AboutPage } from '@/pages/about';
+import { ExperimentsPage } from '@/pages/experiments';
 import { HomePage } from '@/pages/home';
 import { NotFoundPage } from '@/pages/not-found';
 import { PlannedToolPage } from '@/pages/planned-tool';
@@ -34,6 +35,12 @@ const aboutRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/about',
   component: AboutPage,
+});
+
+const experimentsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/experiments',
+  component: ExperimentsPage,
 });
 
 const toolRoute = createRoute({
@@ -74,7 +81,13 @@ function BuiltToolRoute({
   return <ToolComponent />;
 }
 
-const routeTree = rootRoute.addChildren([homeRoute, privacyRoute, aboutRoute, toolRoute]);
+const routeTree = rootRoute.addChildren([
+  homeRoute,
+  privacyRoute,
+  aboutRoute,
+  experimentsRoute,
+  toolRoute,
+]);
 
 export const router = createRouter({
   routeTree,

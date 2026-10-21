@@ -137,6 +137,20 @@ function pageBody({ heading, paragraph }) {
   );
 }
 
+/**
+ * The experiments list is rendered only after hydration; the heading and the
+ * intro are static so the page has a first paint. The list sits below them, so
+ * its arrival cannot move the text that was already painted.
+ */
+const EXPERIMENTS_INTRO =
+  'Unfinished sketches. They work, but they are narrower than the tools in the main index and may change shape. Each one says what it does not do yet.';
+
+function experimentsBody() {
+  return shell(
+    `<article class="mx-auto w-full max-w-[760px] px-4 py-8 md:px-8 md:py-12"><h1 class="text-2xl break-words md:text-3xl">Experiments</h1><p class="prose-measure mt-4 text-muted-foreground">${escapeHtml(EXPERIMENTS_INTRO)}</p></article>`,
+  );
+}
+
 function render({ title, description, robots = false, preloads = [], body = '' }) {
   const html = template
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(title)}</title>`)
@@ -170,8 +184,9 @@ function render({ title, description, robots = false, preloads = [], body = '' }
     .replace('<div id="root"></div>', `<div id="root">${body}</div>`);
 }
 
-// Copy for the three non-tool pages is duplicated from `pages/home.tsx`,
-// `pages/about.tsx` and `pages/privacy.tsx` because the build cannot render React.
+// Copy for the four non-tool pages is duplicated from `pages/home.tsx`,
+// `pages/about.tsx`, `pages/privacy.tsx` and `pages/experiments.tsx` because the
+// build cannot render React.
 // `tests/e2e/prerender.spec.ts` compares it with the hydrated DOM, so a change to
 // either side fails the guard instead of drifting silently.
 const routes = [
@@ -197,6 +212,11 @@ const routes = [
       paragraph:
         'Omnitool is an independent toolkit. It shares a product idea with earlier browser tool collections but uses its own code, design and copy.',
     }),
+  },
+  {
+    path: '/experiments',
+    meta: routeMeta.experiments,
+    body: experimentsBody(),
   },
   ...toolIds.map((id) => {
     const tool = toolsById.get(id);
