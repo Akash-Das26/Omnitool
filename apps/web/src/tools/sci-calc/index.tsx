@@ -123,7 +123,7 @@ export default function ScientificCalculatorTool() {
         <OutputActions text={result ?? ''} filename="calculation.txt" disabled={result === null} />
       }
     >
-      <ToolStage title="Expression">
+      <ToolStage title="Enter">
         <Label htmlFor="sci-calc-expression">Expression</Label>
         <Input
           id="sci-calc-expression"

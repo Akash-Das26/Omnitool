@@ -66,7 +66,7 @@ export function ExperimentsPage() {
         Everything else lives in the{' '}
         <Link
           to="/"
-          className="text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="text-primary underline underline-offset-4 hover:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           tool index
         </Link>

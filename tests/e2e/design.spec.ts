@@ -24,6 +24,10 @@ const BUILT_ROUTES = [
   '/tools/line-height-calc',
   '/tools/typo-calc',
   '/tools/paper-sizes',
+  '/tools/sci-calc',
+  '/tools/tailwind-cheatsheet',
+  '/tools/stupid-units',
+  '/tools/recipe-table',
 ];
 
 async function start(page: Page, theme: 'light' | 'dark') {
@@ -54,7 +58,9 @@ test('planned tools are hidden by default and the counts are truthful', async ({
   const summary = await page.getByText(/tools available, \d+ planned/).innerText();
   const numbers = summary.match(/(\d+) tools available, (\d+) planned/);
   expect(numbers).not.toBeNull();
-  expect(Number(numbers?.[1]) + Number(numbers?.[2])).toBe(97);
+  const availableCount = Number(numbers?.[1]);
+  const plannedCount = Number(numbers?.[2]);
+  expect(availableCount + plannedCount).toBe(97);
 
   // No planned rows, no planned-only category and no roadmap strings.
   await expect(page.getByText('Planned', { exact: true })).toHaveCount(0);
@@ -82,17 +88,18 @@ test('planned tools are hidden by default and the counts are truthful', async ({
       }),
     )
   ).filter((row) => row.available >= 0);
-  expect(railCounts.reduce((total, row) => total + row.available, 0)).toBe(25);
-  expect(railCounts.reduce((total, row) => total + row.planned, 0)).toBe(72);
+  expect(railCounts.reduce((total, row) => total + row.available, 0)).toBe(availableCount);
+  expect(railCounts.reduce((total, row) => total + row.planned, 0)).toBe(plannedCount);
 
-  const toggle = page.getByRole('button', { name: /Show planned tools \(72\)/ });
+  const toggle = page.getByRole('button', {
+    name: new RegExp(`Show planned tools \\(${plannedCount}\\)`),
+  });
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.click();
 
-  await expect(page.getByRole('button', { name: /Hide planned tools \(72\)/ })).toHaveAttribute(
-    'aria-expanded',
-    'true',
-  );
+  await expect(
+    page.getByRole('button', { name: new RegExp(`Hide planned tools \\(${plannedCount}\\)`) }),
+  ).toHaveAttribute('aria-expanded', 'true');
   await expect(page.getByRole('heading', { level: 2, name: 'Colour' })).toBeVisible();
   await expect(
     page.locator('#category-colour').locator('..').getByText('0 available, 11 planned'),
@@ -107,7 +114,9 @@ test('planned tools are hidden by default and the counts are truthful', async ({
 
   await page.getByRole('button', { name: /Hide planned tools/ }).click();
   await expect(page.getByRole('heading', { level: 2, name: 'Colour' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /Show planned tools \(72\)/ })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: new RegExp(`Show planned tools \\(${plannedCount}\\)`) }),
+  ).toBeVisible();
 });
 
 test('a planned-only category explains the empty state', async ({ page }) => {

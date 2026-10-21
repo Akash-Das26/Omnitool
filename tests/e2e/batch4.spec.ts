@@ -1,11 +1,29 @@
 import { expect, test } from '@playwright/test';
 import { gotoApp } from './helpers';
 
+test.describe('experiments', () => {
+  test('lists the sketches and links the built ones', async ({ page }) => {
+    await gotoApp(page, '/experiments');
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Experiments' })).toBeVisible();
+    await expect(
+      page.getByText('Unfinished sketches. They work, but they are narrower'),
+    ).toBeVisible();
+
+    const sketches = page.getByRole('listitem').filter({ hasText: 'Sketch' });
+    await expect(sketches).toHaveCount(2);
+    await expect(sketches.first()).toContainText('there are no charts yet');
+
+    await page.getByRole('link', { name: 'Stupid Units' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Stupid Units' })).toBeVisible();
+  });
+});
+
 test.describe('sci-calc', () => {
   test('evaluates with the declared precedence and announces the result', async ({ page }) => {
     await gotoApp(page, '/tools/sci-calc');
 
-    const input = page.getByLabel('Expression');
+    const input = page.getByRole('textbox', { name: 'Expression' });
     await input.fill('sin(30)');
     await input.press('Enter');
     await expect(page.getByRole('status')).toHaveText('sin(30) = 0.5');
@@ -19,8 +37,9 @@ test.describe('sci-calc', () => {
     await expect(page.getByRole('status')).toHaveText('2^3^2 = 512');
 
     // The history keeps the session's calculations, newest first.
-    await expect(page.getByRole('listitem').first()).toContainText('2^3^2');
-    await expect(page.getByRole('listitem').first()).toContainText('512');
+    const history = page.getByRole('region', { name: 'History' });
+    await expect(history.getByRole('listitem').first()).toContainText('2^3^2');
+    await expect(history.getByRole('listitem').first()).toContainText('512');
   });
 
   test('works from the key grid, and ans carries the previous result', async ({ page }) => {
@@ -32,7 +51,7 @@ test.describe('sci-calc', () => {
     await expect(page.getByRole('status')).toHaveText('5! = 120');
     await expect(page.getByText('ans = 120')).toBeVisible();
 
-    const input = page.getByLabel('Expression');
+    const input = page.getByRole('textbox', { name: 'Expression' });
     await input.fill('ans*2');
     await input.press('Enter');
     await expect(page.getByRole('status')).toHaveText('ans*2 = 240');
@@ -48,7 +67,7 @@ test.describe('sci-calc', () => {
   }) => {
     await gotoApp(page, '/tools/sci-calc');
 
-    const input = page.getByLabel('Expression');
+    const input = page.getByRole('textbox', { name: 'Expression' });
     await input.fill('1/0');
     await input.press('Enter');
     await expect(page.getByRole('alert')).toHaveText('Division by zero has no value.');
@@ -102,8 +121,8 @@ test.describe('tailwind-cheatsheet', () => {
     await expect(page.locator('code').filter({ hasText: /^gap-x-2$/ })).toBeVisible();
     await expect(page.locator('code').filter({ hasText: /^flex$/ })).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Copy gap-x-2' }).click();
-    await expect(page.getByRole('button', { name: 'Copy gap-x-2' })).toHaveText('Copied');
+    await page.getByRole('button', { name: 'Copy class gap-x-2' }).click();
+    await expect(page.getByRole('button', { name: 'Copied gap-x-2' })).toContainText('Copied');
     const clipboard = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipboard).toBe('gap-x-2');
 
@@ -120,36 +139,85 @@ test.describe('stupid-units', () => {
   test('converts between everyday units and sourced equivalents', async ({ page }) => {
     await gotoApp(page, '/tools/stupid-units');
 
-    await expect(page.getByText('Experiment')).toBeVisible();
+    await expect(page.getByText('Experiment', { exact: true })).toBeVisible();
 
     // 20.12 m is exactly one cricket pitch, and its source is on screen.
-    await page.getByLabel('Amount').fill('20.12');
+    await page.getByRole('spinbutton', { name: 'Amount' }).fill('20.12');
     await expect(page.getByText('1 cricket pitch', { exact: true })).toBeVisible();
     await expect(page.getByText(/Source: MCC Laws of Cricket, Law 6/)).toBeVisible();
 
     // A measurement of a real object is marked as rough.
-    await page.getByLabel('Amount').fill('330');
+    await page.getByRole('spinbutton', { name: 'Amount' }).fill('330');
     await expect(page.getByText('roughly 1', { exact: true })).toBeVisible();
     await expect(page.getByText(/Source: toureiffel.paris/)).toBeVisible();
 
     await page.getByRole('button', { name: 'Time' }).click();
     await page.getByLabel('Unit').click();
     await page.getByRole('option', { name: 'Hours' }).click();
-    await page.getByLabel('Amount').fill('1');
+    await page.getByRole('spinbutton', { name: 'Amount' }).fill('1');
     await expect(page.getByRole('button', { name: 'Length' })).toHaveAttribute(
       'aria-pressed',
       'false',
     );
     await expect(page.getByText('4 Warhols')).toBeVisible();
 
-    await page.getByLabel('Amount').fill('-2');
+    await page.getByRole('spinbutton', { name: 'Amount' }).fill('-2');
     await expect(page.getByRole('alert')).toHaveText('Enter a number of zero or more.');
 
     await page.getByRole('button', { name: 'Reset' }).click();
-    await expect(page.getByLabel('Amount')).toHaveValue('1');
+    await expect(page.getByRole('spinbutton', { name: 'Amount' })).toHaveValue('1');
     await expect(page.getByRole('button', { name: 'Length' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+  });
+});
+
+test.describe('recipe-table', () => {
+  test('parses the example, scales it and flags what it cannot read', async ({ page }) => {
+    await gotoApp(page, '/tools/recipe-table');
+
+    await page.getByRole('button', { name: 'Load an example' }).click();
+
+    const flour = page.getByRole('row', { name: /flour/ });
+    await expect(flour).toContainText('roughly 250');
+    await expect(flour).toContainText('USDA FoodData Central 168894');
+
+    const eggs = page.getByRole('row', { name: /^eggs/ });
+    await expect(eggs).toContainText('3');
+
+    // The unmeasured line is kept as written and counted.
+    await expect(page.getByRole('alert')).toHaveText(
+      '1 line was not scaled and is shown as written.',
+    );
+    await expect(page.getByRole('row', { name: /Salt to taste/ })).toContainText(
+      'No amount at the start',
+    );
+
+    await page.getByRole('spinbutton', { name: 'Scale to (servings)' }).fill('8');
+    await expect(page.getByRole('row', { name: /flour/ })).toContainText('roughly 500');
+
+    await page.getByRole('button', { name: 'US', exact: true }).click();
+    await expect(page.getByRole('row', { name: /flour/ })).toContainText('1 1/8');
+    await expect(page.getByRole('row', { name: /flour/ })).toContainText('lb');
+    await expect(page.getByRole('row', { name: /butter/ })).toContainText('8 oz');
+  });
+
+  test('copies the table and resets', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await gotoApp(page, '/tools/recipe-table');
+
+    await page.getByLabel('Ingredients, one per line').fill('1 cup milk\n2 eggs\npepper');
+    await expect(page.getByRole('alert')).toContainText('1 line was not scaled');
+
+    await page.getByRole('button', { name: 'Copy table' }).click();
+    await expect(page.getByText('Table copied')).toBeVisible();
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboard).toContain('Recipe for 4 servings (metric)');
+    expect(clipboard).toContain('roughly 244 g milk');
+
+    await page.getByRole('button', { name: 'Reset' }).click();
+    await expect(page.getByLabel('Ingredients, one per line')).toHaveValue('');
+    await expect(page.getByText('Paste an ingredient list to see the scaled table.')).toBeVisible();
   });
 });

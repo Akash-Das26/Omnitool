@@ -32,6 +32,11 @@ const routes = [
   '/tools/decoder',
   '/tools/large-type',
   '/tools/regex-tester',
+  '/tools/sci-calc',
+  '/tools/tailwind-cheatsheet',
+  '/tools/stupid-units',
+  '/tools/recipe-table',
+  '/experiments',
 ];
 
 const themes = ['light', 'dark'] as const;

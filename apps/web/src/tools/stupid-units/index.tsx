@@ -62,7 +62,7 @@ export default function StupidUnitsTool() {
         <OutputActions text={summary} filename="stupid-units.txt" disabled={summary === ''} />
       }
     >
-      <ToolStage title="Amount">
+      <ToolStage title="Measure">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline">Experiment</Badge>
           <p className="text-sm text-muted-foreground">
@@ -134,7 +134,7 @@ export default function StupidUnitsTool() {
                 <div className="flex flex-wrap items-baseline gap-2">
                   <span className="font-mono text-lg tabular-nums">
                     {unit.exact ? display : `roughly ${display}`}
-                  </span>
+                  </span>{' '}
                   <span className="text-sm">{display === '1' ? unit.name : unit.plural}</span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{unit.definition}</p>
