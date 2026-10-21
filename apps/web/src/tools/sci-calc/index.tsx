@@ -142,11 +142,13 @@ export default function ScientificCalculatorTool() {
           spellCheck={false}
           aria-describedby="sci-calc-syntax"
         />
-        <p id="sci-calc-syntax" className="mt-2 text-sm text-muted-foreground">
-          Multiplication needs <span className="font-mono">*</span>:{' '}
-          <span className="font-mono">2(3+4)</span> and <span className="font-mono">2pi</span> are
-          rejected rather than guessed. Results are binary floating point, rounded for display.
-        </p>
+        <ToolHint>
+          <p id="sci-calc-syntax">
+            Multiplication needs <span className="font-mono">*</span>:{' '}
+            <span className="font-mono">2(3+4)</span> and <span className="font-mono">2pi</span> are
+            rejected rather than guessed. Results are binary floating point, rounded for display.
+          </p>
+        </ToolHint>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <div>
