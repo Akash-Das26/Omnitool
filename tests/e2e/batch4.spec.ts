@@ -1,5 +1,16 @@
-import { expect, test } from '@playwright/test';
+import { type BrowserContext, expect, test } from '@playwright/test';
 import { gotoApp } from './helpers';
+
+/**
+ * Chromium needs the clipboard permissions granted by name; Firefox and WebKit
+ * reject that permission name and expose the clipboard without a grant
+ * (audit F-013 matrix runs).
+ */
+async function allowClipboard(browserName: string, context: BrowserContext) {
+  if (browserName === 'chromium') {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  }
+}
 
 test.describe('experiments', () => {
   test('lists the sketches and links the built ones', async ({ page }) => {
@@ -26,15 +37,15 @@ test.describe('sci-calc', () => {
     const input = page.getByRole('textbox', { name: 'Expression' });
     await input.fill('sin(30)');
     await input.press('Enter');
-    await expect(page.getByRole('status')).toHaveText('sin(30) = 0.5');
+    await expect(page.locator('p[role="status"]')).toHaveText('sin(30) = 0.5');
 
     await input.fill('0.1+0.2');
     await input.press('Enter');
-    await expect(page.getByRole('status')).toHaveText('0.1+0.2 = 0.3');
+    await expect(page.locator('p[role="status"]')).toHaveText('0.1+0.2 = 0.3');
 
     await input.fill('2^3^2');
     await input.press('Enter');
-    await expect(page.getByRole('status')).toHaveText('2^3^2 = 512');
+    await expect(page.locator('p[role="status"]')).toHaveText('2^3^2 = 512');
 
     // The history keeps the session's calculations, newest first.
     const history = page.getByRole('region', { name: 'History' });
@@ -48,13 +59,13 @@ test.describe('sci-calc', () => {
     await page.getByRole('button', { name: 'Insert 5' }).click();
     await page.getByRole('button', { name: 'Insert !' }).click();
     await page.getByRole('button', { name: 'Calculate' }).click();
-    await expect(page.getByRole('status')).toHaveText('5! = 120');
+    await expect(page.locator('p[role="status"]')).toHaveText('5! = 120');
     await expect(page.getByText('ans = 120')).toBeVisible();
 
     const input = page.getByRole('textbox', { name: 'Expression' });
     await input.fill('ans*2');
     await input.press('Enter');
-    await expect(page.getByRole('status')).toHaveText('ans*2 = 240');
+    await expect(page.locator('p[role="status"]')).toHaveText('ans*2 = 240');
 
     await page.getByRole('button', { name: 'Reset' }).click();
     await expect(input).toHaveValue('');
@@ -112,8 +123,8 @@ test.describe('tailwind-cheatsheet', () => {
     await expect(page.getByText(/No class matches/)).toBeVisible();
   });
 
-  test('filters by category and copies a class', async ({ page, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  test('filters by category and copies a class', async ({ page, context, browserName }) => {
+    await allowClipboard(browserName, context);
     await gotoApp(page, '/tools/tailwind-cheatsheet');
 
     await page.getByRole('button', { name: /^Spacing/ }).click();
@@ -203,8 +214,8 @@ test.describe('recipe-table', () => {
     await expect(page.getByRole('row', { name: /butter/ })).toContainText('8 oz');
   });
 
-  test('copies the table and resets', async ({ page, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  test('copies the table and resets', async ({ page, context, browserName }) => {
+    await allowClipboard(browserName, context);
     await gotoApp(page, '/tools/recipe-table');
 
     await page.getByLabel('Ingredients, one per line').fill('1 cup milk\n2 eggs\npepper');
