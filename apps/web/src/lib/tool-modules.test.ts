@@ -30,6 +30,7 @@ describe('tool modules', () => {
         'password-genny',
         'px-to-rem',
         'qr-genny',
+        'recipe-table',
         'regex-tester',
         'sci-calc',
         'stupid-units',

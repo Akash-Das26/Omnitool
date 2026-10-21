@@ -32,6 +32,7 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   decoder: () => import('@/tools/decoder'),
   'large-type': () => import('@/tools/large-type'),
   'regex-tester': () => import('@/tools/regex-tester'),
+  'recipe-table': () => import('@/tools/recipe-table'),
   'sci-calc': () => import('@/tools/sci-calc'),
   'stupid-units': () => import('@/tools/stupid-units'),
   'tailwind-cheatsheet': () => import('@/tools/tailwind-cheatsheet'),
