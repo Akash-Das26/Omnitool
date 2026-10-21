@@ -20,14 +20,18 @@ import { cn } from '@/lib/utils';
 /** Bounded so a broad query cannot put hundreds of rows in the first render. */
 const VISIBLE_LIMIT = 60;
 
+/**
+ * The visible words stay part of the accessible name (axe rule
+ * label-content-name-mismatch), so the class name rides along as hidden text.
+ */
 function CopyButton({
   text,
   label,
-  accessibleName,
+  suffix,
 }: {
   readonly text: string;
   readonly label: string;
-  readonly accessibleName: string;
+  readonly suffix: string;
 }) {
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
 
@@ -41,14 +45,9 @@ function CopyButton({
   }
 
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      className="h-9 px-2 text-sm"
-      onClick={copy}
-      aria-label={accessibleName}
-    >
+    <Button type="button" variant="ghost" className="h-9 px-2 text-sm" onClick={copy}>
       {state === 'copied' ? 'Copied' : state === 'failed' ? 'Copy failed' : label}
+      <span className="sr-only"> {suffix}</span>
     </Button>
   );
 }
@@ -64,16 +63,9 @@ function EntryRow({ entry }: { readonly entry: UtilityEntry }) {
           <p className="prose-measure mt-1 text-sm text-muted-foreground">{entry.note}</p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center">
-          <CopyButton
-            text={entry.class}
-            label="Copy class"
-            accessibleName={`Copy ${entry.class}`}
-          />
-          <CopyButton
-            text={entry.css}
-            label="Copy CSS"
-            accessibleName={`Copy the CSS for ${entry.class}`}
-          />
+          {' '}
+          <CopyButton text={entry.class} label="Copy class" suffix={entry.class} />
+          <CopyButton text={entry.css} label="Copy CSS" suffix={`for ${entry.class}`} />
         </div>
       </div>
       <details className="mt-2">
