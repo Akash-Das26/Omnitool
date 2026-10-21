@@ -33,6 +33,7 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   'large-type': () => import('@/tools/large-type'),
   'regex-tester': () => import('@/tools/regex-tester'),
   'sci-calc': () => import('@/tools/sci-calc'),
+  'tailwind-cheatsheet': () => import('@/tools/tailwind-cheatsheet'),
 };
 
 /**

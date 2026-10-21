@@ -24,7 +24,8 @@
     "e2e": "playwright test",
     "check:budgets": "node scripts/check-build-budget.mjs",
     "lighthouse": "node scripts/lighthouse.mjs",
-    "features:progress": "node scripts/features-progress.mjs"
+    "features:progress": "node scripts/features-progress.mjs",
+    "cheatsheet:generate": "node scripts/generate-tailwind-cheatsheet.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

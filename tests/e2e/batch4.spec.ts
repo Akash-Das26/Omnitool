@@ -70,3 +70,48 @@ test.describe('sci-calc', () => {
     await expect(page.getByRole('alert')).toHaveText('Factorial needs a whole number.');
   });
 });
+
+test.describe('tailwind-cheatsheet', () => {
+  test('searches by class and by CSS property', async ({ page }) => {
+    await gotoApp(page, '/tools/tailwind-cheatsheet');
+
+    await expect(page.getByText(/classes compiled by Tailwind 4\.3\.3/)).toBeVisible();
+
+    const search = page.getByLabel('Class, property or words');
+    await search.fill('mx-auto');
+    await expect(page.locator('code').filter({ hasText: /^mx-auto$/ })).toBeVisible();
+    await expect(
+      page.getByText('Equal automatic side margins, the usual way to centre a block.'),
+    ).toBeVisible();
+
+    // A property name finds every class that sets it.
+    await search.fill('margin-block-start');
+    await expect(page.locator('code').filter({ hasText: /^space-y-2$/ })).toBeVisible();
+    await expect(page.locator('code').filter({ hasText: /^flex$/ })).toHaveCount(0);
+
+    await search.fill('zzzz-not-a-class');
+    await expect(page.getByText(/No class matches/)).toBeVisible();
+  });
+
+  test('filters by category and copies a class', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await gotoApp(page, '/tools/tailwind-cheatsheet');
+
+    await page.getByRole('button', { name: /^Spacing/ }).click();
+    await expect(page.getByRole('heading', { level: 3, name: /Spacing/ })).toBeVisible();
+    await expect(page.locator('code').filter({ hasText: /^gap-x-2$/ })).toBeVisible();
+    await expect(page.locator('code').filter({ hasText: /^flex$/ })).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Copy gap-x-2' }).click();
+    await expect(page.getByRole('button', { name: 'Copy gap-x-2' })).toHaveText('Copied');
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+    expect(clipboard).toBe('gap-x-2');
+
+    await page.getByRole('button', { name: 'Reset' }).click();
+    await expect(page.getByLabel('Class, property or words')).toHaveValue('');
+    await expect(page.getByRole('button', { name: /^All/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+});

@@ -32,6 +32,7 @@ describe('tool modules', () => {
         'qr-genny',
         'regex-tester',
         'sci-calc',
+        'tailwind-cheatsheet',
         'text-diff',
         'time-calc',
         'typo-calc',

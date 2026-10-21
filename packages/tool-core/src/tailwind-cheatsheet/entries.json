@@ -1,0 +1,1154 @@
+{
+  "_note": "Class names, categories and notes are hand-written. The CSS for each entry is generated from the class by scripts/generate-tailwind-cheatsheet.mjs and stored in generated.ts; never edit that file by hand.",
+  "entries": [
+    {
+      "class": "block",
+      "category": "layout",
+      "note": "Takes the full line and stacks vertically."
+    },
+    {
+      "class": "inline-block",
+      "category": "layout",
+      "note": "Sits in the text flow but accepts width and height."
+    },
+    {
+      "class": "inline",
+      "category": "layout",
+      "note": "Default text flow; width and height are ignored."
+    },
+    {
+      "class": "flex",
+      "category": "layout",
+      "note": "Turns the element into a one-dimensional flex container."
+    },
+    {
+      "class": "inline-flex",
+      "category": "layout",
+      "note": "Flex container that still sits inline with text."
+    },
+    {
+      "class": "grid",
+      "category": "layout",
+      "note": "Turns the element into a two-dimensional grid container."
+    },
+    {
+      "class": "inline-grid",
+      "category": "layout",
+      "note": "Grid container that flows inline with surrounding text."
+    },
+    {
+      "class": "hidden",
+      "category": "layout",
+      "note": "Removes the element from layout entirely."
+    },
+    {
+      "class": "contents",
+      "category": "layout",
+      "note": "Drops the box itself; children behave as if it were absent."
+    },
+    {
+      "class": "flow-root",
+      "category": "layout",
+      "note": "Creates a block box that contains its floats."
+    },
+    {
+      "class": "table",
+      "category": "layout",
+      "note": "Renders the element with table box behaviour."
+    },
+    {
+      "class": "isolate",
+      "category": "layout",
+      "note": "Starts a new stacking context without z-index tricks."
+    },
+    {
+      "class": "static",
+      "category": "layout",
+      "note": "Normal document flow; offsets have no effect."
+    },
+    {
+      "class": "relative",
+      "category": "layout",
+      "note": "Stays in flow but becomes the anchor for absolute children."
+    },
+    {
+      "class": "absolute",
+      "category": "layout",
+      "note": "Removed from flow and placed against the nearest positioned ancestor."
+    },
+    {
+      "class": "fixed",
+      "category": "layout",
+      "note": "Pinned to the viewport and unaffected by scrolling."
+    },
+    {
+      "class": "sticky",
+      "category": "layout",
+      "note": "Scrolls normally until the offset is reached, then sticks."
+    },
+    {
+      "class": "inset-0",
+      "category": "layout",
+      "note": "Pins all four sides to zero; a full-size overlay when positioned."
+    },
+    {
+      "class": "inset-x-0",
+      "category": "layout",
+      "note": "Pins the left and right edges to zero."
+    },
+    {
+      "class": "top-0",
+      "category": "layout",
+      "note": "Sets the top offset to zero on a positioned element."
+    },
+    {
+      "class": "right-0",
+      "category": "layout",
+      "note": "Sets the right offset to zero on a positioned element."
+    },
+    {
+      "class": "bottom-0",
+      "category": "layout",
+      "note": "Sets the bottom offset to zero on a positioned element."
+    },
+    {
+      "class": "left-0",
+      "category": "layout",
+      "note": "Sets the left offset to zero on a positioned element."
+    },
+    {
+      "class": "z-10",
+      "category": "layout",
+      "note": "Raises the element one step above the default stacking order."
+    },
+    {
+      "class": "z-50",
+      "category": "layout",
+      "note": "High stacking order, typical for overlays and popovers."
+    },
+    {
+      "class": "overflow-hidden",
+      "category": "layout",
+      "note": "Clips anything that would spill outside the box."
+    },
+    {
+      "class": "overflow-auto",
+      "category": "layout",
+      "note": "Adds scrollbars only when the content overflows."
+    },
+    {
+      "class": "overflow-x-auto",
+      "category": "layout",
+      "note": "Allows horizontal scrolling while the vertical axis stays visible."
+    },
+    {
+      "class": "overflow-y-scroll",
+      "category": "layout",
+      "note": "Always shows a vertical scrollbar, even when not needed."
+    },
+    {
+      "class": "float-left",
+      "category": "layout",
+      "note": "Floats the box to the left so text wraps around it."
+    },
+    {
+      "class": "clear-both",
+      "category": "layout",
+      "note": "Moves below any floated elements on either side."
+    },
+    {
+      "class": "box-border",
+      "category": "layout",
+      "note": "Width includes padding and border, the usual reset default."
+    },
+    {
+      "class": "object-cover",
+      "category": "layout",
+      "note": "Fills the box with an image, cropping the overflow."
+    },
+    {
+      "class": "object-contain",
+      "category": "layout",
+      "note": "Fits the whole image inside the box without cropping."
+    },
+    {
+      "class": "aspect-square",
+      "category": "layout",
+      "note": "Keeps a one-to-one width and height ratio."
+    },
+    {
+      "class": "aspect-video",
+      "category": "layout",
+      "note": "Keeps the 16:9 ratio used by video."
+    },
+    {
+      "class": "columns-2",
+      "category": "layout",
+      "note": "Flows content into two newspaper-style columns."
+    },
+    {
+      "class": "break-inside-avoid",
+      "category": "layout",
+      "note": "Stops a block from being split across columns or pages."
+    },
+    { "class": "visible", "category": "layout", "note": "Shows overflow, the initial behaviour." },
+    {
+      "class": "invisible",
+      "category": "layout",
+      "note": "Hides the element but keeps the space it occupies."
+    },
+    {
+      "class": "sr-only",
+      "category": "layout",
+      "note": "Hides content visually while leaving it for screen readers."
+    },
+    { "class": "not-sr-only", "category": "layout", "note": "Undoes sr-only, usually on focus." },
+
+    { "class": "p-0", "category": "spacing", "note": "No padding on any side." },
+    {
+      "class": "p-1",
+      "category": "spacing",
+      "note": "Padding of one step on the 0.25rem scale: 0.25rem."
+    },
+    { "class": "p-2", "category": "spacing", "note": "Padding of two steps: 0.5rem." },
+    { "class": "p-3", "category": "spacing", "note": "Padding of three steps: 0.75rem." },
+    { "class": "p-4", "category": "spacing", "note": "Padding of four steps: 1rem." },
+    { "class": "p-5", "category": "spacing", "note": "Padding of five steps: 1.25rem." },
+    { "class": "p-6", "category": "spacing", "note": "Padding of six steps: 1.5rem." },
+    { "class": "p-8", "category": "spacing", "note": "Padding of eight steps: 2rem." },
+    { "class": "px-4", "category": "spacing", "note": "Left and right padding of four steps." },
+    { "class": "px-6", "category": "spacing", "note": "Left and right padding of six steps." },
+    { "class": "py-2", "category": "spacing", "note": "Top and bottom padding of two steps." },
+    { "class": "py-3", "category": "spacing", "note": "Top and bottom padding of three steps." },
+    { "class": "pt-3", "category": "spacing", "note": "Top padding only, three steps." },
+    { "class": "pr-4", "category": "spacing", "note": "Right padding only, four steps." },
+    { "class": "pb-6", "category": "spacing", "note": "Bottom padding only, six steps." },
+    { "class": "pl-2", "category": "spacing", "note": "Left padding only, two steps." },
+    {
+      "class": "ps-2",
+      "category": "spacing",
+      "note": "Start-side padding, which follows the writing direction."
+    },
+    {
+      "class": "pe-2",
+      "category": "spacing",
+      "note": "End-side padding, mirrored in right-to-left languages."
+    },
+    { "class": "m-0", "category": "spacing", "note": "Removes every margin." },
+    { "class": "m-2", "category": "spacing", "note": "Margin of two steps on all sides." },
+    { "class": "m-4", "category": "spacing", "note": "Margin of four steps on all sides." },
+    {
+      "class": "m-auto",
+      "category": "spacing",
+      "note": "Automatic margins on all sides; centres in flex and grid too."
+    },
+    {
+      "class": "mx-auto",
+      "category": "spacing",
+      "note": "Equal automatic side margins, the usual way to centre a block."
+    },
+    { "class": "mx-2", "category": "spacing", "note": "Left and right margin of two steps." },
+    { "class": "my-4", "category": "spacing", "note": "Top and bottom margin of four steps." },
+    { "class": "my-2", "category": "spacing", "note": "Top and bottom margin of two steps." },
+    { "class": "mt-2", "category": "spacing", "note": "Top margin only, two steps." },
+    { "class": "mr-3", "category": "spacing", "note": "Right margin only, three steps." },
+    { "class": "mb-6", "category": "spacing", "note": "Bottom margin only, six steps." },
+    { "class": "ml-1", "category": "spacing", "note": "Left margin only, one step." },
+    {
+      "class": "ms-2",
+      "category": "spacing",
+      "note": "Start-side margin, which flips in right-to-left text."
+    },
+    { "class": "me-2", "category": "spacing", "note": "End-side margin, the mirror of ms-2." },
+    {
+      "class": "-mt-2",
+      "category": "spacing",
+      "note": "A negative top margin that pulls the element upwards."
+    },
+    {
+      "class": "space-y-2",
+      "category": "spacing",
+      "note": "Adds vertical space between direct children, not around them."
+    },
+    {
+      "class": "space-x-4",
+      "category": "spacing",
+      "note": "Adds horizontal space between direct children."
+    },
+    {
+      "class": "-space-y-1",
+      "category": "spacing",
+      "note": "Overlaps direct children vertically by one step."
+    },
+    {
+      "class": "gap-2",
+      "category": "spacing",
+      "note": "Gutter between flex or grid items on both axes."
+    },
+    { "class": "gap-4", "category": "spacing", "note": "Four-step gutter on both axes." },
+    { "class": "gap-6", "category": "spacing", "note": "Six-step gutter on both axes." },
+    { "class": "gap-x-2", "category": "spacing", "note": "Column gutter only." },
+    { "class": "gap-y-3", "category": "spacing", "note": "Row gutter only." },
+    {
+      "class": "divide-y",
+      "category": "spacing",
+      "note": "Draws a 1 px line between stacked children."
+    },
+    {
+      "class": "divide-x",
+      "category": "spacing",
+      "note": "Draws a 1 px line between side-by-side children."
+    },
+
+    {
+      "class": "w-0",
+      "category": "sizing",
+      "note": "Zero width; still visible if it has padding or border."
+    },
+    { "class": "w-4", "category": "sizing", "note": "Width of four spacing steps, 1rem." },
+    { "class": "w-1/2", "category": "sizing", "note": "Half the width of the containing block." },
+    { "class": "w-full", "category": "sizing", "note": "Fills the whole width available." },
+    {
+      "class": "w-screen",
+      "category": "sizing",
+      "note": "Width of the viewport, ignoring the parent."
+    },
+    {
+      "class": "w-auto",
+      "category": "sizing",
+      "note": "Lets the browser size the element from its content."
+    },
+    {
+      "class": "w-fit",
+      "category": "sizing",
+      "note": "Shrinks to the content but never past the container."
+    },
+    { "class": "w-min", "category": "sizing", "note": "As narrow as the content allows." },
+    {
+      "class": "w-max",
+      "category": "sizing",
+      "note": "As wide as the content needs, even if it overflows."
+    },
+    {
+      "class": "min-w-0",
+      "category": "sizing",
+      "note": "Allows a flex child to shrink below its content width."
+    },
+    { "class": "min-w-full", "category": "sizing", "note": "Never narrower than the container." },
+    { "class": "max-w-sm", "category": "sizing", "note": "Caps the width at 24rem." },
+    { "class": "max-w-md", "category": "sizing", "note": "Caps the width at 28rem." },
+    {
+      "class": "max-w-prose",
+      "category": "sizing",
+      "note": "Caps the width at a comfortable 65 characters."
+    },
+    { "class": "max-w-5xl", "category": "sizing", "note": "Caps the width at 64rem." },
+    { "class": "h-4", "category": "sizing", "note": "Height of four spacing steps, 1rem." },
+    { "class": "h-8", "category": "sizing", "note": "Height of eight spacing steps, 2rem." },
+    { "class": "h-10", "category": "sizing", "note": "Height of ten spacing steps, 2.5rem." },
+    { "class": "h-full", "category": "sizing", "note": "Fills the whole height of the parent." },
+    {
+      "class": "h-screen",
+      "category": "sizing",
+      "note": "Viewport height; on mobile browsers the address bar can make this jump."
+    },
+    {
+      "class": "h-dvh",
+      "category": "sizing",
+      "note": "Dynamic viewport height, which follows a mobile browser's chrome."
+    },
+    { "class": "h-auto", "category": "sizing", "note": "Height comes from the content." },
+    {
+      "class": "min-h-screen",
+      "category": "sizing",
+      "note": "At least one viewport tall, the usual full-page wrapper."
+    },
+    {
+      "class": "min-h-0",
+      "category": "sizing",
+      "note": "Lets a flex child become shorter than its content."
+    },
+    {
+      "class": "max-h-96",
+      "category": "sizing",
+      "note": "Caps the height at 24rem so long content scrolls instead."
+    },
+    {
+      "class": "size-6",
+      "category": "sizing",
+      "note": "Sets width and height together, six steps."
+    },
+    {
+      "class": "size-10",
+      "category": "sizing",
+      "note": "Square box of ten steps, often an icon button."
+    },
+    {
+      "class": "shrink-0",
+      "category": "sizing",
+      "note": "Stops a flex item from shrinking when space runs out."
+    },
+    { "class": "grow", "category": "sizing", "note": "Lets a flex item take the leftover space." },
+    { "class": "grow-0", "category": "sizing", "note": "Prevents a flex item from growing." },
+    {
+      "class": "basis-1/2",
+      "category": "sizing",
+      "note": "Starting size of half the flex container."
+    },
+
+    {
+      "class": "text-xs",
+      "category": "typography",
+      "note": "Smallest step, 0.75rem with a matching line height."
+    },
+    {
+      "class": "text-sm",
+      "category": "typography",
+      "note": "0.875rem, typical for secondary text."
+    },
+    { "class": "text-base", "category": "typography", "note": "1rem, the default body size." },
+    { "class": "text-lg", "category": "typography", "note": "1.125rem." },
+    { "class": "text-xl", "category": "typography", "note": "1.25rem." },
+    { "class": "text-2xl", "category": "typography", "note": "1.5rem, a common page heading." },
+    { "class": "text-3xl", "category": "typography", "note": "1.875rem." },
+    { "class": "text-4xl", "category": "typography", "note": "2.25rem." },
+    {
+      "class": "font-sans",
+      "category": "typography",
+      "note": "Uses the theme's sans-serif stack."
+    },
+    {
+      "class": "font-mono",
+      "category": "typography",
+      "note": "Uses the monospace stack for code and values."
+    },
+    { "class": "font-normal", "category": "typography", "note": "Weight 400." },
+    { "class": "font-medium", "category": "typography", "note": "Weight 500." },
+    { "class": "font-semibold", "category": "typography", "note": "Weight 600." },
+    { "class": "font-bold", "category": "typography", "note": "Weight 700." },
+    {
+      "class": "leading-none",
+      "category": "typography",
+      "note": "Line height of 1, so lines touch."
+    },
+    { "class": "leading-tight", "category": "typography", "note": "Line height of 1.25." },
+    { "class": "leading-normal", "category": "typography", "note": "Line height of 1.5." },
+    { "class": "leading-relaxed", "category": "typography", "note": "Line height of 1.625." },
+    { "class": "leading-loose", "category": "typography", "note": "Line height of 2." },
+    { "class": "tracking-tighter", "category": "typography", "note": "Letter spacing of -0.05em." },
+    { "class": "tracking-tight", "category": "typography", "note": "Letter spacing of -0.025em." },
+    { "class": "tracking-normal", "category": "typography", "note": "No extra letter spacing." },
+    { "class": "tracking-wide", "category": "typography", "note": "Letter spacing of 0.025em." },
+    {
+      "class": "text-left",
+      "category": "typography",
+      "note": "Left-aligned text, the default in left-to-right scripts."
+    },
+    { "class": "text-center", "category": "typography", "note": "Centres each line of text." },
+    { "class": "text-right", "category": "typography", "note": "Aligns text to the right edge." },
+    {
+      "class": "text-justify",
+      "category": "typography",
+      "note": "Stretches spaces so both edges line up."
+    },
+    {
+      "class": "text-balance",
+      "category": "typography",
+      "note": "Evener line lengths in headings; limited to a few lines."
+    },
+    {
+      "class": "text-pretty",
+      "category": "typography",
+      "note": "Avoids short last lines in body text."
+    },
+    {
+      "class": "uppercase",
+      "category": "typography",
+      "note": "Renders letters as capitals without changing the text."
+    },
+    { "class": "lowercase", "category": "typography", "note": "Renders letters in lower case." },
+    {
+      "class": "capitalize",
+      "category": "typography",
+      "note": "Capitalises the first letter of each word."
+    },
+    { "class": "normal-case", "category": "typography", "note": "Leaves the source casing alone." },
+    {
+      "class": "italic",
+      "category": "typography",
+      "note": "Slants the text using the italic face when there is one."
+    },
+    { "class": "not-italic", "category": "typography", "note": "Forces upright text." },
+    { "class": "underline", "category": "typography", "note": "Draws a line under the text." },
+    {
+      "class": "no-underline",
+      "category": "typography",
+      "note": "Removes underlines, often from links."
+    },
+    { "class": "line-through", "category": "typography", "note": "Draws a line through the text." },
+    {
+      "class": "truncate",
+      "category": "typography",
+      "note": "Clips one line and adds an ellipsis."
+    },
+    {
+      "class": "text-ellipsis",
+      "category": "typography",
+      "note": "Ellipsis for text that overflows its box."
+    },
+    {
+      "class": "break-words",
+      "category": "typography",
+      "note": "Breaks long words only when they would overflow."
+    },
+    {
+      "class": "break-all",
+      "category": "typography",
+      "note": "Breaks anywhere, useful for long hashes and URLs."
+    },
+    {
+      "class": "whitespace-nowrap",
+      "category": "typography",
+      "note": "Keeps text on one line, even if it overflows."
+    },
+    { "class": "list-disc", "category": "typography", "note": "Bulleted list markers." },
+    {
+      "class": "list-none",
+      "category": "typography",
+      "note": "Removes list markers; semantics stay."
+    },
+    {
+      "class": "indent-4",
+      "category": "typography",
+      "note": "Indents the first line of a paragraph by four steps."
+    },
+    {
+      "class": "align-middle",
+      "category": "typography",
+      "note": "Vertically centres an inline element on the text baseline."
+    },
+    {
+      "class": "antialiased",
+      "category": "typography",
+      "note": "Smoothed font rendering on macOS and iOS."
+    },
+    {
+      "class": "tabular-nums",
+      "category": "typography",
+      "note": "Equal-width digits, so numbers do not jump."
+    },
+
+    { "class": "text-black", "category": "colour", "note": "Text in pure black." },
+    {
+      "class": "text-white",
+      "category": "colour",
+      "note": "Text in white; check contrast on the background."
+    },
+    {
+      "class": "text-slate-600",
+      "category": "colour",
+      "note": "Muted slate text; the theme colour is defined as a variable."
+    },
+    {
+      "class": "text-slate-500",
+      "category": "colour",
+      "note": "Lighter slate text for secondary labels."
+    },
+    {
+      "class": "text-blue-500",
+      "category": "colour",
+      "note": "Blue text from the default palette."
+    },
+    { "class": "text-red-600", "category": "colour", "note": "Darker red text, often for errors." },
+    { "class": "text-current", "category": "colour", "note": "Uses the inherited text colour." },
+    {
+      "class": "text-transparent",
+      "category": "colour",
+      "note": "Fully transparent text; keeps selection and copy working."
+    },
+    { "class": "bg-white", "category": "colour", "note": "White background." },
+    { "class": "bg-black", "category": "colour", "note": "Black background." },
+    { "class": "bg-slate-100", "category": "colour", "note": "Very light slate surface." },
+    {
+      "class": "bg-slate-900",
+      "category": "colour",
+      "note": "Near-black slate, common in dark themes."
+    },
+    { "class": "bg-blue-500", "category": "colour", "note": "Blue fill from the default palette." },
+    { "class": "bg-blue-600", "category": "colour", "note": "A darker blue for hover states." },
+    {
+      "class": "bg-transparent",
+      "category": "colour",
+      "note": "No fill; the element behind shows through."
+    },
+    {
+      "class": "bg-current",
+      "category": "colour",
+      "note": "Fill matches the inherited text colour."
+    },
+    {
+      "class": "border-slate-200",
+      "category": "colour",
+      "note": "A light hairline colour for borders."
+    },
+    {
+      "class": "border-blue-500",
+      "category": "colour",
+      "note": "Blue border, useful for a focused or selected state."
+    },
+    {
+      "class": "opacity-0",
+      "category": "colour",
+      "note": "Invisible but still in layout and focusable."
+    },
+    { "class": "opacity-50", "category": "colour", "note": "Half transparent." },
+    { "class": "opacity-100", "category": "colour", "note": "Fully opaque." },
+    {
+      "class": "divide-slate-200",
+      "category": "colour",
+      "note": "Colour of the lines made by divide utilities."
+    },
+    {
+      "class": "ring-blue-500",
+      "category": "colour",
+      "note": "Colour of the ring, usually a focus indicator."
+    },
+    { "class": "outline-blue-500", "category": "colour", "note": "Colour of the outline." },
+    { "class": "fill-blue-500", "category": "colour", "note": "Fill inside an SVG shape." },
+    {
+      "class": "stroke-slate-500",
+      "category": "colour",
+      "note": "Stroke colour for SVG lines and icons."
+    },
+    {
+      "class": "accent-blue-500",
+      "category": "colour",
+      "note": "Tint for native checkboxes, radios and sliders."
+    },
+    {
+      "class": "caret-blue-500",
+      "category": "colour",
+      "note": "Colour of the text cursor in an input."
+    },
+    {
+      "class": "placeholder:text-slate-400",
+      "category": "colour",
+      "note": "Placeholder text colour, applied only to the placeholder."
+    },
+    {
+      "class": "bg-linear-to-r",
+      "category": "colour",
+      "note": "Left-to-right gradient; set the stops with from- and to-."
+    },
+
+    { "class": "border", "category": "borders", "note": "A 1 px border on all sides." },
+    {
+      "class": "border-0",
+      "category": "borders",
+      "note": "No border; keeps the width reserved in some designs."
+    },
+    { "class": "border-2", "category": "borders", "note": "A 2 px border on all sides." },
+    {
+      "class": "border-4",
+      "category": "borders",
+      "note": "A 4 px border, often a selection frame."
+    },
+    { "class": "border-t", "category": "borders", "note": "A 1 px top border only." },
+    { "class": "border-b", "category": "borders", "note": "A 1 px bottom border only." },
+    { "class": "border-l", "category": "borders", "note": "A 1 px left border only." },
+    { "class": "border-r", "category": "borders", "note": "A 1 px right border only." },
+    {
+      "class": "border-solid",
+      "category": "borders",
+      "note": "Continuous border line, the default."
+    },
+    {
+      "class": "border-dashed",
+      "category": "borders",
+      "note": "Dashed border, common for drop zones."
+    },
+    { "class": "border-dotted", "category": "borders", "note": "Dotted border." },
+    { "class": "border-none", "category": "borders", "note": "Removes the border style entirely." },
+    { "class": "rounded-none", "category": "borders", "note": "Square corners." },
+    { "class": "rounded-sm", "category": "borders", "note": "A slight 0.25rem corner radius." },
+    { "class": "rounded", "category": "borders", "note": "0.25rem radius, the base step." },
+    { "class": "rounded-md", "category": "borders", "note": "0.375rem radius for small panels." },
+    {
+      "class": "rounded-lg",
+      "category": "borders",
+      "note": "0.5rem radius, a common control corner."
+    },
+    { "class": "rounded-xl", "category": "borders", "note": "0.75rem radius for larger surfaces." },
+    {
+      "class": "rounded-full",
+      "category": "borders",
+      "note": "Fully rounded ends, for pills and avatars."
+    },
+    { "class": "rounded-t-lg", "category": "borders", "note": "Rounds only the top corners." },
+    { "class": "rounded-b-lg", "category": "borders", "note": "Rounds only the bottom corners." },
+    {
+      "class": "rounded-s-md",
+      "category": "borders",
+      "note": "Rounds the start-side corners, which follow direction."
+    },
+    { "class": "rounded-e-md", "category": "borders", "note": "Rounds the end-side corners." },
+    { "class": "divide-solid", "category": "borders", "note": "Solid dividers between children." },
+    { "class": "ring", "category": "borders", "note": "A 1 px ring drawn outside the border box." },
+    {
+      "class": "ring-2",
+      "category": "borders",
+      "note": "A 2 px ring, the usual keyboard focus ring."
+    },
+    {
+      "class": "ring-inset",
+      "category": "borders",
+      "note": "Draws the ring inside the element instead of outside."
+    },
+    {
+      "class": "outline",
+      "category": "borders",
+      "note": "A 1 px outline that does not affect layout."
+    },
+    { "class": "outline-2", "category": "borders", "note": "A 2 px outline." },
+    {
+      "class": "outline-none",
+      "category": "borders",
+      "note": "Removes the outline; replace it with a visible focus style."
+    },
+    { "class": "outline-dashed", "category": "borders", "note": "Dashed outline style." },
+    {
+      "class": "outline-offset-2",
+      "category": "borders",
+      "note": "Leaves a 2 px gap between the element and its outline."
+    },
+
+    { "class": "shadow-2xs", "category": "effects", "note": "The faintest shadow step." },
+    {
+      "class": "shadow-xs",
+      "category": "effects",
+      "note": "A very small shadow for slight separation."
+    },
+    { "class": "shadow-sm", "category": "effects", "note": "A small shadow for raised cards." },
+    { "class": "shadow-md", "category": "effects", "note": "A medium shadow for panels." },
+    { "class": "shadow-lg", "category": "effects", "note": "A larger shadow for popovers." },
+    { "class": "shadow-xl", "category": "effects", "note": "A prominent shadow for dialogs." },
+    { "class": "shadow-2xl", "category": "effects", "note": "The largest shadow step." },
+    { "class": "shadow-none", "category": "effects", "note": "Removes every shadow." },
+    {
+      "class": "shadow-inner",
+      "category": "effects",
+      "note": "An inset shadow that makes the box look pressed."
+    },
+    { "class": "opacity-75", "category": "effects", "note": "Three-quarters opaque." },
+    {
+      "class": "blur-sm",
+      "category": "effects",
+      "note": "A gentle blur filter on the element itself."
+    },
+    { "class": "blur", "category": "effects", "note": "A 8 px blur filter." },
+    {
+      "class": "brightness-110",
+      "category": "effects",
+      "note": "Brightens the element by ten percent."
+    },
+    { "class": "contrast-125", "category": "effects", "note": "Increases contrast by a quarter." },
+    { "class": "grayscale", "category": "effects", "note": "Removes all colour from the element." },
+    { "class": "invert", "category": "effects", "note": "Inverts the colours of the element." },
+    {
+      "class": "saturate-150",
+      "category": "effects",
+      "note": "Pushes colour saturation up by half."
+    },
+    { "class": "sepia", "category": "effects", "note": "Applies a warm sepia tone." },
+    {
+      "class": "backdrop-blur-sm",
+      "category": "effects",
+      "note": "Blurs whatever is behind the element."
+    },
+    {
+      "class": "mix-blend-multiply",
+      "category": "effects",
+      "note": "Multiplies the element's colours with what is behind."
+    },
+    {
+      "class": "bg-blend-overlay",
+      "category": "effects",
+      "note": "Blends the background image with the background colour."
+    },
+    {
+      "class": "drop-shadow-md",
+      "category": "effects",
+      "note": "A shadow that follows the visible shape, such as text or SVG."
+    },
+    {
+      "class": "isolation-auto",
+      "category": "effects",
+      "note": "Lets the element blend with the page instead of its own stack."
+    },
+
+    {
+      "class": "flex-row",
+      "category": "flexbox-grid",
+      "note": "Lays flex children out in a row, the default."
+    },
+    { "class": "flex-col", "category": "flexbox-grid", "note": "Stacks flex children vertically." },
+    {
+      "class": "flex-wrap",
+      "category": "flexbox-grid",
+      "note": "Lets flex items move onto new lines."
+    },
+    {
+      "class": "flex-nowrap",
+      "category": "flexbox-grid",
+      "note": "Keeps flex items on one line, shrinking them if needed."
+    },
+    {
+      "class": "flex-1",
+      "category": "flexbox-grid",
+      "note": "Grows and shrinks to fill the free space."
+    },
+    {
+      "class": "flex-auto",
+      "category": "flexbox-grid",
+      "note": "Sizes from the content, then shares leftover space."
+    },
+    {
+      "class": "flex-none",
+      "category": "flexbox-grid",
+      "note": "Fixed size; neither grows nor shrinks."
+    },
+    { "class": "flex-initial", "category": "flexbox-grid", "note": "Can shrink but not grow." },
+    {
+      "class": "justify-start",
+      "category": "flexbox-grid",
+      "note": "Packs items at the start of the main axis."
+    },
+    {
+      "class": "justify-center",
+      "category": "flexbox-grid",
+      "note": "Centres items along the main axis."
+    },
+    {
+      "class": "justify-between",
+      "category": "flexbox-grid",
+      "note": "Spreads items apart with the first and last at the edges."
+    },
+    {
+      "class": "justify-around",
+      "category": "flexbox-grid",
+      "note": "Equal space around every item, including the ends."
+    },
+    {
+      "class": "justify-evenly",
+      "category": "flexbox-grid",
+      "note": "Equal gaps between items and at both ends."
+    },
+    {
+      "class": "justify-items-center",
+      "category": "flexbox-grid",
+      "note": "Centres grid items inside their cells horizontally."
+    },
+    {
+      "class": "justify-self-end",
+      "category": "flexbox-grid",
+      "note": "Pushes one grid item to the end of its cell."
+    },
+    {
+      "class": "items-start",
+      "category": "flexbox-grid",
+      "note": "Aligns items to the start of the cross axis."
+    },
+    {
+      "class": "items-center",
+      "category": "flexbox-grid",
+      "note": "Centres items on the cross axis, the usual vertical centring."
+    },
+    {
+      "class": "items-end",
+      "category": "flexbox-grid",
+      "note": "Aligns items to the end of the cross axis."
+    },
+    {
+      "class": "items-stretch",
+      "category": "flexbox-grid",
+      "note": "Stretches items to fill the cross axis, the default."
+    },
+    {
+      "class": "items-baseline",
+      "category": "flexbox-grid",
+      "note": "Lines items up on their first text baseline."
+    },
+    {
+      "class": "self-center",
+      "category": "flexbox-grid",
+      "note": "Centres one item on the cross axis."
+    },
+    {
+      "class": "self-start",
+      "category": "flexbox-grid",
+      "note": "Puts one item at the start of the cross axis."
+    },
+    {
+      "class": "content-center",
+      "category": "flexbox-grid",
+      "note": "Centres wrapped lines within the container."
+    },
+    {
+      "class": "content-between",
+      "category": "flexbox-grid",
+      "note": "Spreads wrapped lines to the container edges."
+    },
+    { "class": "grid-cols-1", "category": "flexbox-grid", "note": "A single equal column." },
+    { "class": "grid-cols-2", "category": "flexbox-grid", "note": "Two equal columns." },
+    { "class": "grid-cols-3", "category": "flexbox-grid", "note": "Three equal columns." },
+    { "class": "grid-cols-4", "category": "flexbox-grid", "note": "Four equal columns." },
+    { "class": "grid-cols-6", "category": "flexbox-grid", "note": "Six equal columns." },
+    {
+      "class": "grid-cols-12",
+      "category": "flexbox-grid",
+      "note": "Twelve equal columns, the classic layout grid."
+    },
+    {
+      "class": "col-span-2",
+      "category": "flexbox-grid",
+      "note": "Makes one grid item occupy two columns."
+    },
+    {
+      "class": "col-start-2",
+      "category": "flexbox-grid",
+      "note": "Starts a grid item in the second column."
+    },
+    {
+      "class": "col-end-4",
+      "category": "flexbox-grid",
+      "note": "Ends a grid item before the fourth column line."
+    },
+    {
+      "class": "row-span-2",
+      "category": "flexbox-grid",
+      "note": "Makes one grid item occupy two rows."
+    },
+    { "class": "grid-rows-2", "category": "flexbox-grid", "note": "Two equal rows." },
+    {
+      "class": "row-start-1",
+      "category": "flexbox-grid",
+      "note": "Pins a grid item to the first row."
+    },
+    {
+      "class": "order-1",
+      "category": "flexbox-grid",
+      "note": "Moves a flex or grid item after the default order."
+    },
+    {
+      "class": "order-first",
+      "category": "flexbox-grid",
+      "note": "Sends an item to the start without changing the markup."
+    },
+    {
+      "class": "order-last",
+      "category": "flexbox-grid",
+      "note": "Sends an item to the end without changing the markup."
+    },
+    {
+      "class": "place-items-center",
+      "category": "flexbox-grid",
+      "note": "Centres grid items on both axes in one class."
+    },
+    {
+      "class": "place-content-between",
+      "category": "flexbox-grid",
+      "note": "Spreads grid tracks apart on both axes."
+    },
+    {
+      "class": "auto-cols-fr",
+      "category": "flexbox-grid",
+      "note": "Implicit grid columns share space equally."
+    },
+    {
+      "class": "auto-rows-min",
+      "category": "flexbox-grid",
+      "note": "Implicit grid rows take their minimum content height."
+    },
+
+    {
+      "class": "transition",
+      "category": "transitions",
+      "note": "Animates the common colour, shadow and transform properties."
+    },
+    {
+      "class": "transition-all",
+      "category": "transitions",
+      "note": "Animates every animatable property; can be costly."
+    },
+    {
+      "class": "transition-colors",
+      "category": "transitions",
+      "note": "Animates colour changes only."
+    },
+    { "class": "transition-opacity", "category": "transitions", "note": "Animates opacity only." },
+    {
+      "class": "transition-transform",
+      "category": "transitions",
+      "note": "Animates transforms such as scale and rotate."
+    },
+    {
+      "class": "transition-none",
+      "category": "transitions",
+      "note": "Turns transitions off for the element."
+    },
+    {
+      "class": "duration-150",
+      "category": "transitions",
+      "note": "A 150 ms transition, snappy feedback."
+    },
+    { "class": "duration-300", "category": "transitions", "note": "A 300 ms transition." },
+    { "class": "duration-700", "category": "transitions", "note": "A slower 700 ms transition." },
+    {
+      "class": "ease-linear",
+      "category": "transitions",
+      "note": "Constant speed from start to finish."
+    },
+    { "class": "ease-in", "category": "transitions", "note": "Starts slowly and speeds up." },
+    {
+      "class": "ease-out",
+      "category": "transitions",
+      "note": "Starts quickly and settles; good for entrances."
+    },
+    { "class": "ease-in-out", "category": "transitions", "note": "Slow at both ends." },
+    {
+      "class": "delay-150",
+      "category": "transitions",
+      "note": "Waits 150 ms before starting the transition."
+    },
+    {
+      "class": "animate-spin",
+      "category": "transitions",
+      "note": "A continuous rotation, usually a loading indicator."
+    },
+    {
+      "class": "animate-ping",
+      "category": "transitions",
+      "note": "A radiating pulse, often a notification dot."
+    },
+    {
+      "class": "animate-pulse",
+      "category": "transitions",
+      "note": "A gentle fade loop for skeleton loaders."
+    },
+    { "class": "animate-bounce", "category": "transitions", "note": "A small vertical bounce." },
+
+    {
+      "class": "hover:bg-blue-600",
+      "category": "variants",
+      "note": "Darker fill while a mouse or pen hovers."
+    },
+    { "class": "hover:underline", "category": "variants", "note": "Underlines text on hover." },
+    {
+      "class": "focus:ring-2",
+      "category": "variants",
+      "note": "Adds a ring when the element has focus."
+    },
+    {
+      "class": "focus-visible:ring-2",
+      "category": "variants",
+      "note": "A ring for keyboard focus, not every click."
+    },
+    {
+      "class": "active:bg-blue-700",
+      "category": "variants",
+      "note": "Fill while the control is pressed."
+    },
+    { "class": "disabled:opacity-50", "category": "variants", "note": "Dims a disabled control." },
+    {
+      "class": "checked:bg-blue-500",
+      "category": "variants",
+      "note": "Style applied while a checkbox or radio is checked."
+    },
+    {
+      "class": "before:block",
+      "category": "variants",
+      "note": "Styles the generated before pseudo-element."
+    },
+    {
+      "class": "after:block",
+      "category": "variants",
+      "note": "Styles the generated after pseudo-element."
+    },
+    {
+      "class": "group-hover:underline",
+      "category": "variants",
+      "note": "Reacts when a parent marked group is hovered."
+    },
+    {
+      "class": "peer-checked:block",
+      "category": "variants",
+      "note": "Reacts to an earlier sibling marked peer being checked."
+    },
+    {
+      "class": "sm:flex",
+      "category": "variants",
+      "note": "Applies from the 40rem breakpoint upwards."
+    },
+    {
+      "class": "md:grid-cols-2",
+      "category": "variants",
+      "note": "Two columns from the 48rem breakpoint upwards."
+    },
+    {
+      "class": "lg:px-8",
+      "category": "variants",
+      "note": "Roomier side padding from the 64rem breakpoint."
+    },
+    {
+      "class": "xl:max-w-5xl",
+      "category": "variants",
+      "note": "Caps the width from the 80rem breakpoint."
+    },
+    {
+      "class": "2xl:text-lg",
+      "category": "variants",
+      "note": "Larger text from the 96rem breakpoint."
+    },
+    {
+      "class": "max-sm:hidden",
+      "category": "variants",
+      "note": "Applies below the 40rem breakpoint."
+    },
+    {
+      "class": "dark:bg-slate-900",
+      "category": "variants",
+      "note": "Applies when the dark class is on an ancestor."
+    },
+    {
+      "class": "motion-safe:animate-spin",
+      "category": "variants",
+      "note": "Only animates when the visitor has not asked for reduced motion."
+    },
+    {
+      "class": "motion-reduce:transition-none",
+      "category": "variants",
+      "note": "Removes transitions for visitors who asked for reduced motion."
+    },
+    { "class": "print:hidden", "category": "variants", "note": "Hides the element when printing." },
+    {
+      "class": "rtl:ms-2",
+      "category": "variants",
+      "note": "Applies in right-to-left writing modes."
+    },
+    {
+      "class": "portrait:flex-col",
+      "category": "variants",
+      "note": "Stacks content when the viewport is taller than it is wide."
+    },
+    {
+      "class": "landscape:flex-row",
+      "category": "variants",
+      "note": "Uses a row when the viewport is wider than it is tall."
+    },
+    {
+      "class": "aria-expanded:bg-slate-100",
+      "category": "variants",
+      "note": "Styles an element whose aria-expanded is true."
+    }
+  ]
+}
