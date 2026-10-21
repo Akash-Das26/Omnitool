@@ -115,3 +115,41 @@ test.describe('tailwind-cheatsheet', () => {
     );
   });
 });
+
+test.describe('stupid-units', () => {
+  test('converts between everyday units and sourced equivalents', async ({ page }) => {
+    await gotoApp(page, '/tools/stupid-units');
+
+    await expect(page.getByText('Experiment')).toBeVisible();
+
+    // 20.12 m is exactly one cricket pitch, and its source is on screen.
+    await page.getByLabel('Amount').fill('20.12');
+    await expect(page.getByText('1 cricket pitch', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Source: MCC Laws of Cricket, Law 6/)).toBeVisible();
+
+    // A measurement of a real object is marked as rough.
+    await page.getByLabel('Amount').fill('330');
+    await expect(page.getByText('roughly 1', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Source: toureiffel.paris/)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Time' }).click();
+    await page.getByLabel('Unit').click();
+    await page.getByRole('option', { name: 'Hours' }).click();
+    await page.getByLabel('Amount').fill('1');
+    await expect(page.getByRole('button', { name: 'Length' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    await expect(page.getByText('4 Warhols')).toBeVisible();
+
+    await page.getByLabel('Amount').fill('-2');
+    await expect(page.getByRole('alert')).toHaveText('Enter a number of zero or more.');
+
+    await page.getByRole('button', { name: 'Reset' }).click();
+    await expect(page.getByLabel('Amount')).toHaveValue('1');
+    await expect(page.getByRole('button', { name: 'Length' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+});

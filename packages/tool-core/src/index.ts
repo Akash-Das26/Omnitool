@@ -19,6 +19,7 @@ export * from './password/index';
 export * from './px/index';
 export * from './qr/index';
 export * from './regex/index';
+export * from './stupid-units/index';
 export * from './tailwind-cheatsheet/index';
 export * from './time/index';
 export * from './type-scale/index';
