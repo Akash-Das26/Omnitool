@@ -87,7 +87,7 @@ Overlap check: no draft shares four or more consecutive words with the "Original
 | `code-genny` | Barcode Generator | Generate 1D and 2D barcodes for products and labels. | draft |
 | `decoder` | Cipher Decoder | Decode classical ciphers by hand or let the tool guess the method. | draft |
 | `password-genny` | Password Generator | Make random passwords or passphrases in the browser with the Web Crypto API. | draft |
-| `qr-genny` | QR Generator | Create QR codes as PNG or SVG, with size and error correction controls. | draft |
+| `qr-genny` | QR Generator | Create QR codes with PNG or SVG output, size and error correction controls. | draft |
 | `markdown-writer` | Text Scratchpad | Draft and tidy Markdown with a set of text manipulation tools. | draft |
 | `algebra-calc` | Algebra Calculator | Simplify, expand, factor or solve algebraic expressions step by step. | draft |
 | `base-converter` | Base Converter | Convert whole numbers between any two bases from 2 to 36 without losing precision. | draft |

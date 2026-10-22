@@ -85,3 +85,24 @@ The Phase 1 shell was aligned with the accepted Stitch layout reference (`docs/d
 **Deviations:** the tool stages stay a single column (DESIGN.md wording) rather than the two-column split in the Stitch screens; "Send to" is hidden until handoff exists (P7) rather than shown disabled; Reset is wired on the three sample tools only. The image converter's codec download is still simulated, with the size labelled as a sample.
 
 **Known gaps:** the eight Batch 1 tools keep the shared frame but have no Reset; per-value copy rows are used where the value is text (QR rows are downloads plus SVG markup copy); the screenshot baselines are Chromium on Linux only.
+
+### P2 — Batch 2 and Batch 3 (not appended at the time)
+
+Recorded as a documentation gap: the figures for Batch 2 (Session 011) and Batch 3 (Session 018) were logged in `docs/review/REVIEW-LOG.md` but never copied into this section. Batch 3's numbers, from its session entry: 28 routes, shell 161.7 kB gzip, precache 83 files / 1149.5 kB, 432 unit tests, E2E 194 (Chromium) and 189 (Firefox, 5 skipped).
+
+### P2 — Batch 4 (2026-10-22)
+
+Four tools — `sci-calc`, `tailwind-cheatsheet`, `stupid-units`, `recipe-table` — plus the Experiments page at `/experiments` (PF-19). No new dependency: the calculator owns its tokenizer and recursive-descent parser (no `eval`, no `Function`); the cheatsheet stores CSS emitted by the repository's pinned Tailwind 4.3.3 compiler through `scripts/generate-tailwind-cheatsheet.mjs`, with a test that runs it with `--check`; both data tables live in `tool-core` with their sources named in code. Logic sits in `packages/tool-core/src/{calc,tailwind-cheatsheet,stupid-units,recipe}` with tests beside it; the UIs are thin components on the shared Tool Frame.
+
+**Measured budgets (local production build, 2026-10-22):**
+- Shell JS: **180.9 kB gzip** (budget 200 kB), up 19.2 kB from Batch 3's 161.7 kB. The new tool data did not leak into the shell — the stupid-units table and the cheatsheet entries are in their own chunks (checked by searching the entry for marker strings) — so the growth is shared runtime and UI code. 19.1 kB of headroom left.
+- Precache: **92 files / 1395.6 kB** (budget 8192 kB).
+- Build files: **96** (limit 20,000); **33 route pages** (home, about, privacy, experiments and 29 tools) plus `404.html`.
+- Unit tests: **490 passing in 39 files**; coverage **96.92% statements / 90.41% branches** (thresholds 90/85).
+- E2E: Chromium **217 passed**; Firefox **212 passed, 5 skipped** (the Chromium-only pixel baselines); WebKit **NOT TESTED** (F-019, missing system libraries). axe in both themes on 34 routes, including `/experiments`.
+- Lighthouse mobile, 3 runs per route over 33 routes (`scripts/lighthouse.mjs`, exit 0): 28 routes at **1,510–1,665 ms** median LCP; `/about/` and `/experiments/` 1,361 ms; home **2,459 ms**; `/privacy/` 2,458 ms; `/tools/large-type/` **2,611 ms**, the only route over NFR-013. Performance 97–100, accessibility/best practices/SEO 100 on every route. Batch 4's four: `recipe-table` 1,511, `tailwind-cheatsheet` 1,511, `stupid-units` 1,512, `sci-calc` 1,662 ms.
+- `scripts/lighthouse.mjs` now derives the page list from the build instead of naming pages: `/experiments/` had been missing from the hand-written list and would have shipped unmeasured.
+
+**Deviations:** `stupid-units` ships 25 units, not 30; units whose official size could not be confirmed were dropped (no banana, no bus, no Vatican City). `recipe-table`'s density table has 11 ingredients rather than about 15, because only the USDA FoodData Central household measures that could be read directly were kept. `sci-calc` supports explicit multiplication only (DEC-39).
+
+**Known gaps:** `/tools/large-type/` is over NFR-013 by about 110 ms in two sweeps (DEC-41 records the options); the four new descriptions are drafts pending approval (DEC-35); WebKit is still untested locally.
