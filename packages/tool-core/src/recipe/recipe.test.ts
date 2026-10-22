@@ -161,6 +161,36 @@ describe('scaling and converting', () => {
     });
   });
 
+  it('rejects servings that are not finite numbers', () => {
+    expect(buildRecipeTable('1 cup flour', { ...BASE, servings: Number.NaN })).toEqual({
+      ok: false,
+      error: 'Enter servings as numbers.',
+    });
+    expect(
+      buildRecipeTable('1 cup flour', { ...BASE, baseServings: Number.POSITIVE_INFINITY }),
+    ).toEqual({
+      ok: false,
+      error: 'Enter servings as numbers.',
+    });
+  });
+
+  it('names the original unit in the note for weight and volume inputs', () => {
+    expect(row('2 fl oz syrup', { system: 'metric' }).note).toContain('was 2 fl oz');
+    expect(row('1 l stock', { system: 'metric' }).note).toContain('was 1 l');
+    expect(row('250 ml water', { system: 'metric' }).note).toContain('was 250 ml');
+    expect(row('1 kg sugar', { system: 'us' }).note).toContain('was 1 kg');
+    expect(row('500 g potatoes', { system: 'us' }).note).toContain('was 500 g');
+    expect(row('2 eggs', { system: 'metric' }).note).toContain('was 2');
+    expect(row('3 pinches salt', { system: 'metric' }).note).toContain('was 3 pinch');
+  });
+
+  it('reads a heavy weight in pounds rather than ounces', () => {
+    // At one pound the ounce ceiling gives way, so 1 lb stays 1 lb, not 16 oz.
+    expect(row('1 lb flour', { system: 'us' }).quantity).toBe('1');
+    expect(row('2 lb flour', { servings: 8, system: 'us' }).quantity).toBe('4');
+    expect(row('4 lb flour', { servings: 2, system: 'us' }).quantity).toBe('2');
+  });
+
   it('counts the flagged lines', () => {
     const table = buildRecipeTable('2 eggs\nSalt to taste\npepper', BASE);
     if (!table.ok) throw new Error(table.error);

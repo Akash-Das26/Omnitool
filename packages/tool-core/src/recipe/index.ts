@@ -465,7 +465,9 @@ function formatMass(grams: number, system: UnitSystem): QuantityText {
   }
   // Under an ounce, grams read better than fractions of an ounce.
   if (grams < 28.349523125) return { amount: String(Math.round(grams)), unit: 'g', roughly: false };
-  if (grams < 454)
+  // Below one pound (453.59237 g exactly) ounces are the finer read; a full
+  // pound or more is shown in pounds, still to the nearest eighth.
+  if (grams < 453.59237)
     return { amount: formatFraction(grams / 28.349523125), unit: 'oz', roughly: false };
   return { amount: formatFraction(grams / 453.59237), unit: 'lb', roughly: false };
 }
@@ -554,6 +556,14 @@ export function buildRecipeTable(input: string, options: RecipeOptions): RecipeT
     const scaled = scaleRange(parsed.min, parsed.max, factor);
     const density = findDensity(parsed.name);
     const originalUnit = UNITS_BY_ID.get(parsed.unit) as UnitDefinition;
+    const originalText =
+      parsed.min === parsed.max
+        ? formatOriginal(parsed.min, originalUnit)
+        : `${formatOriginal(parsed.min, originalUnit)}–${formatOriginal(parsed.max, originalUnit)}`;
+    // Every converted row carries the amount as the recipe wrote it, except cups:
+    // a cup becomes a readable millilitre figure on its own, so a note would only
+    // repeat the input.
+    const willNote = originalUnit.id !== 'cup';
 
     if (density && originalUnit.kind === 'volume') {
       const grams = (scaled.min * originalUnit.base * density.gramsPerCup) / US_CUP_ML;
@@ -565,16 +575,12 @@ export function buildRecipeTable(input: string, options: RecipeOptions): RecipeT
           ? displayed.amount
           : `${displayed.amount}–${displayedMax.amount}`;
       const unitWord = displayed.unit;
-      const original =
-        parsed.min === parsed.max
-          ? formatOriginal(parsed.min, originalUnit)
-          : `${formatOriginal(parsed.min, originalUnit)}–${formatOriginal(parsed.max, originalUnit)}`;
       rows.push({
         raw: line,
         name: parsed.name,
         quantity: `roughly ${amount}`,
         unit: unitWord,
-        note: `about ${density.gramsPerCup} g per cup (USDA FoodData Central ${density.fdcId}); was ${original}`,
+        note: `about ${density.gramsPerCup} g per cup (USDA FoodData Central ${density.fdcId}); was ${originalText}`,
         flagged: null,
       });
       continue;
@@ -583,12 +589,13 @@ export function buildRecipeTable(input: string, options: RecipeOptions): RecipeT
     const from = formatQuantity(scaled.min, parsed.unit, system);
     const to = formatQuantity(scaled.max, parsed.unit, system);
     const amount = from.amount === to.amount ? from.amount : `${from.amount}–${to.amount}`;
+    const convertedNote = willNote ? `was ${originalText}` : null;
     rows.push({
       raw: line,
       name: parsed.name,
       quantity: from.roughly ? `roughly ${amount}` : amount,
       unit: from.unit,
-      note: null,
+      note: convertedNote,
       flagged: null,
     });
   }
