@@ -15,7 +15,7 @@
  * NOT TESTED rather than passed or failed.
  */
 
-import { readdirSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { availableParallelism, loadavg } from 'node:os';
@@ -91,10 +91,21 @@ function printLoad(load) {
   return `${load.one.toFixed(2)}/${load.five.toFixed(2)}`;
 }
 
-// Every prerendered tool directory is a built route; planned tools have no
-// directory and are intentionally absent. Read after the dist check so a
+// Every prerendered directory is a built route: one per page and one per tool.
+// The list is derived rather than named so a new page cannot ship unmeasured
+// (`/experiments` was missing from a hand-written list once); planned tools have
+// no directory and are intentionally absent. Read after the dist check so a
 // missing build still gets the clear "run pnpm build" message.
 function routesForDist() {
+  const builtPageRoutes = readdirSync(DIST, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter(
+      (name) =>
+        name !== 'tools' && name !== 'assets' && existsSync(resolve(DIST, name, 'index.html')),
+    )
+    .sort();
+
   const builtToolRoutes = readdirSync(resolve(DIST, 'tools'), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
@@ -102,8 +113,7 @@ function routesForDist() {
 
   return [
     { path: '/', name: 'home' },
-    { path: '/about/', name: 'about' },
-    { path: '/privacy/', name: 'privacy' },
+    ...builtPageRoutes.map((name) => ({ path: `/${name}/`, name })),
     ...builtToolRoutes.map((id) => ({ path: `/tools/${id}/`, name: `tool-${id}` })),
   ];
 }
