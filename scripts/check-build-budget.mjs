@@ -7,6 +7,14 @@ const dist = join(root, 'apps/web/dist');
 const manifestPath = join(dist, '.vite/manifest.json');
 
 const SHELL_JS_GZIP_BUDGET = 200 * 1024;
+/** Warn when a batch adds more than this to the shell; the 200 kB limit still applies. */
+const SHELL_GROWTH_WARNING = 10 * 1024;
+/**
+ * Libraries that belong to one tool's lazy chunk and must never appear in the
+ * shell. The build has no sourcemaps, so each entry is a string that only that
+ * library emits; add one whenever a tool gains a library.
+ */
+const TOOL_LIBRARIES = [{ name: 'qrcode', marker: 'getSymbolSize' }];
 const PRECACHE_TOTAL_BUDGET = 8 * 1024 * 1024;
 const PRECACHE_FILE_LIMIT = 2 * 1024 * 1024;
 const CLOUDFLARE_FILE_LIMIT = 20 * 1024 * 1024;
@@ -60,6 +68,23 @@ if (shellJsGzip > SHELL_JS_GZIP_BUDGET) {
   );
 }
 
+const shellText = shellJs.map((path) => readFileSync(path, 'utf8')).join('\n');
+for (const library of TOOL_LIBRARIES) {
+  if (shellText.includes(library.marker)) {
+    failures.push(
+      `${library.name} is in the shell chunk; tool libraries must stay in their tool's lazy chunk`,
+    );
+  }
+}
+
+/** The last shell size recorded in IMPLEMENTATION.md section 9, or null. */
+function recordedShellSize() {
+  const notes = join(root, 'docs/implementation/IMPLEMENTATION.md');
+  const text = readFileSync(notes, 'utf8');
+  const matches = [...text.matchAll(/Shell JS: \*\*([\d.]+) kB gzip\*\*/g)];
+  return matches.length > 0 ? Number(matches.at(-1)[1]) : null;
+}
+
 const allFiles = walk(dist);
 let precacheTotal = 0;
 let precacheCount = 0;
@@ -100,6 +125,22 @@ console.log(
   `Precache candidates: ${precacheCount} files, ${formatBytes(precacheTotal)} (budget ${formatBytes(PRECACHE_TOTAL_BUDGET)})`,
 );
 console.log(`Build files: ${allFiles.length} (limit ${MAX_FILES})`);
+
+const recorded = recordedShellSize();
+if (recorded !== null) {
+  const growth = shellJsGzip / 1024 - recorded;
+  const sign = growth >= 0 ? '+' : '';
+  console.log(
+    `Shell growth: ${sign}${growth.toFixed(1)} kB since the recorded ${recorded.toFixed(1)} kB (warn above +10 kB per batch)`,
+  );
+  if (growth > SHELL_GROWTH_WARNING / 1024) {
+    console.warn(
+      `WARN: the shell grew ${sign}${growth.toFixed(1)} kB. Attribute it with \`node scripts/shell-attribution.mjs <dist built with --sourcemap>\` before recording the batch.`,
+    );
+  }
+} else {
+  console.warn('WARN: no recorded shell size found in docs/implementation/IMPLEMENTATION.md');
+}
 
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL: ${failure}`);

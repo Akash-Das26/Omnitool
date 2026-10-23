@@ -1,4 +1,4 @@
-import { formatBytes } from '@omnitool/tool-core';
+import { formatBytes } from '@omnitool/tool-core/files';
 import { CATEGORIES, searchTools, type Tool } from '@omnitool/tools-registry';
 import { FileIcon, XIcon } from 'lucide-react';
 import { Fragment, type KeyboardEvent, useMemo, useState } from 'react';
