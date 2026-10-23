@@ -34,6 +34,7 @@ const routes = [
   '/tools/graph-calc',
   '/tools/glyph-browser',
   '/tools/markdown-writer',
+  '/tools/font-explorer',
   '/tools/regex-tester',
   '/tools/sci-calc',
   '/tools/tailwind-cheatsheet',

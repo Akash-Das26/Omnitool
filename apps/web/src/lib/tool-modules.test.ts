@@ -17,6 +17,7 @@ describe('tool modules', () => {
         'cron-builder',
         'decoder',
         'encoder',
+        'font-explorer',
         'glyph-browser',
         'graph-calc',
         'http-status',

@@ -634,8 +634,8 @@
       "accepts": [".ttf", ".otf", ".woff", ".woff2"],
       "tier": 2,
       "phase": 2,
-      "description": "",
-      "produces": ["application/json", "text/plain"]
+      "description": "Inspect a font file's glyphs, metrics and naming details.",
+      "produces": ["text/plain"]
     },
     {
       "id": "glyph-browser",

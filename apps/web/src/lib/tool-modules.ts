@@ -34,6 +34,7 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   'graph-calc': () => import('@/tools/graph-calc'),
   'markdown-writer': () => import('@/tools/markdown-writer'),
   'glyph-browser': () => import('@/tools/glyph-browser'),
+  'font-explorer': () => import('@/tools/font-explorer'),
   'regex-tester': () => import('@/tools/regex-tester'),
   'recipe-table': () => import('@/tools/recipe-table'),
   'sci-calc': () => import('@/tools/sci-calc'),

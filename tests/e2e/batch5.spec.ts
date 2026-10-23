@@ -84,3 +84,34 @@ test.describe('glyph-browser', () => {
     ).toBeVisible();
   });
 });
+
+test.describe('font-explorer', () => {
+  test('reads a real font file in the worker and previews it', async ({ page }) => {
+    await gotoApp(page, '/tools/font-explorer');
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles('tests/fixtures/schibsted-grotesk-latin-wght-normal.woff2');
+
+    await expect(page.getByText(/Nothing was uploaded or saved/)).toBeVisible({ timeout: 20_000 });
+    const names = page.getByRole('region', { name: 'Name table' });
+    await expect(names.getByText('Schibsted Grotesk', { exact: true })).toBeVisible();
+    await expect(names.getByText('Glyphs')).toBeVisible();
+
+    // The variable axis is real: it comes from the font's fvar table.
+    await expect(page.getByLabel(/wght/)).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Specimen' })).toBeVisible();
+    await expect(page.getByLabel('Text')).toHaveValue(/Handgloves/);
+  });
+
+  test('explains a file that is not a font', async ({ page }) => {
+    await gotoApp(page, '/tools/font-explorer');
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'broken.ttf',
+      mimeType: 'font/ttf',
+      buffer: Buffer.from('this is not a font at all'),
+    });
+    await expect(page.getByRole('alert')).toContainText(/could not be read as a font/i, {
+      timeout: 20_000,
+    });
+  });
+});
