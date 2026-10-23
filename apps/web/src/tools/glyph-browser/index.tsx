@@ -246,57 +246,59 @@ export default function GlyphBrowserTool() {
       </ToolStage>
 
       <ToolStage title="Characters">
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Loading this block…</p>
-        ) : loadError ? (
-          <p role="alert" className="text-sm text-destructive">
-            {loadError}
-          </p>
-        ) : matches.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Nothing in this block matches. Try another block, or clear the search.
-          </p>
-        ) : (
-          <>
-            <p className="mb-3 text-sm text-muted-foreground">
-              {`${matches.length.toLocaleString('en-GB')} matching characters`}
-              {matches.length > VISIBLE_LIMIT
-                ? `; showing the first ${VISIBLE_LIMIT}. Narrow the search to see the rest.`
-                : '.'}
+        <div className="h-80 overflow-y-auto">
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading this block…</p>
+          ) : loadError ? (
+            <p role="alert" className="text-sm text-destructive">
+              {loadError}
             </p>
-            <ul className="grid grid-cols-6 gap-1 sm:grid-cols-10 md:grid-cols-12">
-              {matches.slice(0, VISIBLE_LIMIT).map((entry) => {
-                const [codePoint, name, entryCategory] = entry;
-                const character = characterOf(codePoint);
-                const printable = isPrintable(codePoint, entryCategory);
-                return (
-                  <li key={`${codePoint}-${name}`}>
-                    <button
-                      type="button"
-                      onClick={() => setSelected(entry)}
-                      // The visible glyph must be part of the accessible name,
-                      // or the name and the label disagree (axe: label-content-name-mismatch).
-                      aria-label={`${printable ? character : codePoint.toString(16).toUpperCase().padStart(4, '0')} ${name}, ${formatCodePoint(codePoint)}`}
-                      aria-pressed={selected?.[0] === codePoint}
-                      className="flex aspect-square w-full items-center justify-center rounded-control border border-border bg-surface text-lg hover:bg-surface-hover focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:border-ring aria-pressed:bg-surface-inset"
-                    >
-                      {printable ? (
-                        <span aria-hidden="true">{character}</span>
-                      ) : (
-                        <span
-                          aria-hidden="true"
-                          className="font-mono text-xs text-muted-foreground"
-                        >
-                          {codePoint.toString(16).toUpperCase().padStart(4, '0')}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
+          ) : matches.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nothing in this block matches. Try another block, or clear the search.
+            </p>
+          ) : (
+            <>
+              <p className="mb-3 text-sm text-muted-foreground">
+                {`${matches.length.toLocaleString('en-GB')} matching characters`}
+                {matches.length > VISIBLE_LIMIT
+                  ? `; showing the first ${VISIBLE_LIMIT}. Narrow the search to see the rest.`
+                  : '.'}
+              </p>
+              <ul className="grid grid-cols-6 gap-1 sm:grid-cols-10 md:grid-cols-12">
+                {matches.slice(0, VISIBLE_LIMIT).map((entry) => {
+                  const [codePoint, name, entryCategory] = entry;
+                  const character = characterOf(codePoint);
+                  const printable = isPrintable(codePoint, entryCategory);
+                  return (
+                    <li key={`${codePoint}-${name}`}>
+                      <button
+                        type="button"
+                        onClick={() => setSelected(entry)}
+                        // The visible glyph must be part of the accessible name,
+                        // or the name and the label disagree (axe: label-content-name-mismatch).
+                        aria-label={`${printable ? character : codePoint.toString(16).toUpperCase().padStart(4, '0')} ${name}, ${formatCodePoint(codePoint)}`}
+                        aria-pressed={selected?.[0] === codePoint}
+                        className="flex aspect-square w-full items-center justify-center rounded-control border border-border bg-surface text-lg hover:bg-surface-hover focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:border-ring aria-pressed:bg-surface-inset"
+                      >
+                        {printable ? (
+                          <span aria-hidden="true">{character}</span>
+                        ) : (
+                          <span
+                            aria-hidden="true"
+                            className="font-mono text-xs text-muted-foreground"
+                          >
+                            {codePoint.toString(16).toUpperCase().padStart(4, '0')}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+        </div>
       </ToolStage>
 
       <ToolStage title="Character">

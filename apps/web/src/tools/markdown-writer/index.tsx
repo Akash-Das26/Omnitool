@@ -358,7 +358,6 @@ export default function MarkdownWriterTool() {
               className="mt-2 min-h-72 font-mono"
               rows={16}
               value={text}
-              placeholder={'# Notes\n\nStart writing. Markdown stays plain text.'}
               onChange={(event) => setText(event.target.value)}
               onKeyDown={onKeyDown}
               spellCheck={false}
