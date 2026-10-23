@@ -107,6 +107,18 @@ export default defineConfig({
             },
           },
           {
+            // Unicode block data is a same-origin JSON file, fetched when a
+            // block is opened. Not precached (it is 11 MB in total), cached on
+            // first use so a block that has been seen works offline.
+            urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith('/unicode/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'omnitool-unicode-v1',
+              expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
             urlPattern: ({ url }) =>
               url.hostname === 'cdn.jsdelivr.net' ||
               url.hostname === 'huggingface.co' ||

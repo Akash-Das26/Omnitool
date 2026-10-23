@@ -646,7 +646,7 @@
       "accepts": [],
       "tier": 2,
       "phase": 2,
-      "description": "",
+      "description": "Browse Unicode characters and copy the ones you need.",
       "produces": ["text/plain"]
     },
     {
@@ -991,11 +991,11 @@
       "category": "other-tools",
       "categoryName": "Other Tools",
       "flags": [],
-      "accepts": [],
+      "accepts": [".md", ".markdown", ".txt"],
       "tier": 2,
       "phase": 2,
-      "description": "",
-      "produces": ["text/markdown", "text/plain"]
+      "description": "Draft and tidy Markdown with a set of text manipulation tools.",
+      "produces": ["text/markdown", "text/html"]
     },
     {
       "id": "algebra-calc",

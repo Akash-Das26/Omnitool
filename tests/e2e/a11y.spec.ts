@@ -32,6 +32,8 @@ const routes = [
   '/tools/decoder',
   '/tools/large-type',
   '/tools/graph-calc',
+  '/tools/glyph-browser',
+  '/tools/markdown-writer',
   '/tools/regex-tester',
   '/tools/sci-calc',
   '/tools/tailwind-cheatsheet',

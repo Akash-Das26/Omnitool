@@ -28,6 +28,16 @@ Omnitool's identity assets (logo, icons, social image, empty-state illustrations
 
 **Recorded decisions (Session 004, P1):** `@axe-core/playwright` and `axe-core` are **MPL-2.0**, used as development-only dependencies for accessibility testing. They are not modified and are not shipped in the production bundle. Accepted on that basis (see `docs/review/REVIEW-LOG.md`, Session 004).
 
+**Recorded decisions (Session 020, P2):** the owner approved three tool-only libraries on 2026-10-23. All are permissive, all are pinned exactly, and each is imported only by its own tool's lazy chunk (checked by `scripts/check-build-budget.mjs`, which fails if a tool library's marker reaches the shell):
+
+| Package | Version | Licence | Used by | Source of the facts |
+|---|---|---|---|---|
+| `markdown-it` | 15.0.3 | MIT | `markdown-writer` | `pnpm view markdown-it@15.0.3 version license`; the project's own token-to-React renderer sits on top, and its HTML output is never used |
+| `fontkit` | 2.0.4 | MIT | `font-explorer` | `pnpm view fontkit@2.0.4`; parsing runs in a worker. Types from `@types/fontkit@2.0.9` (MIT, development only) |
+| `@unicode/unicode-16.0.0` | 2.0.8 | MIT | `glyph-browser` (build-time data, not shipped as a module) | `pnpm view @unicode/unicode-16.0.0@2.0.8`; generated from the Unicode 16.0 Character Database. The Unicode Character Database itself is distributed under the Unicode Licence v3; the block index Omnitool writes carries the UCD version and this notice in the tool footer |
+
+Transitive licences of those three, checked with `pnpm licenses list` (2026-10-23): `mdurl` MIT, `argparse` PSF-2.0, `entities` BSD-2-Clause, `uc.micro` MIT, `linkify-it` MIT, `punycode.js` MIT, `dfa` MIT, `clone` MIT, `brotli` MIT, `restructure` MIT, `@swc/helpers` Apache-2.0, `tiny-inflate` MIT, `unicode-trie` MIT, `fast-deep-equal` MIT, `unicode-properties` MIT. `@unicode/unicode-16.0.0` has no dependencies. No GPL, AGPL, SSPL or share-alike package is in the tree. One deprecated transitive is present (`glob@11.1.0`, MIT) and nothing depends on its deprecated behaviour.
+
 **Recorded decisions (Session 005, P1):** `lighthouse@13.5.0` and `chrome-launcher@1.2.2` are **Apache-2.0**, development-only, used by `scripts/lighthouse.mjs` and CI. `@lhci/cli` was removed; its transitive dependency tree carried four high advisories with no upstream fix. Neither package ships in the production bundle. `qrcode` is **MIT**, shipped in the QR sample.
 
 ## 5. Omnitool's own licence

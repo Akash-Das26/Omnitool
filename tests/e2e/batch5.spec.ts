@@ -55,3 +55,32 @@ test.describe('graph-calc', () => {
     await expect(page.getByText('f1: The expression is incomplete.')).toBeVisible();
   });
 });
+
+test.describe('glyph-browser', () => {
+  test('shows a block, copies the facts and finds a character by name', async ({ page }) => {
+    await gotoApp(page, '/tools/glyph-browser');
+
+    await expect(page.getByText(/matching characters/)).toBeVisible();
+    await page.getByRole('button', { name: /LATIN CAPITAL LETTER A, U\+0041/ }).click();
+
+    const panel = page.getByRole('region', { name: 'Character' });
+    await expect(panel.getByText('U+0041', { exact: true }).first()).toBeVisible();
+    await expect(panel.getByText('LATIN CAPITAL LETTER A')).toBeVisible();
+    await expect(panel.getByText('41', { exact: true })).toBeVisible();
+    await expect(panel.getByText('&#x41;')).toBeVisible();
+
+    // A block switch loads new data; the search then filters within it.
+    await page.getByLabel('Block').click();
+    await page.getByRole('option', { name: /^Emoticons/ }).click();
+    await page.getByLabel('Name or code point').fill('GRINNING');
+    await expect(page.getByRole('button', { name: /GRINNING FACE, U\+1F600/ })).toBeVisible();
+  });
+
+  test('finds a character by its code point', async ({ page }) => {
+    await gotoApp(page, '/tools/glyph-browser');
+    await page.getByLabel('Name or code point').fill('U+0042');
+    await expect(
+      page.getByRole('button', { name: 'LATIN CAPITAL LETTER B, U+0042' }),
+    ).toBeVisible();
+  });
+});

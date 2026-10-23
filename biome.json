@@ -12,7 +12,8 @@
       "!**/.wrangler",
       "!delphitools-main",
       "!docs/design/stitch",
-      "!docs/design/built"
+      "!docs/design/built",
+      "!apps/web/public/unicode"
     ]
   },
   "formatter": {
