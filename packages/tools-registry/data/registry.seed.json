@@ -1042,8 +1042,8 @@
       "accepts": [],
       "tier": 2,
       "phase": 2,
-      "description": "",
-      "produces": ["image/png", "image/svg+xml"]
+      "description": "Plot mathematical functions on an adjustable graph.",
+      "produces": ["image/png", "text/plain"]
     },
     {
       "id": "sci-calc",

@@ -31,6 +31,7 @@ const routes = [
   '/tools/meta-tag-genny',
   '/tools/decoder',
   '/tools/large-type',
+  '/tools/graph-calc',
   '/tools/regex-tester',
   '/tools/sci-calc',
   '/tools/tailwind-cheatsheet',

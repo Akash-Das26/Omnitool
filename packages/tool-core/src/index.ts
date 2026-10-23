@@ -6,6 +6,7 @@ export * from './cron/index';
 export * from './diff/index';
 export * from './encoder/index';
 export * from './files/index';
+export * from './graph/index';
 export * from './http-status/index';
 export * from './json/index';
 export * from './jwt/index';

@@ -29,6 +29,31 @@ export type CalcResult =
   | { readonly ok: true; readonly value: number; readonly display: string }
   | { readonly ok: false; readonly error: string };
 
+/** Values for the names a compiled expression may read, such as `x` when plotting. */
+export type CalcScope = Readonly<Record<string, number>>;
+
+/**
+ * A parsed expression, ready to be evaluated many times. The graph tool needs
+ * one parse and thousands of evaluations per frame; the calculator needs one of
+ * each, and both go through `compileExpression`.
+ */
+export interface CompiledExpression {
+  readonly evaluate: (scope?: CalcScope) => number;
+}
+
+export type CompileResult =
+  | { readonly ok: true; readonly compiled: CompiledExpression }
+  | { readonly ok: false; readonly error: string };
+
+export interface CompileOptions extends CalcOptions {
+  /**
+   * Names that are allowed but resolved at evaluation time. A name that is not
+   * listed here, and is not `pi`, `e`, `ans` or a function, is an error when the
+   * expression is compiled, exactly as before graphing existed.
+   */
+  readonly variables?: readonly string[];
+}
+
 const MAX_LENGTH = 1000;
 const MAX_DEPTH = 100;
 const MAX_FACTORIAL = 170;
@@ -211,6 +236,14 @@ const FUNCTIONS = new Set([
   'round',
 ]);
 
+/** A node that can be evaluated against a scope; numbers are constant closures. */
+type Eval = (scope: CalcScope) => number;
+
+const constant =
+  (value: number): Eval =>
+  () =>
+    value;
+
 class Parser {
   private index = 0;
 
@@ -218,9 +251,10 @@ class Parser {
     private readonly tokens: readonly Token[],
     private readonly mode: AngleMode,
     private readonly ans: number,
+    private readonly variables: ReadonlySet<string>,
   ) {}
 
-  parse(): number {
+  parse(): Eval {
     const value = this.expression(0);
     const token = this.tokens[this.index];
     if (token) throw new CalcError(this.leftoverMessage(token));
@@ -231,73 +265,92 @@ class Parser {
     return this.tokens[this.index];
   }
 
-  private expression(depth: number): number {
+  private expression(depth: number): Eval {
     let value = this.term(depth);
     for (;;) {
       const token = this.peek();
       if (token?.type !== 'op' || (token.value !== '+' && token.value !== '-')) return value;
       this.index += 1;
       const right = this.term(depth);
-      value = token.value === '+' ? value + right : value - right;
+      const left = value;
+      value =
+        token.value === '+'
+          ? (scope) => left(scope) + right(scope)
+          : (scope) => left(scope) - right(scope);
     }
   }
 
-  private term(depth: number): number {
+  private term(depth: number): Eval {
     let value = this.unary(depth);
     for (;;) {
       const token = this.peek();
-      if (token?.type !== 'op') return value;
-      if (token.value !== '*' && token.value !== '/' && token.value !== '%') return value;
+      if (
+        token?.type !== 'op' ||
+        (token.value !== '*' && token.value !== '/' && token.value !== '%')
+      ) {
+        return value;
+      }
       this.index += 1;
       const right = this.unary(depth);
-      if (token.value === '*') value *= right;
-      else if (token.value === '/') {
-        if (right === 0) throw new CalcError('Division by zero has no value.');
-        value /= right;
+      const left = value;
+      if (token.value === '*') {
+        value = (scope) => left(scope) * right(scope);
+      } else if (token.value === '/') {
+        value = (scope) => {
+          const divisor = right(scope);
+          if (divisor === 0) throw new CalcError('Division by zero has no value.');
+          return left(scope) / divisor;
+        };
       } else {
-        if (right === 0) throw new CalcError('The remainder after dividing by zero has no value.');
-        value %= right;
+        value = (scope) => {
+          const divisor = right(scope);
+          if (divisor === 0)
+            throw new CalcError('The remainder after dividing by zero has no value.');
+          return left(scope) % divisor;
+        };
       }
     }
   }
 
-  private unary(depth: number): number {
+  private unary(depth: number): Eval {
     const token = this.peek();
     if (token?.type === 'op' && (token.value === '-' || token.value === '+')) {
       this.index += 1;
       const value = this.unary(depth);
-      return token.value === '-' ? -value : value;
+      return token.value === '-' ? (scope) => -value(scope) : value;
     }
     return this.power(depth);
   }
 
-  private power(depth: number): number {
+  private power(depth: number): Eval {
     const base = this.postfix(depth);
     const token = this.peek();
     if (token?.type === 'op' && token.value === '^') {
       this.index += 1;
       // Right-associative, and the exponent may carry its own sign: 2^-3.
-      return base ** this.unary(depth);
+      const exponent = this.unary(depth);
+      return (scope) => base(scope) ** exponent(scope);
     }
     return base;
   }
 
-  private postfix(depth: number): number {
+  private postfix(depth: number): Eval {
     let value = this.primary(depth);
     while (this.peek()?.type === 'bang') {
       this.index += 1;
-      value = factorial(value);
+      const inner = value;
+      value = (scope) => factorial(inner(scope));
     }
     return value;
   }
 
-  private primary(depth: number): number {
+  private primary(depth: number): Eval {
     const token = this.peek();
     if (!token) throw new CalcError('The expression is incomplete.');
 
     if (token.type === 'number') {
       this.index += 1;
-      return token.value;
+      return constant(token.value);
     }
 
     if (token.type === 'name') {
@@ -309,11 +362,20 @@ class Parser {
         }
         this.index += 1;
         const argument = this.bracket(depth + 1);
-        return applyFunction(token.value, argument, this.mode);
+        const name = token.value;
+        return (scope) => applyFunction(name, argument(scope), this.mode);
       }
-      if (token.value === 'pi') return Math.PI;
-      if (token.value === 'e') return Math.E;
-      if (token.value === 'ans') return this.ans;
+      if (token.value === 'pi') return constant(Math.PI);
+      if (token.value === 'e') return constant(Math.E);
+      if (token.value === 'ans') return constant(this.ans);
+      if (this.variables.has(token.value)) {
+        const name = token.value;
+        return (scope) => {
+          const value = scope[name];
+          if (value === undefined) throw new CalcError(`“${name}” has no value here.`);
+          return value;
+        };
+      }
       if (FUNCTIONS.has(token.value)) {
         throw new CalcError(`“${token.value}” needs a value in brackets.`);
       }
@@ -332,7 +394,7 @@ class Parser {
   }
 
   /** Reads up to and including the closing bracket of an already-consumed “(”. */
-  private bracket(depth: number): number {
+  private bracket(depth: number): Eval {
     if (depth > MAX_DEPTH) {
       throw new CalcError(`The expression is nested more than ${MAX_DEPTH} levels deep.`);
     }
@@ -387,9 +449,12 @@ export function formatNumber(value: number, significantDigits = DEFAULT_DIGITS):
   return fixed.replace(/\.0*$/, '').replace(/(\.\d*?)0+$/, '$1');
 }
 
-export function evaluateExpression(input: string, options: CalcOptions = {}): CalcResult {
+/**
+ * Parses `input` once and returns an evaluator. Nothing is evaluated here, so a
+ * graph can compile a function, then call it for every column of the viewport.
+ */
+export function compileExpression(input: string, options: CompileOptions = {}): CompileResult {
   const mode = options.angleMode ?? 'deg';
-  const digits = options.significantDigits ?? DEFAULT_DIGITS;
   const ans = Number.isFinite(options.ans ?? 0) ? (options.ans ?? 0) : 0;
 
   if (input.trim() === '') return { ok: false, error: 'Enter an expression.' };
@@ -400,8 +465,23 @@ export function evaluateExpression(input: string, options: CalcOptions = {}): Ca
     };
   }
 
+  const variables = new Set(options.variables ?? []);
   try {
-    const value = new Parser(tokenize(input), mode, ans).parse();
+    const evaluate = new Parser(tokenize(input), mode, ans, variables).parse();
+    return { ok: true, compiled: { evaluate: (scope = {}) => evaluate(scope) } };
+  } catch (error) {
+    if (error instanceof CalcError) return { ok: false, error: error.message };
+    return { ok: false, error: 'The expression could not be evaluated.' };
+  }
+}
+
+export function evaluateExpression(input: string, options: CalcOptions = {}): CalcResult {
+  const digits = options.significantDigits ?? DEFAULT_DIGITS;
+  const compiled = compileExpression(input, options);
+  if (!compiled.ok) return { ok: false, error: compiled.error };
+
+  try {
+    const value = compiled.compiled.evaluate();
     if (Number.isNaN(value)) return { ok: false, error: 'That calculation has no real value.' };
     if (!Number.isFinite(value)) return { ok: false, error: 'The result is too large to show.' };
     return { ok: true, value, display: formatNumber(value, digits) };
