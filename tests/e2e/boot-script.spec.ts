@@ -134,14 +134,45 @@ const PROFILE = () => {
   );
 };
 
-async function settle(page: Page) {
-  await page.waitForFunction(() => document.documentElement.dataset.appReady === 'true');
+/**
+ * Waits for the shell's first React commit. The poll is a timer rather than
+ * `requestAnimationFrame`: a page Chromium has throttled because the suite put
+ * other windows in front of it stops firing frame callbacks, and a frame-based
+ * poll then reports a 30 s test timeout instead of whatever went wrong. A
+ * throttled page cannot produce frames either, so the two-frame settle below
+ * falls back to a short timer for the same reason.
+ */
+async function settle(page: Page, label = page.url(), errors: string[] = []) {
+  try {
+    await page.waitForFunction(() => document.documentElement.dataset.appReady === 'true', null, {
+      polling: 100,
+      timeout: 20_000,
+    });
+  } catch {
+    const state = await page
+      .evaluate(() => ({
+        ready: document.documentElement.dataset.appReady ?? null,
+        heading: document.querySelector('h1')?.textContent?.slice(0, 60) ?? null,
+        scripts: [...document.scripts].map((script) => script.src.split('/').pop() ?? 'inline'),
+      }))
+      .catch(() => 'page unavailable');
+    throw new Error(
+      `no boot at ${label}: ${JSON.stringify(state)}; console errors: ${JSON.stringify(errors)}`,
+    );
+  }
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate(
     () =>
-      new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      ),
+      new Promise<void>((resolve) => {
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          resolve();
+        };
+        requestAnimationFrame(() => requestAnimationFrame(finish));
+        setTimeout(finish, 500);
+      }),
   );
 }
 
@@ -178,7 +209,7 @@ test('no CSP violations across routes, with dark theme and a collapsed rail save
       '/tools/does-not-exist',
     ]) {
       await page.goto(`${base}${route}`);
-      await settle(page);
+      await settle(page, route, consoleErrors);
       const state = await page.evaluate(() => ({
         dark: document.documentElement.classList.contains('dark'),
         rail: document.documentElement.dataset.rail,
