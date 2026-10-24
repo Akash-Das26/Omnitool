@@ -87,10 +87,17 @@ async function startServer() {
 
   const server = createServer((request, response) => {
     const pathname = decodeURIComponent(new URL(request.url ?? '/', 'http://local').pathname);
+    // The last entry is the host's own 404 shell: Cloudflare Pages answers an
+    // unknown path with `404.html` and a 404 status (docs/deployment/
+    // CLOUDFLARE-PAGES.md), and that page boots the app so the router can show
+    // the planned-tool page. Without it the route depends on whether the
+    // service worker has taken over and answered from `index.html`, which made
+    // this guard pass or fail with worker scheduling rather than the build.
     const candidates = [
       join(DIST, pathname),
       join(DIST, pathname, 'index.html'),
       `${join(DIST, pathname)}.html`,
+      join(DIST, '404.html'),
     ];
     for (const candidate of candidates) {
       if (!candidate.startsWith(DIST)) continue;
@@ -124,6 +131,25 @@ async function startServer() {
   if (!address || typeof address === 'string') throw new Error('server has no port');
   return { server, base: `http://127.0.0.1:${address.port}` };
 }
+
+/**
+ * Routes swept for CSP and first-paint state. The last two have no prerendered
+ * page: the host answers them with `404.html` and a 404 status, the page boots,
+ * and the router shows the planned-tool page or the not-found copy. The status
+ * is not asserted here because the service worker answers navigations from
+ * `index.html` once it has activated, so a loaded page can report either.
+ */
+const CSP_ROUTES = [
+  '/',
+  '/tools/uuid-genny/',
+  '/about/',
+  '/privacy/',
+  '/tools/colour-converter',
+  '/tools/does-not-exist',
+];
+
+/** Paths with no prerendered page, whose 404 response the browser logs. */
+const UNPRERENDERED = new Set(['/tools/colour-converter', '/tools/does-not-exist']);
 
 /** Dark theme and a collapsed rail saved the way the app saves them. */
 const PROFILE = () => {
@@ -200,14 +226,10 @@ test('no CSP violations across routes, with dark theme and a collapsed rail save
     });
     page.on('pageerror', (error) => consoleErrors.push(String(error)));
 
-    for (const route of [
-      '/',
-      '/tools/uuid-genny/',
-      '/about/',
-      '/privacy/',
-      '/tools/colour-converter',
-      '/tools/does-not-exist',
-    ]) {
+    for (const route of CSP_ROUTES) {
+      // Errors are per route: a fault on an earlier page must not be blamed on
+      // this one, or a real failure could hide behind the next navigation.
+      consoleErrors.length = 0;
       await page.goto(`${base}${route}`);
       await settle(page, route, consoleErrors);
       const state = await page.evaluate(() => ({
@@ -217,7 +239,13 @@ test('no CSP violations across routes, with dark theme and a collapsed rail save
       expect(state.dark, `${route} theme`).toBe(true);
       expect(state.rail, `${route} rail`).toBe('collapsed');
       expect(violations, `${route} CSP violations`).toEqual([]);
-      expect(consoleErrors, `${route} console errors`).toEqual([]);
+      // Chromium reports the 404 on the document itself, which is the host's
+      // documented answer for a path with no prerendered page; anything else is
+      // a fault.
+      const unexpected = consoleErrors.filter(
+        (message) => !(UNPRERENDERED.has(route) && message.includes('status of 404')),
+      );
+      expect(unexpected, `${route} console errors`).toEqual([]);
     }
 
     await context.close();

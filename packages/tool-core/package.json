@@ -18,7 +18,9 @@
     "./uuid": "./src/uuid/index.ts",
     "./words": "./src/words/index.ts",
     "./graph": "./src/graph/index.ts",
-    "./markdown": "./src/markdown/index.ts"
+    "./markdown": "./src/markdown/index.ts",
+    "./unicode": "./src/unicode/index.ts",
+    "./unicode/search": "./src/unicode/search.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

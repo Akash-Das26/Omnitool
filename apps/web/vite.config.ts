@@ -107,9 +107,10 @@ export default defineConfig({
             },
           },
           {
-            // Unicode block data is a same-origin JSON file, fetched when a
-            // block is opened. Not precached (it is 11 MB in total), cached on
-            // first use so a block that has been seen works offline.
+            // Unicode data is same-origin JSON: the block parts and the global
+            // name index. Not precached — 11.5 MB raw against an 8 MB budget for
+            // the blocks, and the same again for the names — so it is cached on
+            // first use and everything opened or searched once works offline.
             urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith('/unicode/'),
             handler: 'CacheFirst',
             options: {

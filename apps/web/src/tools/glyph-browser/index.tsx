@@ -6,23 +6,18 @@ import {
   parseCodePoint,
   utf8Bytes,
 } from '@omnitool/tool-core';
+import { GLYPH_RESULT_LIMIT, isUnnamed } from '@omnitool/tool-core/unicode/search';
 import { CheckIcon, CopyIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { ToolFrame, ToolHint, ToolStage } from '@/components/tool-frame';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { copyText } from '@/lib/download';
 import { requireTool } from '@/lib/tool';
-
-type Entry = readonly [codePoint: number, name: string, category: string];
+import { type Entry, GlyphGrid } from './glyph-grid';
+import { createWorkerBackend } from './search-client';
+import { createGlyphSearch, type GlyphSearchState } from './search-controller';
 
 interface BlockSummary {
   readonly name: string;
@@ -39,22 +34,19 @@ interface Index {
   readonly blocks: readonly BlockSummary[];
 }
 
-const DEFAULT_BLOCK = 'basic-latin';
-/** The grid renders at most this many characters; the count says how many match. */
-const VISIBLE_LIMIT = 500;
-
-function isPrintable(codePoint: number, category: string): boolean {
-  if (
-    category === 'Cc' ||
-    category === 'Cf' ||
-    category === 'Cs' ||
-    category === 'Zl' ||
-    category === 'Zp'
-  ) {
-    return false;
-  }
-  return characterOf(codePoint) !== '';
+interface Selected {
+  readonly codePoint: number;
+  readonly name: string;
+  readonly category: string;
+  readonly block: string;
 }
+
+const DEFAULT_BLOCK = 'basic-latin';
+/** Typing settles this long before the worker is asked; a stale query is dropped. */
+const SEARCH_DEBOUNCE_MS = 250;
+
+const SELECT_CLASS =
+  'mt-2 h-8 w-full rounded-lg border border-input bg-transparent py-1 pr-2 pl-2.5 text-sm focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50';
 
 function CopyValue({ label, value }: { readonly label: string; readonly value: string }) {
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
@@ -103,7 +95,28 @@ export default function GlyphBrowserTool() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
-  const [selected, setSelected] = useState<Entry | null>(null);
+  const [selected, setSelected] = useState<Selected | null>(null);
+  const [searchText, setSearchText] = useState('');
+  const [searchLimit, setSearchLimit] = useState(GLYPH_RESULT_LIMIT);
+  const [searchState, setSearchState] = useState<GlyphSearchState>({ status: 'idle' });
+
+  const search = useMemo(() => createGlyphSearch(createWorkerBackend, setSearchState), []);
+
+  useEffect(() => () => search.dispose(), [search]);
+
+  useEffect(() => {
+    const text = searchText.trim();
+    if (text === '') {
+      search.dispose();
+      setSearchState({ status: 'idle' });
+      return;
+    }
+    const timer = setTimeout(
+      () => search.search({ query: text, limit: searchLimit }),
+      SEARCH_DEBOUNCE_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [search, searchLimit, searchText]);
 
   useEffect(() => {
     let cancelled = false;
@@ -181,13 +194,114 @@ export default function GlyphBrowserTool() {
     setQuery('');
     setCategory('all');
     setSelected(null);
+    setSearchText('');
+    setSearchLimit(GLYPH_RESULT_LIMIT);
   }
 
-  const selectedCharacter = selected ? characterOf(selected[0]) : '';
+  const selectedCharacter = selected ? characterOf(selected.codePoint) : '';
+  const searchDone = searchState.status === 'done' ? searchState : null;
+  const searchData = searchDone?.data ?? null;
 
   return (
     <ToolFrame tool={tool} onReset={reset}>
-      <ToolStage title="Find a character">
+      <ToolStage title="Search every character">
+        <Label htmlFor="glyph-search">Words, a character or a code point</Label>
+        <Input
+          id="glyph-search"
+          className="mt-2"
+          value={searchText}
+          placeholder="grinning face, A, or U+1F600"
+          autoComplete="off"
+          spellCheck={false}
+          onChange={(event) => {
+            setSearchLimit(GLYPH_RESULT_LIMIT);
+            setSearchText(event.target.value);
+          }}
+        />
+        <div id="glyph-search-status" className="mt-3" aria-live="polite" role="status">
+          {searchState.status === 'running' ? (
+            <p className="text-sm text-muted-foreground">{searchState.label ?? 'Searching…'}</p>
+          ) : searchState.status === 'error' ? (
+            <p className="text-sm text-destructive">{searchState.message}</p>
+          ) : searchData ? (
+            <p className="text-sm text-muted-foreground">
+              {searchData.total === 0
+                ? `No characters match “${searchDone?.query ?? ''}”.`
+                : searchData.total === 1
+                  ? '1 character matches.'
+                  : `${searchData.total.toLocaleString('en-GB')} characters match.`}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Every named character in Unicode, by name word or code point.
+            </p>
+          )}
+        </div>
+        {searchData && searchData.results.length > 0 ? (
+          <>
+            <ul className="mt-3 flex flex-col gap-1">
+              {searchData.results.map((row) => {
+                const character = characterOf(row.codePoint);
+                return (
+                  <li key={row.codePoint}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelected({
+                          codePoint: row.codePoint,
+                          name: row.name,
+                          category: row.category,
+                          block: row.block,
+                        })
+                      }
+                      aria-pressed={selected?.codePoint === row.codePoint}
+                      className="flex w-full items-start gap-3 rounded-control border border-border bg-surface p-2 text-left hover:bg-surface-hover focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:border-ring aria-pressed:bg-surface-inset"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="flex size-10 shrink-0 items-center justify-center text-xl"
+                      >
+                        {character === ''
+                          ? row.codePoint.toString(16).toUpperCase().padStart(4, '0')
+                          : character}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm">
+                          {isUnnamed(row.name) ? 'No name data' : row.name}
+                        </span>
+                        <span className="block font-mono text-xs text-muted-foreground">
+                          {formatCodePoint(row.codePoint)}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {`${row.block}, ${categoryName(row.category)}`}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            {searchData.total > searchData.results.length ? (
+              <div className="mt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setSearchLimit((limit) => limit + GLYPH_RESULT_LIMIT)}
+                >
+                  {`Show ${GLYPH_RESULT_LIMIT} more`}
+                </Button>
+              </div>
+            ) : null}
+          </>
+        ) : null}
+        <ToolHint>
+          {searchData
+            ? `The names are ${(searchData.gzipBytes / 1024 / 1024).toFixed(1)} MB gzipped and are fetched once; the service worker keeps them, so searching works offline afterwards.`
+            : 'The first search fetches the whole name table once; the service worker caches it, so searching works offline afterwards.'}
+        </ToolHint>
+      </ToolStage>
+
+      <ToolStage title="Browse a block">
         {indexError ? (
           <p role="alert" className="text-sm text-destructive">
             {indexError}
@@ -196,37 +310,37 @@ export default function GlyphBrowserTool() {
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label htmlFor="glyph-block">Block</Label>
-              <Select value={blockSlug} onValueChange={setBlockSlug}>
-                <SelectTrigger id="glyph-block" className="mt-2">
-                  <SelectValue placeholder="Choose a block" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(index?.blocks ?? []).map((candidate) => (
-                    <SelectItem key={candidate.slug} value={candidate.slug}>
-                      {`${candidate.name} (${candidate.count.toLocaleString('en-GB')})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                id="glyph-block"
+                className={SELECT_CLASS}
+                value={blockSlug}
+                onChange={(event) => setBlockSlug(event.target.value)}
+              >
+                {(index?.blocks ?? []).map((candidate) => (
+                  <option key={candidate.slug} value={candidate.slug}>
+                    {`${candidate.name} (${candidate.count.toLocaleString('en-GB')})`}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <Label htmlFor="glyph-category">Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger id="glyph-category" className="mt-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All categories</SelectItem>
-                  {categories.map((code) => (
-                    <SelectItem key={code} value={code}>
-                      {categoryName(code)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                id="glyph-category"
+                className={SELECT_CLASS}
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+              >
+                <option value="all">All categories</option>
+                {categories.map((code) => (
+                  <option key={code} value={code}>
+                    {categoryName(code)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="glyph-query">Name or code point</Label>
+              <Label htmlFor="glyph-query">Name or code point in this block</Label>
               <Input
                 id="glyph-query"
                 className="mt-2"
@@ -246,7 +360,9 @@ export default function GlyphBrowserTool() {
       </ToolStage>
 
       <ToolStage title="Characters">
-        <div className="h-80 overflow-y-auto">
+        {/* A fixed height for every state: the grid is 320 px tall, so the page
+            must not grow by that much when the block arrives (that was 0.09 CLS). */}
+        <div className="flex h-80 flex-col">
           {loading ? (
             <p className="text-sm text-muted-foreground">Loading this block…</p>
           ) : loadError ? (
@@ -260,42 +376,22 @@ export default function GlyphBrowserTool() {
           ) : (
             <>
               <p className="mb-3 text-sm text-muted-foreground">
-                {`${matches.length.toLocaleString('en-GB')} matching characters`}
-                {matches.length > VISIBLE_LIMIT
-                  ? `; showing the first ${VISIBLE_LIMIT}. Narrow the search to see the rest.`
-                  : '.'}
+                {`${matches.length.toLocaleString('en-GB')} matching characters.`}
               </p>
-              <ul className="grid grid-cols-6 gap-1 sm:grid-cols-10 md:grid-cols-12">
-                {matches.slice(0, VISIBLE_LIMIT).map((entry) => {
-                  const [codePoint, name, entryCategory] = entry;
-                  const character = characterOf(codePoint);
-                  const printable = isPrintable(codePoint, entryCategory);
-                  return (
-                    <li key={`${codePoint}-${name}`}>
-                      <button
-                        type="button"
-                        onClick={() => setSelected(entry)}
-                        // The visible glyph must be part of the accessible name,
-                        // or the name and the label disagree (axe: label-content-name-mismatch).
-                        aria-label={`${printable ? character : codePoint.toString(16).toUpperCase().padStart(4, '0')} ${name}, ${formatCodePoint(codePoint)}`}
-                        aria-pressed={selected?.[0] === codePoint}
-                        className="flex aspect-square w-full items-center justify-center rounded-control border border-border bg-surface text-lg hover:bg-surface-hover focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:border-ring aria-pressed:bg-surface-inset"
-                      >
-                        {printable ? (
-                          <span aria-hidden="true">{character}</span>
-                        ) : (
-                          <span
-                            aria-hidden="true"
-                            className="font-mono text-xs text-muted-foreground"
-                          >
-                            {codePoint.toString(16).toUpperCase().padStart(4, '0')}
-                          </span>
-                        )}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+              <GlyphGrid
+                key={`${blockSlug}:${category}:${query}`}
+                entries={matches}
+                label={`Characters in ${block?.name ?? 'this block'}`}
+                selectedCodePoint={selected?.codePoint ?? null}
+                onSelect={(entry) =>
+                  setSelected({
+                    codePoint: entry[0],
+                    name: entry[1],
+                    category: entry[2],
+                    block: block?.name ?? 'No block',
+                  })
+                }
+              />
             </>
           )}
         </div>
@@ -308,25 +404,27 @@ export default function GlyphBrowserTool() {
               <span className="text-6xl leading-none" aria-hidden="true">
                 {selectedCharacter === '' ? '·' : selectedCharacter}
               </span>
-              <p className="text-center text-sm font-medium">{selected[1]}</p>
+              <p className="text-center text-sm font-medium">
+                {isUnnamed(selected.name) ? 'No name data' : selected.name}
+              </p>
               <p className="text-center font-mono text-sm text-muted-foreground">
-                {formatCodePoint(selected[0])}
+                {formatCodePoint(selected.codePoint)}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">
-                {`${categoryName(selected[2])} in ${block?.name ?? 'this block'}`}
+                {`${categoryName(selected.category)} in ${selected.block}`}
               </p>
               <div className="mt-2">
                 <CopyValue label="Character" value={selectedCharacter} />
-                <CopyValue label="Code point" value={formatCodePoint(selected[0])} />
+                <CopyValue label="Code point" value={formatCodePoint(selected.codePoint)} />
                 <CopyValue
                   label="UTF-8 bytes"
-                  value={utf8Bytes(selected[0])
+                  value={utf8Bytes(selected.codePoint)
                     .map((byte) => byte.toString(16).toUpperCase().padStart(2, '0'))
                     .join(' ')}
                 />
-                <CopyValue label="HTML entity" value={htmlEntity(selected[0])} />
+                <CopyValue label="HTML entity" value={htmlEntity(selected.codePoint)} />
               </div>
             </div>
           </div>

@@ -844,3 +844,54 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 **Next session should:** hand the owner P2-42 (Batch 5 gate), P2-43 (four descriptions), P2-44 (glyph-browser search scope) and the dependency review for a Batch 6 decision. Audit A2 has still not been requested.
 
 **Human review:** [ ] diff read  [ ] approved
+
+---
+
+### Session 021 — 2026-10-24 — P2 Batch 5 follow-up (global name search) — agent
+**Goal:** Do the work DEC-50 approved for P2-44: search every block in `glyph-browser`, from the Unicode 16 data already committed, without a new data source, package or runtime request. Batch 6 was not started.
+
+**Done:**
+- **Global name index** (`scripts/generate-unicode-index.mjs`, `apps/web/public/unicode/search-index.json`, `apps/web/public/unicode/search/search-01..12.json`). The existing build script now also writes the same entries in code point order, cut when a chunk reaches 100 kB gzip (hard target 200 kB): **12 chunks, 294,579 records, 11,524.5 kB raw / 1,160.3 kB gzip, largest 108.5 kB gzip**, plus a 440 B manifest with the version, source, count and per-chunk ranges. The manifest and chunks are served from the same origin under `/unicode/`, so the existing `omnitool-unicode-v1` CacheFirst rule keeps them; JSON is not in the precache globs, so **precache growth is 0 kB**.
+- **Search logic** (`packages/tool-core/src/unicode/search.ts`, `search.test.ts`, subpath `@omnitool/tool-core/unicode/search`). Records are prepared once (lower-cased name, block and category words). A query is a word-prefix match on any of those words, a pasted character, or a code point in any notation the tool accepts (`U+1F600`, `0x1F600`, `1F600`). Code point order is kept, results stop at **200** with an honest total and a "Show 200 more" button; malformed code points fall back to a word search and find nothing rather than guessing.
+- **Coverage of the new module, and of branches that were untested** (`packages/tool-core/src/unicode/search.test.ts`, plus `*.branches.test.ts` for `ciphers`, `cron`, `diff`, `encoder`, `files/filename`, `graph`, `uuid` and `markdown/markdown.blocks.test.ts`). The new search code needed its own tests anyway; while measuring them I found several tool-core branches with no test at all (throw paths, empty-input paths, the nested-list and blockquote-in-list paths in the markdown parser), so they are covered rather than left as a percentage. Branch coverage went from 86.83% to **89.8%** on the same thresholds.
+- **Worker** (`apps/web/src/tools/glyph-browser/search-worker.ts`, `search-client.ts`, `search-controller.ts` + tests). The index loads once in a Comlink worker and stays loaded; the page thread is never asked to parse 11.5 MB. The controller allows one search at a time and queues the latest query. The block grid is the virtualised `role="listbox"` from DEC-54 (roving tabindex, `aria-setsize`/`aria-posinset`, 40 px cells, visible rows plus two rows of buffer); the panel states the one-time download size and that later searches work offline.
+- **Two real defects found by running it, not by reading it.** (1) The controller cancelled a running search by terminating its worker — which threw away the loaded index, so the next keystroke re-downloaded 1.16 MB. It now queues the newest query and only terminates on dispose or after a failure. (2) With the index already loaded, the worker answered in the same task as a proxied progress callback, and **Firefox never delivered the result** — the UI sat on "Searching" forever with no error, while Chromium was fine. The final progress call is now awaited, so the answer leaves in a later message; the reason is in a comment at the call site. Firefox went from 1 failed / 11 passed to 12 passed on that spec.
+- **Unicode data corrected** (`scripts/generate-unicode-index.mjs`, all 433 block parts regenerated). The package's ranges are half-open `[start, end)` and the generator read them as inclusive: every block contained the first code point of the next block, so U+1F600 was in both Emoticons and Miscellaneous Symbols and Pictographs and U+20A0 carried two categories. Category precedence also compared code lengths, so a two-letter specific category could be replaced by a one-letter group (`L`, `P`, …). Both fixed; the true count is **294,579** characters, not the 294,885 the Batch 5 notes carried (the difference is 306 duplicated boundary code points).
+- **Boot guard made deterministic** (`tests/e2e/boot-script.spec.ts`). It swept `/tools/colour-converter`, which has no prerendered page. When the service worker had already taken navigations over, the route booted from `index.html`; when it had not, the test's static server answered plain-text "Not found" — so the guard passed or failed with worker timing (it failed 2 of 4 full runs earlier in the day, then 3 of 3 when the glyph work was done). The server now falls back to `404.html` with a **404** status, as the host documents; console errors are cleared per route so a fault on one page cannot be blamed on the next; and the one expected document 404 message is allowed only on the two unprerendered paths. The service worker answering a navigation is why the status is not asserted.
+- **`tests/e2e/tools.spec.ts` race removed.** The `uuid-genny` test navigated with `page.goto` and read `[data-output-value]` on the next line; one full Chromium run found zero rows. It now uses `gotoApp` (waits for `data-app-ready`) and waits for the five rows, as do the other three tests in the file.
+- **Copy corrected.** The idle status said "Every character in Unicode", but the index holds the 294,579 named characters; it now says "Every named character in Unicode".
+
+**Features touched:** `glyph-browser` ✅ note rewritten (global search, 294,579 characters, index sizes). PF-04/PF-10 counts unchanged; `pnpm features:progress`: **46 done, 4 in progress, 75 not started, 2 out of scope (125)**.
+
+**Decisions:** DEC-50 (option (a)), DEC-54 (grid) and DEC-55 (search data location, precache growth 0) implemented as written; DEC-51 (never touch `ART-PROMPTS.md`) and DEC-52 (no description is approved, so none changed) honoured; DEC-53 (no audit run, no finding closed) unchanged.
+
+**Verification:**
+- `pnpm lint`: pass, **243 files**, 0 warnings, design rules pass.
+- `pnpm typecheck`: pass (all workspace projects).
+- `pnpm test`: **718 passed / 54 files**; `pnpm test:coverage`: **96.15% statements / 89.8% branches / 99.29% functions / 97.26% lines** (thresholds 90/85/90/90).
+- `pnpm build`: exit 0; **37 route pages** plus `404.html`, 64 planned routes excluded, one boot hash on all 38 pages.
+- `pnpm check:budgets`: pass — shell **142.0 kB gzip** (budget 200, **+0.0 kB** against the recorded baseline), precache **107 files / 1725.9 kB** (budget 8192, +13.4 kB and one file: the search worker chunk), **558 build files** (limit 20,000).
+- `pnpm e2e` (Chromium): **242 passed**, three consecutive clean full runs on the final build (241 in the run before the `tools.spec.ts` fix).
+- `--project=firefox`: **237 passed, 5 skipped** (Chromium-only pixel baselines), twice, including `batch5.spec.ts` 12/12.
+- `--project=webkit`: **NOT TESTED** — F-019, the host still lacks `libavif16` and `libmanette-0.2-0`.
+- axe in both themes and both browsers ran inside those suites and passed (`tests/e2e/a11y.spec.ts` + the design/visual checks).
+- `pnpm lighthouse`: **NOT TESTED** — the host's 1-minute load average was 7.8–13.9 against the sweep's 4.00 limit on 16 cores, and the script refuses to report a number it cannot trust. `/tools/glyph-browser/`'s last trusted figures (91 performance, 1,665 ms median LCP) stand for now.
+- GitHub Actions: **not executed**. Nothing was pushed.
+
+**Not done / uncertain:**
+- **Lighthouse was not re-measured** after the change (host too busy). The search panel adds no request to first paint — the name index is fetched only when someone types — but that is reasoning, not a measurement.
+- **WebKit remains untested** on this host, so the Comlink/Firefox fix is verified on two engines, not three.
+- **The name index is 1.16 MB gzip** that a first search must download. It is disclosed in the panel in MB, cached afterwards, and not precached, but a first search on a slow connection costs that download.
+- **Search covers named characters only** (294,579 of the code space). Unnamed code points can still be reached by browsing their block, not by name, and the copy now says so.
+- The **repo now carries ~25 MB of generated Unicode JSON** under `apps/web/public/unicode` (13 MB of blocks + 12 MB of names). `--check` in the generator keeps them honest against the package, but a Unicode upgrade rewrites all of it.
+- Nothing in this session changed a registry description (DEC-52) and no audit finding was closed (DEC-53).
+
+**Problems and risks found:**
+- **A green suite hid two product defects until the second engine ran.** The worker's cancel-by-terminate and the lost Comlink result both passed on Chromium for the whole of the first implementation; only the Firefox run showed them. Batch 5's own notes already record that Firefox and a11y were run separately — the Firefox run is not optional for worker-heavy tools.
+- **The boot guard's "Not found" was invisible until the service worker happened not to help.** The test asserted six routes and quietly depended on the SPA fallback being supplied by whichever layer won a race. Two different guards in two sessions (P2-45, P2-48) failed for the same underlying reason: a test that does not control which layer answers.
+- `glyph-browser`'s grid still keeps its own block index and the search worker keeps a second full copy of the names in memory (prepared records). That is about 30 MB of JS objects in the worker after the first search; it stayed responsive in both engines but is the number to watch if the limit grows.
+- The **294,885** figure in the Batch 5 notes was 306 too high: the generator's inclusive range read duplicated each block's boundary code point. It is corrected in `features.md`, `todo.md` and `IMPLEMENTATION.md`, and the generator's `--check` catches the data drifting from the package, not the prose drifting from the data.
+
+**Next session should:** hand the owner P2-42 (Batch 5 gate), P2-43 (four descriptions), P2-35 (dependency review) and this follow-up for review; re-run Lighthouse on a quiet host for `/tools/glyph-browser/` and the full sweep; request Audit A2, which still has not been run.
+
+**Human review:** [ ] diff read  [ ] approved

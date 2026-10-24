@@ -25,6 +25,7 @@ const root = new URL('..', import.meta.url).pathname;
 const pkg = join(root, 'apps/web/node_modules/@unicode/unicode-16.0.0');
 const outDir = join(root, 'apps/web/public/unicode');
 const blocksDir = join(outDir, 'blocks');
+const searchDir = join(outDir, 'search');
 const PART_SIZE = 2500;
 const check = process.argv.includes('--check');
 
@@ -112,13 +113,23 @@ const CATEGORY_CODES = {
   Uppercase_Letter: 'Lu',
 };
 
+/**
+ * The package stores ranges as [begin, end): `end` is exclusive. Reading it as
+ * inclusive duplicated the first code point of the next block and gave it that
+ * block's category as well (U+1F600 was in both Emoticons and Miscellaneous
+ * Symbols and Pictographs, U+20A0 was Unassigned as well as a currency symbol).
+ */
 const categoryOf = new Map();
+/** L, LC, M, N, P, S, Z and C group the two-letter categories. */
+function isGrouped(code) {
+  return code.length === 1 || code === 'LC';
+}
 for (const [start, end, name] of categoryRanges) {
   const code = CATEGORY_CODES[name] ?? name;
-  for (let cp = start; cp <= end; cp += 1) {
+  for (let cp = start; cp < end; cp += 1) {
     // A specific category (Lu, Ps, ...) wins over the grouped ones (L, P, ...).
     const existing = categoryOf.get(cp);
-    if (!existing || existing.length <= 2) categoryOf.set(cp, code);
+    if (!existing || (isGrouped(existing) && !isGrouped(code))) categoryOf.set(cp, code);
   }
 }
 
@@ -228,15 +239,19 @@ function slugify(name) {
 
 const blocks = [];
 const files = new Map();
+/** Every character once, for the global name search. */
+const allEntries = [];
 
 for (const [start, end, name] of blockRanges) {
   const entries = [];
-  for (let cp = start; cp <= end; cp += 1) {
+  for (let cp = start; cp < end; cp += 1) {
     const category = categoryOf.get(cp) ?? 'Cn';
     if (category === 'Cn' && !nameTable.has(cp)) continue;
     entries.push([cp, displayName(cp), category]);
   }
   if (entries.length === 0) continue;
+
+  for (const entry of entries) allEntries.push(entry);
 
   const slug = slugify(name);
   const parts = [];
@@ -245,16 +260,57 @@ for (const [start, end, name] of blockRanges) {
     files.set(partName, entries.slice(index, index + PART_SIZE));
     parts.push(partName);
   }
-  blocks.push({ name: name.replaceAll('_', ' '), slug, start, end, count: entries.length, parts });
+  // `end` is exclusive in the package; the index publishes an inclusive end so
+  // a code point lookup can compare against it directly.
+  blocks.push({
+    name: name.replaceAll('_', ' '),
+    slug,
+    start,
+    end: end - 1,
+    count: entries.length,
+    parts,
+  });
+}
+
+allEntries.sort((a, b) => a[0] - b[0]);
+
+/**
+ * The search index: the same entries, in code-point order, cut into chunks that
+ * stay well under the 200 kB gzip target so the search worker can fetch them in
+ * parallel and the service worker caches each one on first use.
+ */
+const SEARCH_CHUNK_TARGET_GZIP = 100 * 1024;
+const SEARCH_CHUNK_MAX_GZIP = 200 * 1024;
+const SEARCH_CHUNK_MIN_ENTRIES = 2_000;
+const searchFiles = new Map();
+let searchChunk = [];
+let sinceMeasure = 0;
+for (const entry of allEntries) {
+  searchChunk.push(entry);
+  sinceMeasure += 1;
+  // Gzip only every so often: measuring on every entry would compress the whole
+  // growing chunk 295,000 times and take minutes.
+  if (sinceMeasure >= SEARCH_CHUNK_MIN_ENTRIES) {
+    sinceMeasure = 0;
+    if (gzipSync(JSON.stringify(searchChunk)).length >= SEARCH_CHUNK_TARGET_GZIP) {
+      const name = `search-${String(searchFiles.size + 1).padStart(2, '0')}.json`;
+      searchFiles.set(name, searchChunk);
+      searchChunk = [];
+    }
+  }
+}
+if (searchChunk.length > 0) {
+  searchFiles.set(`search-${String(searchFiles.size + 1).padStart(2, '0')}.json`, searchChunk);
 }
 
 if (check) {
   let stale = 0;
-  for (const [name, entries] of files) {
-    const path = join(blocksDir, name);
-    const expected = JSON.stringify(entries);
-    if (!existsSync(path) || readFileSync(path, 'utf8') !== expected) {
-      console.error(`unicode: ${name} is missing or stale`);
+  const expected = [...files].map(([name, entries]) => [join(blocksDir, name), entries]);
+  expected.push(...[...searchFiles].map(([name, entries]) => [join(searchDir, name), entries]));
+  for (const [path, entries] of expected) {
+    const body = JSON.stringify(entries);
+    if (!existsSync(path) || readFileSync(path, 'utf8') !== body) {
+      console.error(`unicode: ${path.slice(root.length)} is missing or stale`);
       stale += 1;
     }
   }
@@ -268,6 +324,8 @@ if (check) {
 
 rmSync(blocksDir, { recursive: true, force: true });
 mkdirSync(blocksDir, { recursive: true });
+rmSync(searchDir, { recursive: true, force: true });
+mkdirSync(searchDir, { recursive: true });
 
 let totalRaw = 0;
 let totalGzip = 0;
@@ -281,6 +339,28 @@ for (const [name, entries] of files) {
   if (gzip > largest.gzip) largest = { name, gzip };
 }
 
+const searchChunks = [];
+let searchRaw = 0;
+let searchGzip = 0;
+let largestSearch = { name: '', gzip: 0 };
+for (const [name, entries] of searchFiles) {
+  const body = JSON.stringify(entries);
+  writeFileSync(join(searchDir, name), body);
+  const gzip = gzipSync(body).length;
+  if (gzip > SEARCH_CHUNK_MAX_GZIP) {
+    console.error(
+      `unicode: ${name} is ${(gzip / 1024).toFixed(1)} kB gzip, over the ${SEARCH_CHUNK_MAX_GZIP / 1024} kB limit`,
+    );
+    process.exit(1);
+  }
+  searchRaw += Buffer.byteLength(body);
+  searchGzip += gzip;
+  if (gzip > largestSearch.gzip) largestSearch = { name, gzip };
+  const first = entries[0][0];
+  const last = entries[entries.length - 1][0];
+  searchChunks.push({ file: name, first, last, count: entries.length, gzip });
+}
+
 const index = {
   version: VERSION,
   source: '@unicode/unicode-16.0.0 2.0.8 (MIT); generated from the Unicode 16.0 Character Database',
@@ -289,6 +369,17 @@ const index = {
   blocks,
 };
 writeFileSync(join(outDir, 'index.json'), `${JSON.stringify(index)}\n`);
+
+const searchIndex = {
+  version: VERSION,
+  source: index.source,
+  generated: index.generated,
+  count: allEntries.length,
+  chunks: searchChunks,
+  rawBytes: searchRaw,
+  gzipBytes: searchGzip,
+};
+writeFileSync(join(outDir, 'search-index.json'), `${JSON.stringify(searchIndex)}\n`);
 
 const digest = createHash('sha256')
   .update(JSON.stringify(index))
@@ -301,4 +392,7 @@ console.log(
 );
 console.log(
   `unicode: ${(totalRaw / 1024).toFixed(1)} kB raw, ${(totalGzip / 1024).toFixed(1)} kB gzip; largest ${largest.name} ${(largest.gzip / 1024).toFixed(1)} kB gzip; digest ${digest}`,
+);
+console.log(
+  `unicode search: ${allEntries.length.toLocaleString('en-GB')} names in ${searchChunks.length} chunks, ${(searchRaw / 1024).toFixed(1)} kB raw, ${(searchGzip / 1024).toFixed(1)} kB gzip; largest ${largestSearch.name} ${(largestSearch.gzip / 1024).toFixed(1)} kB gzip`,
 );

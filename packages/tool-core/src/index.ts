@@ -27,6 +27,7 @@ export * from './tailwind-cheatsheet/index';
 export * from './time/index';
 export * from './type-scale/index';
 export * from './unicode/index';
+export * from './unicode/search';
 export * from './units/index';
 export * from './uuid/index';
 export * from './words/index';
