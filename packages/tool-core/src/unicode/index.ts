@@ -33,18 +33,18 @@ export function utf8Bytes(codePoint: number): readonly number[] {
   ];
 }
 
-const NAMED_ENTITIES: Readonly<Record<number, string>> = Object.freeze({
-  0x26: '&amp;',
-  0x3c: '&lt;',
-  0x3e: '&gt;',
-  0x22: '&quot;',
-  0x27: '&#39;',
-});
+const NAMED_ENTITIES: ReadonlyMap<number, string> = new Map([
+  [0x26, '&amp;'],
+  [0x3c, '&lt;'],
+  [0x3e, '&gt;'],
+  [0x22, '&quot;'],
+  [0x27, '&#39;'],
+]);
 
 /** A named entity where HTML has one, otherwise a hexadecimal reference. */
 export function htmlEntity(codePoint: number): string {
   if (!isValidCodePoint(codePoint)) return '';
-  return NAMED_ENTITIES[codePoint] ?? `&#x${codePoint.toString(16).toUpperCase()};`;
+  return NAMED_ENTITIES.get(codePoint) ?? `&#x${codePoint.toString(16).toUpperCase()};`;
 }
 
 /**
