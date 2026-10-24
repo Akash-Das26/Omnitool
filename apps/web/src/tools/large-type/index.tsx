@@ -7,7 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { requireTool } from '@/lib/tool';
 
-const DEFAULT_TEXT = 'Large Type\nHold the room without a slide deck.';
+/**
+ * The box starts empty on purpose. A sample line at 96 px is the largest thing
+ * on the page, but it only exists after the route chunk has hydrated, so it
+ * became the LCP element and pushed this route to 2,611 ms against NFR-013's
+ * 2,500 ms. An empty box leaves the prerendered description as the largest
+ * element (about 1.5 s) and is also what every sibling tool does; Reset clears
+ * back to it.
+ */
+const DEFAULT_TEXT = '';
 
 export default function LargeTypeTool() {
   const tool = requireTool('large-type');
@@ -72,7 +80,12 @@ export default function LargeTypeTool() {
             />
           </div>
           <div className="flex items-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setSize(suggested)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSize(suggested)}
+              disabled={plan.lines.length === 0}
+            >
               Fit to the preview
             </Button>
             <Button type="button" onClick={present}>

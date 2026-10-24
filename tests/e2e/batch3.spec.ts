@@ -95,10 +95,20 @@ test.describe('decoder', () => {
 });
 
 test.describe('large-type', () => {
-  test('shows the text at the chosen size and fits it to the preview', async ({ page }) => {
+  test('starts empty and shows typed text at the chosen size', async ({ page }) => {
     await gotoApp(page, '/tools/large-type');
 
-    const line = page.getByText('Hold the room without a slide deck.', { exact: true });
+    // Empty start is deliberate (DEC-41): the prerendered description, not a
+    // hydrated sample line, stays the largest element on the page.
+    await expect(page.getByLabel('Text to show')).toHaveValue('');
+    await expect(
+      page.getByText('Nothing to show yet. Type a line in the field above.'),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Fit to the preview' })).toBeDisabled();
+
+    await page.getByLabel('Text to show').fill('Hold the room without a slide deck.');
+    const display = page.getByRole('region', { name: 'Display' });
+    const line = display.getByText('Hold the room without a slide deck.', { exact: true });
     await expect(line).toBeVisible();
     await expect(line).toHaveCSS('font-size', '96px');
 
@@ -107,6 +117,22 @@ test.describe('large-type', () => {
 
     await page.getByRole('button', { name: 'Fit to the preview' }).click();
     await expect(page.getByLabel('Size in px')).not.toHaveValue('160');
+  });
+
+  test('presents full screen or explains why it cannot', async ({ page }) => {
+    await gotoApp(page, '/tools/large-type');
+    await page.getByLabel('Text to show').fill('Read this out');
+    await page.getByRole('button', { name: 'Present' }).click();
+
+    // Headless browsers may refuse the request; either outcome is a handled
+    // one: the button flips to Exit full screen, or a status explains the
+    // fallback. The preview stays usable in both cases.
+    await expect(
+      page.getByRole('button', { name: 'Exit full screen' }).or(page.getByRole('status')),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('region', { name: 'Display' }).getByText('Read this out', { exact: true }),
+    ).toBeVisible();
   });
 });
 
