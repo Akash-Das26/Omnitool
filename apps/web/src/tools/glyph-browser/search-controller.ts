@@ -17,6 +17,8 @@ export type GlyphSearchState =
       readonly query: string;
       readonly phase?: GlyphSearchPhase;
       readonly label?: string;
+      /** 0 to 100, straight from the worker, for the determinate bar. */
+      readonly progress: number;
     }
   | { readonly status: 'done'; readonly query: string; readonly data: GlyphSearchData }
   | { readonly status: 'error'; readonly query: string; readonly message: string };
@@ -62,7 +64,7 @@ export function createGlyphSearch(
     token += 1;
     const mine = token;
     busy = true;
-    onChange({ status: 'running', query: input.query });
+    onChange({ status: 'running', query: input.query, progress: 0 });
     const worker = backend ?? createBackend();
     backend = worker;
     const finish = (state: GlyphSearchState) => {
@@ -77,13 +79,14 @@ export function createGlyphSearch(
       onChange(state);
     };
     worker
-      .run(input, (_progress, label, phase) => {
+      .run(input, (progress, label, phase) => {
         if (mine !== token) return;
         onChange({
           status: 'running',
           query: input.query,
           phase: phaseOf(phase),
           label: label ?? undefined,
+          progress: Number.isFinite(progress) ? Math.max(0, Math.min(100, progress)) : 0,
         });
       })
       .then((data) => finish({ status: 'done', query: input.query, data }))

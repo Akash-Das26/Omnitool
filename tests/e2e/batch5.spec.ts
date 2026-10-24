@@ -217,6 +217,82 @@ test.describe('glyph-browser', () => {
     expect(longest, `longest main-thread task was ${longest} ms`).toBeLessThan(200);
   });
 
+  test('states the one-time download before the first search and the cached state after it', async ({
+    page,
+  }) => {
+    await gotoApp(page, '/tools/glyph-browser');
+
+    // (a) Before any search: how big it is, where it goes, and a way out.
+    await expect(
+      page.getByText(/One-time download: 1\.1 MB, stored on this device\./),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+
+    // (b) Once it has arrived the notice turns into the cached state.
+    await page.getByLabel('Words, a character or a code point').fill('grinning face');
+    await expect(page.locator('#glyph-search-status')).toHaveText(/characters match\./, {
+      timeout: 30_000,
+    });
+    await expect(page.getByText(/name table is stored on this device \(1\.1 MB\)/)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(0);
+  });
+
+  test('cancelling the download leaves search off and says so', async ({ page }) => {
+    await gotoApp(page, '/tools/glyph-browser');
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(page.getByText(/Download cancelled before the names arrived/)).toBeVisible();
+    // The rest of the tool is untouched: the block list still works.
+    await expect(
+      page.getByRole('option', { name: /LATIN CAPITAL LETTER A, U\+0041/ }),
+    ).toBeVisible();
+  });
+
+  test('says that search needs the download when it is offline and nothing is cached', async ({
+    page,
+    context,
+  }) => {
+    await gotoApp(page, '/tools/glyph-browser');
+    await page.evaluate(() => navigator.serviceWorker.ready);
+
+    // Offline before the name chunks have been fetched: only the manifest is cached.
+    await context.setOffline(true);
+    await page.getByLabel('Words, a character or a code point').fill('euro sign');
+    await expect(page.locator('#glyph-search-status')).toHaveText(
+      /needs the one-time download of the character names/,
+      { timeout: 30_000 },
+    );
+    await expect(page.getByText(/Browsing a block below still works\./)).toBeVisible();
+    // Browsing really does still work with no network at all.
+    await expect(
+      page.getByRole('option', { name: /LATIN CAPITAL LETTER A, U\+0041/ }),
+    ).toBeVisible();
+
+    await context.setOffline(false);
+  });
+
+  test('clearing this site data brings the notice back', async ({ page }) => {
+    await gotoApp(page, '/tools/glyph-browser');
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.getByLabel('Words, a character or a code point').fill('grinning face');
+    await expect(page.locator('#glyph-search-status')).toHaveText(/characters match\./, {
+      timeout: 30_000,
+    });
+    await expect(page.getByText(/name table is stored on this device/)).toBeVisible();
+
+    await page.evaluate(async () => {
+      const names = await caches.keys();
+      await Promise.all(names.map((name) => caches.delete(name)));
+    });
+    await page.reload();
+    await expect(page.getByRole('heading', { level: 1, name: 'Glyph Browser' })).toBeVisible();
+
+    // (e) Site data cleared: the one-time notice and its Cancel come back.
+    await expect(
+      page.getByText(/One-time download: 1\.1 MB, stored on this device\./),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+  });
+
   test('searches offline after the name table has been fetched once', async ({ page, context }) => {
     await gotoApp(page, '/tools/glyph-browser');
     // The service worker has to be in control before the first search, or the

@@ -13,6 +13,7 @@ import { ToolFrame, ToolHint, ToolStage } from '@/components/tool-frame';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { copyText } from '@/lib/download';
 import { requireTool } from '@/lib/tool';
 import { type Entry, GlyphGrid } from './glyph-grid';
@@ -32,6 +33,11 @@ interface Index {
   readonly version: string;
   readonly source: string;
   readonly blocks: readonly BlockSummary[];
+}
+
+interface SearchManifestSummary {
+  readonly gzipBytes: number;
+  readonly chunks: readonly { readonly file: string }[];
 }
 
 interface Selected {
@@ -99,6 +105,11 @@ export default function GlyphBrowserTool() {
   const [searchText, setSearchText] = useState('');
   const [searchLimit, setSearchLimit] = useState(GLYPH_RESULT_LIMIT);
   const [searchState, setSearchState] = useState<GlyphSearchState>({ status: 'idle' });
+  /** Gzip of the whole name table, read from the 1.2 kB manifest before any search. */
+  const [nameBytes, setNameBytes] = useState<number | null>(null);
+  const [manifestFailed, setManifestFailed] = useState(false);
+  const [namesReady, setNamesReady] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
 
   const search = useMemo(() => createGlyphSearch(createWorkerBackend, setSearchState), []);
 
@@ -117,6 +128,44 @@ export default function GlyphBrowserTool() {
     );
     return () => clearTimeout(timer);
   }, [search, searchLimit, searchText]);
+
+  /**
+   * The manifest is small enough to read on mount, so the one-time download can
+   * be stated in megabytes before the first search rather than after it. When
+   * every name chunk is already in the Cache API the table is on this device,
+   * which is what makes the notice honest across a reload.
+   */
+  useEffect(() => {
+    let live = true;
+    const controller = new AbortController();
+    fetch('/unicode/search-index.json', { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error(`The name table is not available (${response.status}).`);
+        return response.json() as Promise<SearchManifestSummary>;
+      })
+      .then(async (manifest) => {
+        if (!live) return;
+        setNameBytes(manifest.gzipBytes);
+        if (typeof caches === 'undefined') return;
+        const cached = await Promise.all(
+          manifest.chunks.map((chunk) =>
+            caches.match(`/unicode/search/${chunk.file}`).then((hit) => hit !== undefined),
+          ),
+        );
+        if (live) setNamesReady(cached.every(Boolean));
+      })
+      .catch(() => {
+        if (live) setManifestFailed(true);
+      });
+    return () => {
+      live = false;
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (searchState.status === 'done') setNamesReady(true);
+  }, [searchState.status]);
 
   useEffect(() => {
     let cancelled = false;
@@ -196,11 +245,38 @@ export default function GlyphBrowserTool() {
     setSelected(null);
     setSearchText('');
     setSearchLimit(GLYPH_RESULT_LIMIT);
+    setCancelled(false);
+  }
+
+  /**
+   * Stops a download outright: the worker is terminated, so the chunks it had
+   * not fetched yet are not fetched. What arrived stays cached, which is why the
+   * next attempt resumes from the cache instead of starting the whole table.
+   */
+  function cancelDownload() {
+    search.dispose();
+    setSearchState({ status: 'idle' });
+    setCancelled(true);
   }
 
   const selectedCharacter = selected ? characterOf(selected.codePoint) : '';
   const searchDone = searchState.status === 'done' ? searchState : null;
   const searchData = searchDone?.data ?? null;
+  const running = searchState.status === 'running' ? searchState : null;
+  const downloading = running !== null && !namesReady;
+  const sizeLabel = nameBytes === null ? null : `${(nameBytes / 1024 / 1024).toFixed(1)} MB`;
+  const sizeInBrackets = sizeLabel === null ? '' : ` (${sizeLabel})`;
+  /**
+   * Deliberately one short line. The tool page's LCP element is the prerendered
+   * description (DEC-21); a tall notice painted at hydration would take that
+   * place and push LCP to the hydration time — it measured 2,495 ms against
+   * 1,512 ms before this line existed. The longer explanation lives in the hint.
+   */
+  const downloadNotice =
+    sizeLabel === null
+      ? 'One-time download of the name table, stored on this device.'
+      : `One-time download: ${sizeLabel}, stored on this device.`;
+  const unavailableMessage = `Searching needs the one-time download of the character names${sizeInBrackets}, and it has not arrived. You may be offline. Browsing a block below still works.`;
 
   return (
     <ToolFrame tool={tool} onReset={reset}>
@@ -216,13 +292,51 @@ export default function GlyphBrowserTool() {
           onChange={(event) => {
             setSearchLimit(GLYPH_RESULT_LIMIT);
             setSearchText(event.target.value);
+            setCancelled(false);
           }}
         />
+        {namesReady ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            {`The name table is stored on this device${sizeInBrackets}. Search works offline.`}
+          </p>
+        ) : cancelled ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Download cancelled before the names arrived. Search stays off until they are downloaded;
+            browsing a block below still works.
+          </p>
+        ) : manifestFailed ? (
+          <p className="mt-3 text-sm text-muted-foreground">{unavailableMessage}</p>
+        ) : (
+          <div className="mt-3 rounded-control border border-border bg-surface-inset px-3 py-2">
+            <p className="text-sm">{downloadNotice}</p>
+            {downloading ? (
+              <div className="mt-2 flex items-center gap-3">
+                <Progress
+                  className="h-2 flex-1"
+                  value={running?.progress ?? 0}
+                  aria-label="Character names download"
+                />
+                <span className="font-mono text-xs text-muted-foreground">
+                  {`${Math.round(running?.progress ?? 0)}%`}
+                </span>
+              </div>
+            ) : null}
+            <div className="mt-2">
+              <Button type="button" variant="outline" size="sm" onClick={cancelDownload}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
         <div id="glyph-search-status" className="mt-3" aria-live="polite" role="status">
-          {searchState.status === 'running' ? (
-            <p className="text-sm text-muted-foreground">{searchState.label ?? 'Searching…'}</p>
+          {running ? (
+            <p className="text-sm text-muted-foreground">{running.label ?? 'Searching…'}</p>
           ) : searchState.status === 'error' ? (
-            <p className="text-sm text-destructive">{searchState.message}</p>
+            <p
+              className={namesReady ? 'text-sm text-destructive' : 'text-sm text-muted-foreground'}
+            >
+              {namesReady ? searchState.message : unavailableMessage}
+            </p>
           ) : searchData ? (
             <p className="text-sm text-muted-foreground">
               {searchData.total === 0
@@ -295,9 +409,7 @@ export default function GlyphBrowserTool() {
           </>
         ) : null}
         <ToolHint>
-          {searchData
-            ? `The names are ${(searchData.gzipBytes / 1024 / 1024).toFixed(1)} MB gzipped and are fetched once; the service worker keeps them, so searching works offline afterwards.`
-            : 'The first search fetches the whole name table once; the service worker caches it, so searching works offline afterwards.'}
+          {`The names are ${sizeLabel ?? 'about 1.2 MB'} gzipped and are fetched once; the service worker keeps them, so searching works offline afterwards.`}
         </ToolHint>
       </ToolStage>
 

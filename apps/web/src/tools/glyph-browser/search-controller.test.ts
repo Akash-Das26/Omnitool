@@ -28,7 +28,7 @@ function fakeBackend(): {
   cancel: ReturnType<typeof vi.fn>;
   calls: GlyphSearchInput[];
   deferreds: Deferred[];
-  progress(index: number, label?: string, phase?: string): void;
+  progress(index: number, label?: string, phase?: string, value?: number): void;
 } {
   const calls: GlyphSearchInput[] = [];
   const deferreds: Deferred[] = [];
@@ -49,8 +49,8 @@ function fakeBackend(): {
     cancel,
     calls,
     deferreds,
-    progress(index, label, phase) {
-      progressFns[index]?.(50, label, phase);
+    progress(index, label, phase, value = 50) {
+      progressFns[index]?.(value, label, phase);
     },
   };
 }
@@ -140,7 +140,23 @@ describe('createGlyphSearch', () => {
       query: 'grinning',
       phase: 'download',
       label: 'Downloading 1,134 kB of names',
+      progress: 50,
     });
+  });
+
+  it('clamps a progress value the bar cannot draw', async () => {
+    const fake = fakeBackend();
+    const states: GlyphSearchState[] = [];
+    const search = createGlyphSearch(
+      () => fake.backend,
+      (state) => states.push(state),
+    );
+
+    search.search({ query: 'grinning', limit: 200 });
+    fake.progress(0, 'Downloading', 'download', 140);
+    expect(states.at(-1)).toMatchObject({ progress: 100 });
+    fake.progress(0, 'Downloading', 'download', -3);
+    expect(states.at(-1)).toMatchObject({ progress: 0 });
   });
 
   it('ignores a phase name it does not know', async () => {
@@ -159,6 +175,7 @@ describe('createGlyphSearch', () => {
       query: 'grinning',
       phase: undefined,
       label: 'Something else',
+      progress: 50,
     });
   });
 
