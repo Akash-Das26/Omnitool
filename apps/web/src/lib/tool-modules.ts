@@ -41,6 +41,7 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   'stupid-units': () => import('@/tools/stupid-units'),
   'tailwind-cheatsheet': () => import('@/tools/tailwind-cheatsheet'),
   'code-genny': () => import('@/tools/code-genny'),
+  'algebra-calc': () => import('@/tools/algebra-calc'),
 };
 
 /**

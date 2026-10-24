@@ -12,6 +12,7 @@ describe('tool modules', () => {
   it('lists only the tools that exist', () => {
     expect(Object.keys(TOOL_LOADERS).sort()).toEqual(
       [
+        'algebra-calc',
         'base-converter',
         'braille-converter',
         'code-genny',

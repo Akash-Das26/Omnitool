@@ -63,3 +63,55 @@ test.describe('code-genny', () => {
     expect(file.suggestedFilename()).toMatch(/^ean13-5901234123457\.svg$/);
   });
 });
+
+test.describe('algebra-calc', () => {
+  /** Runs one operation end to end and returns the result region. */
+  async function calculate(page: Page, operation: string, expression: string, value?: string) {
+    await choose(page, 'Operation', operation);
+    await page.getByLabel(/^(Expression|Equations, one per line)$/).fill(expression);
+    if (value !== undefined) await page.getByLabel('Value of x').fill(value);
+    await page.getByRole('button', { name: 'Work it out' }).click();
+    return page.getByRole('region', { name: 'Result' });
+  }
+
+  test('factors x^2-5x+6 and lists the roots it found', async ({ page }) => {
+    await gotoApp(page, '/tools/algebra-calc');
+    const result = page.getByRole('region', { name: 'Result' });
+    await choose(page, 'Operation', 'Factor');
+    await page.getByLabel('Expression', { exact: true }).fill('x^2-5*x+6');
+    await page.getByRole('button', { name: 'Work it out' }).click();
+    await expect(result.getByText('(x - 2)(x - 3)')).toBeVisible();
+    await expect(result.getByText(/x = 2 is a root/)).toBeVisible();
+  });
+
+  test('solves a linear equation', async ({ page }) => {
+    await gotoApp(page, '/tools/algebra-calc');
+    const result = await calculate(page, 'Solve an equation', '2*x+3=11');
+    await expect(result.getByText('x = 4', { exact: true })).toBeVisible();
+  });
+
+  test('expands a cube and evaluates exactly', async ({ page }) => {
+    await gotoApp(page, '/tools/algebra-calc');
+    const expanded = await calculate(page, 'Expand', '(x+1)^3');
+    await expect(expanded.getByText('x^3 + 3x^2 + 3x + 1').first()).toBeVisible();
+
+    const value = await calculate(page, 'Evaluate', 'x^2+2*x+1', '3');
+    await expect(value.getByText('16', { exact: true })).toBeVisible();
+  });
+
+  test('solves a system of two equations', async ({ page }) => {
+    await gotoApp(page, '/tools/algebra-calc');
+    const result = await calculate(page, 'Solve a system', 'x+y=5\nx-y=1');
+    await expect(result.getByText('x = 3, y = 2').first()).toBeVisible();
+  });
+
+  test('refuses what it does not support, in words', async ({ page }) => {
+    await gotoApp(page, '/tools/algebra-calc');
+    await choose(page, 'Operation', 'Simplify');
+    await page.getByLabel('Expression', { exact: true }).fill('1/x');
+    await page.getByRole('button', { name: 'Work it out' }).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'Dividing by something containing x is not supported.',
+    );
+  });
+});
