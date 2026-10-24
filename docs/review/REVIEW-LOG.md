@@ -793,3 +793,54 @@ Append a new entry after **every** session, newest at the bottom. Be honest abou
 **Next session should:** hand the owner P2-34 (batch gate), DEC-41, and the dependency review for a Batch 5 decision. No phase gate is claimed and Audit A2 was not requested.
 
 **Human review:** [ ] diff read  [ ] approved
+
+---
+
+### Session 020 — 2026-10-24 — P2 Batch 5 — agent
+**Goal:** Answer the shell-budget question from Session 019, fix `/tools/large-type/` against NFR-013, and build the four tools left in P2 (`graph-calc`, `markdown-writer`, `glyph-browser`, `font-explorer`) up to the batch gate. Request Builder, workflows and short links stay out (DEC-32, DEC-14).
+
+**Done:**
+- **Shell JS growth explained and removed** (`scripts/shell-attribution.mjs`, `packages/tool-core`, `apps/web/src/lib/tool-modules.ts`). The 19.2 kB came from the tool-core barrel: every tool's UI imported `@omnitool/tool-core`, so importing one helper pulled the whole package into the shell graph. The package is now marked side-effect-free and the app imports subpaths, so the shell keeps only what it uses: **180.9 → 142.0 kB gzip**, precache candidates 1395.6 → 1191.6 kB at that point in the session (1712.5 kB after the four new tools, see below). `scripts/check-build-budget.mjs` now records the shell baseline, warns above +10 kB in a batch and fails outright if a tool library appears in the shell source graph.
+- **`large-type` fixed (DEC-45, P2-37).** The tool starts empty with a placeholder, so the prerendered name and description are the LCP element; the 96 px sample line that painted ~1.5 s after FCP is gone. Empty state, typed text and full screen are covered by tests.
+- **`graph-calc`** (`packages/tool-core`, `apps/web/src/tools/graph-calc`): the calculator's own tokenizer and parser compile to a closure with `x` in scope — no `eval`, no `Function`, no new dependency. Sampling stops at domain errors and at jumps across the whole view, so `tan` and `1/x` draw gaps instead of vertical lines; 1,500 evaluations per function. Canvas with pan, wheel/pinch/button/keyboard zoom, pointer and keyboard trace, table of values, a written summary of each curve, PNG export, six functions with token colours plus a per-function dash and label.
+- **`markdown-writer`** (`markdown-it` 15.0.3, MIT, lazy chunk, DEC-46): markdown-it is used as a tokenizer only (`html: false`, `linkify: false`); its tokens become an own tree rendered as React elements and exported from the same tree with escaped text, so no HTML string is ever produced. Links allow http/https/mailto only, images only local non-SVG data URIs, raw HTML stays text. A 16-payload XSS corpus runs in unit tests and again in E2E, asserting no dialog, no injected script element and no third-party request. A 1 MB document stays usable (150 ms debounce, preview capped at 400 blocks, export uncapped).
+- **`glyph-browser`**: block data generated at build time by `scripts/generate-unicode-index.mjs` from `@unicode/unicode-16.0.0` 2.0.8 (MIT, DEC-48) into 433 JSON parts, largest 12.5 kB gzip, fetched per block and cached by the service worker; 338 blocks, 294,885 characters. Copies character, U+ code point, UTF-8 bytes and HTML entity; the Unicode version and both licences are shown. The package is never a shipped module.
+- **`font-explorer`**: fontkit 2.0.4 (MIT, DEC-47) in a worker, 50 MB limit, name-table fields, glyph count, units per em, variable axes with live sliders, a script-coverage estimate and a FontFace preview under a random family name. Nothing is persisted; malformed files are explained rather than thrown.
+- **Two gate defects fixed rather than worked around.** (1) Five `lint/complexity/useSimpleNumberKeys` warnings introduced with the glyph-browser data (hex numeric keys in the named-entity table) — the table is now a `Map`, so lint is back to zero warnings. (2) The boot guard (`tests/e2e/boot-script.spec.ts`) failed in **2 of 4 full Chromium runs** with a bare 30 s timeout. Cause: `settle` polled `html[data-app-ready]` with `requestAnimationFrame`, and a page Chromium has throttled because the suite put other windows in front of it stops firing frame callbacks — the poll never ran, whatever the page's actual state. It now polls on a 100 ms timer, fails after 20 s with the route, the document state and the console errors in the message, and the two-frame settle falls back to a 500 ms timer. Two full runs were clean afterwards (P2-45).
+
+**Features touched:** `graph-calc`, `markdown-writer`, `glyph-browser`, `font-explorer` ⬜ → ✅ (draft descriptions pending approval, DEC-44); `large-type` ✅ note corrected (starts empty, 1,510 ms); PF-10 corrected to 33 tool routes / 37 routes and NFR-013 holding on all of them. `pnpm features:progress`: **46 done, 4 in progress, 75 not started, 2 out of scope (125)**.
+
+**Decisions:** DEC-42 (CI unrun), DEC-43 (no audit finding closed), DEC-44 (all description rows still draft), DEC-46/47/48 (three libraries, pinned, permissive, one worker-only and one build-time-only) honoured. **DEC-45 resolved DEC-41** (large-type starts empty). **DEC-41 ticked as resolved.**
+
+**Verification:**
+- `pnpm lint`: pass, **225 files**, **0 warnings**, design rules pass.
+- `pnpm typecheck`: pass (all workspace projects).
+- `pnpm test`: **553 passed / 42 files**; coverage **95.88% statements / 94.65% lines / 86.83% branches / 99.02% functions** (thresholds 90/90/85/90).
+- `pnpm build`: exit 0; **37 route pages** plus `404.html`; 64 planned routes excluded; boot-script hash in `script-src` on all 38 pages.
+- `pnpm check:budgets`: pass — shell **142.0 kB gzip** (budget 200), precache **106 files / 1712.5 kB** (budget 8192), **544 build files**, shell growth +0.0 kB against the recorded baseline.
+- `pnpm e2e` (Chromium): **237 passed** — twice consecutively after the boot-guard fix. Earlier in the session the same suite failed on that guard twice (236 passed / 1 failed each); both failures are the defect described above, not a product regression.
+- `--project=firefox`: **232 passed, 5 skipped** (Chromium-only pixel baselines).
+- `--project=webkit`: **NOT TESTED** — F-019, the host still lacks `libavif16` and `libmanette-0.2-0`.
+- axe: **80 checks** in both themes over the route list, zero serious/critical.
+- `pnpm lighthouse`: exit 0 on the final build, guard quiet (1-minute load 2.20 at start, max 3.66 against 4.00), **37 routes × 3 runs**, `NFR-013` met on **every** route: 1,212 ms (`/experiments/`) and 1,218 ms (`/about/`) at the fast end, 1,509–1,815 ms on tool pages, home 2,173 ms, `/privacy/` 2,180 ms, `large-type` **1,510 ms**. CLS 0.000 everywhere. Performance 99–100 except **`/tools/glyph-browser/` at 91** (TBT 350 ms).
+- Descriptions: no existing registry description changed; the four new tools carry draft rows (DEC-44). The overlap check over the drafts against the original description column still reports 0 shared four-word runs.
+- GitHub Actions: **not executed** (DEC-42). Nothing was pushed.
+
+**Not done / uncertain:**
+- **`glyph-browser`'s name search covers the selected block only** (P2-44). The approved package ships no ready-made global name index and building one is a data decision, not an implementation detail, so the tool says so in the UI and the options are written down.
+- **`glyph-browser` is the weakest route on performance: 91.** The 350 ms TBT is the block list rendering on first load — LCP is fine (1,665 ms) and a11y/SEO/best-practices are 100. Not fixed; the honest fix is virtualising the block list, which is a change to the tool's DOM, not a tuning tweak.
+- **Firefox and the a11y suite were run separately** from the last full Chromium run; the numbers above are from those runs, not from one single suite invocation.
+- The **four descriptions are drafts pending approval** (P2-43, DEC-44).
+- The build precache now carries **106 files / 1712.5 kB**, up from 1191.6 kB before the four tools: markdown-it and the fontkit worker are inside the precache. Within budget, but the next heavy library should be measured before it is precached.
+- `ART-PROMPTS.md` in the working tree contains a pasted audit block that is not mine and is uncommitted; I left it untouched.
+
+**Problems and risks found:**
+- **The E2E gate had a latent defect that a "flaky test" label would have hidden.** The guard polled for readiness with `requestAnimationFrame`; a throttled page froze the poll and the test reported a timeout that looked like a slow boot. Two full runs had failed on it before anyone read the error. Any future guard that waits on rAF polling has the same failure mode.
+- One full Chromium run in this session failed **214 tests** because two Playwright suites were writing to `test-results/` at once (artifacts `ENOENT`). Nothing in the harness prevents that; the project rule is one suite at a time.
+- The shell attribution script reports whole-package gzip share from the sourcemap, so it identifies the culprit reliably but cannot attribute within a package.
+- `glyph-browser` ships 433 JSON parts (about 11 MB raw) into `apps/web/public`; the build and the 544-file count are fine, but the repo carries the data and a Unicode upgrade rewrites all of it.
+- **No phase gate is claimed.** P2 Batch 5 needs the owner's review of four tools, four descriptions and the dependency decisions.
+
+**Next session should:** hand the owner P2-42 (Batch 5 gate), P2-43 (four descriptions), P2-44 (glyph-browser search scope) and the dependency review for a Batch 6 decision. Audit A2 has still not been requested.
+
+**Human review:** [ ] diff read  [ ] approved

@@ -26,7 +26,14 @@ import { launch } from 'chrome-launcher';
 import lighthouse from 'lighthouse';
 
 const DIST = resolve('apps/web/dist');
-const REPORT_DIR = resolve('reports/lighthouse');
+/**
+ * `--only <text>` measures the routes whose path contains that text and writes
+ * to reports/lighthouse/subset, so a targeted re-measurement cannot overwrite
+ * the full sweep that the batch gate reads. The full sweep has no filter.
+ */
+const ONLY_INDEX = process.argv.indexOf('--only');
+const ONLY = ONLY_INDEX === -1 ? null : (process.argv[ONLY_INDEX + 1] ?? '');
+const REPORT_DIR = resolve(ONLY ? 'reports/lighthouse/subset' : 'reports/lighthouse');
 
 /**
  * A loaded host produces meaningless scores: the same tree scored 90-100 on a
@@ -280,7 +287,10 @@ async function main() {
   if (!(await isFile(resolve(DIST, 'index.html')))) {
     throw new Error('apps/web/dist is missing; run `pnpm build` first.');
   }
-  const routes = routesForDist();
+  const routes = ONLY
+    ? routesForDist().filter((route) => route.path.includes(ONLY))
+    : routesForDist();
+  if (routes.length === 0) throw new Error(`No route matches --only ${ONLY}`);
   await mkdir(REPORT_DIR, { recursive: true });
   const startLoad = assertQuietHost('start of sweep');
   console.log(
@@ -464,7 +474,7 @@ async function main() {
       `Host: ${CORES} cores · load limit ${LOAD_LIMIT.toFixed(2)} (${LOAD_SHARE_OF_CORES * 100}%) · ` +
         `1m/5m ${printLoad(startLoad)} at start`,
       '',
-      `${routes.length} routes × ${RUNS} runs. Budgets use the median; the minimum is reported next to it.`,
+      `${routes.length} routes × ${RUNS} runs${ONLY ? ` (subset: paths containing “${ONLY}”; not the batch gate)` : ''}. Budgets use the median; the minimum is reported next to it.`,
       '',
       `NFR-013 (median LCP ≤ ${LCP_TARGET_MS} ms): ` +
         (overTarget.length === 0

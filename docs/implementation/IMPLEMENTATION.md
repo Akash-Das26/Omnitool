@@ -106,3 +106,25 @@ Four tools — `sci-calc`, `tailwind-cheatsheet`, `stupid-units`, `recipe-table`
 **Deviations:** `stupid-units` ships 25 units, not 30; units whose official size could not be confirmed were dropped (no banana, no bus, no Vatican City). `recipe-table`'s density table has 11 ingredients rather than about 15, because only the USDA FoodData Central household measures that could be read directly were kept. `sci-calc` supports explicit multiplication only (DEC-39).
 
 **Known gaps:** `/tools/large-type/` is over NFR-013 by about 110 ms in two sweeps (DEC-41 records the options); the four new descriptions are drafts pending approval (DEC-35); WebKit is still untested locally.
+
+### P2 — Batch 5 (2026-10-23)
+
+Shell attribution first, then `large-type`, then four tools: `graph-calc`, `markdown-writer`, `glyph-browser`, `font-explorer`. Three libraries were approved by the owner and pinned exactly: `markdown-it` 15.0.3 (MIT), `fontkit` 2.0.4 (MIT) and `@unicode/unicode-16.0.0` 2.0.8 (MIT); each loads only in its own tool's chunk, and `scripts/check-build-budget.mjs` fails the build if one reaches the shell.
+
+**Shell JS attribution and the fix (2026-10-23):** `scripts/shell-attribution.mjs` builds with `--sourcemap`, walks each shell chunk's mappings and reports every module's gzip share. The shell was **react-dom 62.8 kB (34.7%), tool-core 32.8 kB, @tanstack/router-core 20.2 kB, qrcode 11.4 kB** — tool-core and qrcode have no business there. Cause: `omnibox.tsx` and `file-intake.tsx` imported the tool-core barrel, and every tool chunk imported it too, so the barrel became a shared chunk the entry also loaded, carrying the recipe table (10.3 kB), the cheatsheet data (5.8 kB), http-status (3.8 kB) and qrcode with it. The package now declares `sideEffects: false` and those two imports use `@omnitool/tool-core/files`; tool-core no longer appears in the shell at all.
+
+**Measured budgets (local production build, 2026-10-23):**
+- Shell JS: **142.0 kB gzip** (budget 200 kB), **−38.9 kB** against the recorded 180.9 kB; the attribution warning above +10 kB per batch is in `check:budgets`, which also fails on a tool library in the shell or the shell source graph.
+- Precache: **106 files / 1712.5 kB** (budget 8192 kB), +316.9 kB on Batch 4's 1395.6 kB — four new tool chunks, none over 2 MiB.
+- Build files: **544** (limit 20,000): 96 from Batch 4 plus **433 generated Unicode JSON parts** and the index. Those are not precached; they are fetched per block and cached by the service worker (`omnitool-unicode-v1`). Unicode data: 338 blocks, 294,885 characters, **11,524.7 kB raw / 1,167.9 kB gzip**, largest part **12.5 kB gzip** against the 200 kB target.
+- Unit tests: **553 passing in 42 files**; coverage **95.88% lines / 86.83% branches** (thresholds 90/85; margins +5.88 and +1.83).
+- E2E: Chromium **237 passed**; Firefox **232 passed, 5 skipped** (Chromium-only pixel baselines); WebKit **NOT TESTED** — the browser binary cannot launch on this host (`Host system is missing dependencies`, F-019). axe in both themes on 38 routes plus the omnibox: 0 serious or critical.
+- Visual baselines updated (both because the new tools changed counts on the page): `home-dark-chromium-linux.png`, `omnibox-file-dark-chromium-linux.png`. No other baseline moved.
+- Lighthouse mobile, 3 runs on a quiet host across **37 routes**, `pnpm lighthouse` exit 0: **every route within NFR-013**; performance median **91–100**, accessibility/best practices/SEO **100** on every route. Home **2,173 ms** median LCP (DEC-24 band), `/about/` 1,218 ms, `/experiments/` about 1,215 ms. The four new tools: `graph-calc` **99 / 1,515 ms**, `markdown-writer` **99 / 1,509 ms**, `glyph-browser` **91 / 1,665 ms**, `font-explorer` **100 / 1,662 ms**; `large-type` **100 / 1,510 ms** after DEC-45 (runs: 1,515 / 1,510 / 1,509). Per-run LCP for the four: graph-calc 1,518/1,515/1,513, markdown-writer 1,512/1,509/1,508, glyph-browser 1,669/1,665/1,662, font-explorer 1,662/1,664/1,662.
+
+**Deviations and gaps:**
+- `glyph-browser`'s name search filters the selected block. The approved package carries blocks, categories, scripts and names in a build-time table, but no ready-made global name index; the options are recorded as P2-44 for the owner.
+- `glyph-browser` is the weakest route at performance 91 (TBT 350 ms) — still above 90, but the number to watch.
+- `markdown-writer` caps the preview at 400 blocks so a 1 MB document cannot freeze the page; the downloads are built from the whole tree.
+- `font-explorer` reports script coverage as a sample-based estimate, said so in the UI.
+- The Chromium suite timed out in `boot-script.spec.ts:148` on two of three full runs at the default 8 workers and passed twice with the file alone and once at `--workers=4`; it is load-sensitive on this shared host and is recorded in the review log, not papered over.
