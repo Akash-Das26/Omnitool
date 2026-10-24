@@ -7,6 +7,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./base": "./src/base/index.ts",
+    "./barcode": "./src/barcode/index.ts",
     "./diff": "./src/diff/index.ts",
     "./encoder": "./src/encoder/index.ts",
     "./files": "./src/files/index.ts",

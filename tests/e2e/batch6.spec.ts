@@ -1,0 +1,65 @@
+import { expect, type Page, test } from '@playwright/test';
+import { gotoApp } from './helpers';
+
+/** Radix selects open a listbox; this clicks the trigger, then the named item. */
+async function choose(page: Page, trigger: string, option: string) {
+  await page.getByLabel(trigger, { exact: true }).click();
+  await page.getByRole('option', { name: option, exact: true }).click();
+}
+
+test.describe('code-genny', () => {
+  test('renders a validated EAN-13 and explains its check digit', async ({ page }) => {
+    await gotoApp(page, '/tools/code-genny');
+
+    const preview = page.getByRole('img', { name: 'EAN-13 barcode for 5901234123457' });
+    await expect(preview).toBeVisible();
+    // Every bar is its own rect: 28 bars plus the background for this symbol.
+    expect(await preview.locator('rect').count()).toBeGreaterThan(20);
+
+    const output = page.getByRole('region', { name: 'Output' });
+    await expect(output.getByText(/weighted sum 83, remainder 3/)).toBeVisible();
+    await expect(output.getByText(/115 modules, 10-module quiet zone/)).toBeVisible();
+  });
+
+  test('computes the check digit when the input is one short', async ({ page }) => {
+    await gotoApp(page, '/tools/code-genny');
+    await page.getByLabel('Text or digits').fill('590123412345');
+    await expect(page.getByRole('img', { name: 'EAN-13 barcode for 5901234123457' })).toBeVisible();
+    const output = page.getByRole('region', { name: 'Output' });
+    await expect(
+      output.getByText(/sum is 83; the check digit is 10 minus the remainder/),
+    ).toBeVisible();
+    await expect(output.getByText(/check digit was added/)).toBeVisible();
+  });
+
+  test('rejects a wrong check digit instead of drawing it', async ({ page }) => {
+    await gotoApp(page, '/tools/code-genny');
+    await page.getByLabel('Text or digits').fill('5901234123456');
+    await expect(page.getByRole('alert')).toHaveText(/check digit is 7, not 6/);
+    await expect(page.getByRole('img', { name: /barcode/ })).toHaveCount(0);
+  });
+
+  test('switches symbology, uppercases Code 39 and flags the change', async ({ page }) => {
+    await gotoApp(page, '/tools/code-genny');
+    await choose(page, 'Barcode type', 'Code 39');
+    await page.getByLabel('Text or digits').fill('ab-1');
+    await expect(page.getByRole('img', { name: 'Code 39 barcode for AB-1' })).toBeVisible();
+    await expect(page.getByText(/changed to upper case/)).toBeVisible();
+  });
+
+  test('pads an odd ITF count and states the leading zero', async ({ page }) => {
+    await gotoApp(page, '/tools/code-genny');
+    await choose(page, 'Barcode type', 'ITF');
+    await page.getByLabel('Text or digits').fill('123');
+    await expect(page.getByRole('img', { name: 'ITF barcode for 0123' })).toBeVisible();
+    await expect(page.getByText(/leading zero was added/)).toBeVisible();
+  });
+
+  test('downloads the SVG it shows', async ({ page }) => {
+    await gotoApp(page, '/tools/code-genny');
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Download SVG' }).click();
+    const file = await download;
+    expect(file.suggestedFilename()).toMatch(/^ean13-5901234123457\.svg$/);
+  });
+});

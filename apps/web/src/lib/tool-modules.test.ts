@@ -14,6 +14,7 @@ describe('tool modules', () => {
       [
         'base-converter',
         'braille-converter',
+        'code-genny',
         'cron-builder',
         'decoder',
         'encoder',

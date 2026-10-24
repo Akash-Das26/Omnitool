@@ -946,7 +946,7 @@
       "accepts": [],
       "tier": 2,
       "phase": 2,
-      "description": "",
+      "description": "Generate 1D and 2D barcodes for products and labels.",
       "produces": ["image/png", "image/svg+xml"]
     },
     {
@@ -1006,7 +1006,7 @@
       "accepts": [],
       "tier": 2,
       "phase": 2,
-      "description": "",
+      "description": "Simplify, expand, factor or solve algebraic expressions step by step.",
       "produces": ["text/plain"]
     },
     {
@@ -1090,7 +1090,7 @@
       "accepts": [],
       "tier": 2,
       "phase": 2,
-      "description": "",
+      "description": "Rewrite English text in the Shavian alphabet.",
       "produces": ["text/plain"]
     },
     {
@@ -1126,7 +1126,7 @@
       "accepts": [],
       "tier": 2,
       "phase": 2,
-      "description": "",
+      "description": "Write English words in the International Phonetic Alphabet.",
       "produces": ["text/plain"]
     },
     {
