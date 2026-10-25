@@ -43,6 +43,7 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   'code-genny': () => import('@/tools/code-genny'),
   'algebra-calc': () => import('@/tools/algebra-calc'),
   'ipa-transcriber': () => import('@/tools/ipa-transcriber'),
+  'shavian-transliterator': () => import('@/tools/shavian-transliterator'),
 };
 
 /**

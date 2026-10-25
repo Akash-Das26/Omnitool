@@ -40,6 +40,7 @@ describe('tool modules', () => {
         'recipe-table',
         'regex-tester',
         'sci-calc',
+        'shavian-transliterator',
         'stupid-units',
         'tailwind-cheatsheet',
         'text-diff',

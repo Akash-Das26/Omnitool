@@ -1,4 +1,5 @@
 import { type Transcription, transcribe } from '@omnitool/tool-core/ipa';
+import { type ShavianText, transliterate } from '@omnitool/tool-core/shavian';
 import * as Comlink from 'comlink';
 
 /**
@@ -62,6 +63,12 @@ function dictionary(onProgress: Progress): Promise<LoadedDictionary> {
   return loaded;
 }
 
+export interface ShavianPayload {
+  readonly source: string;
+  readonly shavian: ShavianText;
+  readonly manifest: PronunciationManifest;
+}
+
 export interface TranscriptionPayload {
   readonly text: string;
   readonly transcription: Transcription;
@@ -74,6 +81,14 @@ const api = {
     return {
       text,
       transcription: transcribe(text, (word) => entries.get(word)),
+      manifest: manifestations,
+    };
+  },
+  async shavian(source: string, onProgress: Progress): Promise<ShavianPayload> {
+    const { entries, manifestations } = await dictionary(onProgress);
+    return {
+      source,
+      shavian: transliterate(source, (word) => entries.get(word)),
       manifest: manifestations,
     };
   },

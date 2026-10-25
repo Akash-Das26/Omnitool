@@ -22,6 +22,7 @@ export * from './px/index';
 export * from './qr/index';
 export * from './recipe/index';
 export * from './regex/index';
+export * from './shavian/index';
 export * from './stupid-units/index';
 export * from './tailwind-cheatsheet/index';
 export * from './time/index';

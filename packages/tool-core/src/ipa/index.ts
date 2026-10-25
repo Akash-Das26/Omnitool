@@ -186,9 +186,13 @@ export type PronunciationLookup = (word: string) => readonly string[] | undefine
 
 /**
  * Handles the punctuation that the dictionary itself does not spell out:
- * a hyphenated compound is looked up whole, then as its parts.
+ * a hyphenated compound is looked up whole, then as its parts. Shared with the
+ * Shavian transliterator, which needs the same reach into the dictionary.
  */
-function pronunciations(word: string, lookup: PronunciationLookup): readonly string[] | undefined {
+export function pronunciations(
+  word: string,
+  lookup: PronunciationLookup,
+): readonly string[] | undefined {
   const direct = lookup(word.toLowerCase());
   if (direct !== undefined) return direct;
   if (word.includes('-')) {

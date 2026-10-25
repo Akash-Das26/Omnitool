@@ -195,3 +195,87 @@ test.describe('algebra-calc', () => {
     );
   });
 });
+
+test.describe('shavian-transliterator', () => {
+  test('states the one-time download, shows progress and can be cancelled', async ({ page }) => {
+    const held: (() => void)[] = [];
+    await page.route('**/pron/pron-*.json', async (route) => {
+      await new Promise<void>((resolve) => held.push(resolve));
+      await route.abort().catch(() => {});
+    });
+
+    await gotoApp(page, '/tools/shavian-transliterator');
+    await expect(
+      page.getByText(/One-time download: 0\.9 MB, stored on this device\./),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('progressbar', { name: 'Pronunciation dictionary download' }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(page.getByText(/Download cancelled before the dictionary arrived/)).toBeVisible();
+
+    for (const release of held) release();
+    await page.unroute('**/pron/pron-*.json');
+  });
+
+  test('says what is missing when the dictionary cannot be fetched', async ({ page }) => {
+    await page.route('**/pron/manifest.json', (route) => route.abort());
+    await gotoApp(page, '/tools/shavian-transliterator');
+    await expect(
+      page.getByText(/needs the one-time download of the pronunciation dictionary/),
+    ).toBeVisible();
+  });
+
+  test('writes the default line in Shavian and names the dictionary it used', async ({ page }) => {
+    await gotoApp(page, '/tools/shavian-transliterator');
+    const output = page.locator('p.break-words').first();
+    // "The quick brown fox jumps over the lazy dog." is nine words, all listed.
+    await expect(output).toContainText(/\p{Script=Shavian}{5,}/u, { timeout: 30_000 });
+    await expect(page.getByText('Transliterated')).toBeVisible();
+    await expect(page.getByText(/CMU Pronouncing Dictionary, commit 7479086/)).toBeVisible();
+    // The hint lives in a collapsed <details>: assert its text, then open it.
+    await expect(page.locator('details').last()).toContainText('It is one-way');
+  });
+
+  test('leaves an unknown word as written and marks a name with the namer dot', async ({
+    page,
+  }) => {
+    await gotoApp(page, '/tools/shavian-transliterator');
+    await page.getByLabel('Latin text').fill('hello zzzz');
+    const output = page.locator('p.break-words').first();
+    await expect(output).toContainText('zzzz', { timeout: 30_000 });
+    await expect(page.getByText(/zzzz — no dictionary entry/)).toBeVisible();
+
+    await page.getByLabel('Latin text').fill('I saw London');
+    await expect(output).toContainText('\u00B7', { timeout: 30_000 });
+    await expect(page.getByRole('heading', { name: 'Names' })).toBeVisible();
+    await expect(page.getByText(/London — capitalised words/)).toBeVisible();
+  });
+
+  test('transliterates offline after the dictionary has been fetched once', async ({
+    page,
+    context,
+  }) => {
+    await gotoApp(page, '/tools/shavian-transliterator');
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.reload();
+    await expect(page.locator('p.break-words').first()).toContainText(/\p{Script=Shavian}/u, {
+      timeout: 30_000,
+    });
+
+    await context.setOffline(true);
+    await page.reload();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Shavian Transliterator' }),
+    ).toBeVisible();
+    await page.getByLabel('Latin text').fill('hello');
+    // hello is HH AH0 L OW1: ha-ha, ado, loll, oak.
+    await expect(page.locator('p.break-words').first()).toHaveText(
+      '\u{10463}\u{10469}\u{10464}\u{10474}',
+      {
+        timeout: 30_000,
+      },
+    );
+    await context.setOffline(false);
+  });
+});

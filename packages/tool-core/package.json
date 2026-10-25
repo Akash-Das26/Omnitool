@@ -20,6 +20,7 @@
     "./password": "./src/password/index.ts",
     "./px": "./src/px/index.ts",
     "./qr": "./src/qr/index.ts",
+    "./shavian": "./src/shavian/index.ts",
     "./unicode": "./src/unicode/index.ts",
     "./unicode/search": "./src/unicode/search.ts",
     "./uuid": "./src/uuid/index.ts",
