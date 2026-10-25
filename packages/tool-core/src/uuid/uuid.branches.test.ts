@@ -106,7 +106,7 @@ describe('nanoid', () => {
 
   it('skips bytes that would bias the alphabet', () => {
     // 256 % 200 = 56, so bytes at 200 and above are discarded.
-    const id = nanoid(4, 'a'.repeat(199) + 'b', countingRandom([250, 0]));
+    const id = nanoid(4, `${'a'.repeat(199)}b`, countingRandom([250, 0]));
     expect(id).toBe('aaaa');
   });
 
