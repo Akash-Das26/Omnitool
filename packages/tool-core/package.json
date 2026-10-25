@@ -13,6 +13,7 @@
     "./encoder": "./src/encoder/index.ts",
     "./files": "./src/files/index.ts",
     "./graph": "./src/graph/index.ts",
+    "./ipa": "./src/ipa/index.ts",
     "./json": "./src/json/index.ts",
     "./jwt": "./src/jwt/index.ts",
     "./markdown": "./src/markdown/index.ts",

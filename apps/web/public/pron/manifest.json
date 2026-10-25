@@ -1,0 +1,62 @@
+{
+  "name": "CMU Pronouncing Dictionary",
+  "repository": "https://github.com/cmusphinx/cmudict",
+  "commit": "74790861f652b15e4ac49015a90074ad62a27690",
+  "committed": "2025-10-24",
+  "licence": "BSD-2-Clause",
+  "notice": "Copyright (C) 1993-2015 Carnegie Mellon University. All rights reserved.",
+  "words": 126052,
+  "variants": 9114,
+  "gzipBytes": 945847,
+  "chunks": [
+    {
+      "file": "pron-01.json",
+      "first": "'bout",
+      "last": "ciulla",
+      "count": 20500,
+      "gzip": 154954
+    },
+    {
+      "file": "pron-02.json",
+      "first": "ciullo",
+      "last": "formations",
+      "count": 20500,
+      "gzip": 157360
+    },
+    {
+      "file": "pron-03.json",
+      "first": "formative",
+      "last": "kreischer",
+      "count": 21000,
+      "gzip": 155739
+    },
+    {
+      "file": "pron-04.json",
+      "first": "kreisel",
+      "last": "paddles",
+      "count": 21000,
+      "gzip": 156342
+    },
+    {
+      "file": "pron-05.json",
+      "first": "paddling",
+      "last": "siragusa",
+      "count": 21000,
+      "gzip": 156493
+    },
+    {
+      "file": "pron-06.json",
+      "first": "siravo",
+      "last": "yoshiaki",
+      "count": 21000,
+      "gzip": 156875
+    },
+    {
+      "file": "pron-07.json",
+      "first": "yoshida",
+      "last": "zywicki",
+      "count": 1052,
+      "gzip": 8084
+    }
+  ]
+}

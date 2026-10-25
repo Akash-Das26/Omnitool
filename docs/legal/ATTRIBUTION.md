@@ -38,6 +38,19 @@ Omnitool's identity assets (logo, icons, social image, empty-state illustrations
 
 **Test fixture:** `tests/fixtures/schibsted-grotesk-latin-wght-normal.woff2` is the Schibsted Grotesk variable font (SIL Open Font License 1.1), copied unmodified from `@fontsource-variable/schibsted-grotesk@5.3.0`, which the app already ships for its own UI. Its licence text sits beside it as `tests/fixtures/OFL-Schibsted-Grotesk.txt`. It is used only by the font-explorer E2E test; fonts supplied by users are never saved or uploaded.
 
+**Committed data set (Session 022, Batch 6): the CMU Pronouncing Dictionary.** Used by `ipa-transcriber` and (for phonemes only) `shavian-transliterator`. Provenance and licence, all read from the upstream source, not from a mirror:
+
+| Fact | Value | Where it came from |
+|---|---|---|
+| Source | `https://github.com/cmusphinx/cmudict` | the repository's own remote, cloned read-only into `data/pronunciation/cmudict.dict` |
+| Version | commit `74790861f652b15e4ac49015a90074ad62a27690`, committed 2025-10-24 | `git log -1 --format=%H %cI` in that clone, recorded in `apps/web/public/pron/manifest.json` and shown in the tool footer |
+| Licence | BSD-2-Clause, Copyright (C) 1993-2015 Carnegie Mellon University | `data/pronunciation/LICENSE`, copied verbatim from the same commit |
+| Size | 135,351 headword lines → 126,052 headwords and 9,114 additional pronunciation variants | `scripts/generate-pronunciation-data.mjs`, reported in the manifest |
+| Shipped form | seven same-origin JSON chunks, 0.9 MB gzip in total, at most 158 kB gzip each | measured with `gzip -9` on the built files |
+| Transcribed by Omnitool | the ARPAbet → IPA mapping in `packages/tool-core/src/ipa` | written for this project from the ARPAbet symbol set published with the dictionary; no dictionary text or table is copied from delphitools |
+
+No other data set is committed for these tools. The Shavian alphabet mapping is written from the Unicode Character Database (character names and code points in the block U+10450–U+1047F), which the project already reads through the MIT-licensed `@unicode/unicode-16.0.0` package at build time.
+
 Transitive licences of those three, checked with `pnpm licenses list` (2026-10-23): `mdurl` MIT, `argparse` PSF-2.0, `entities` BSD-2-Clause, `uc.micro` MIT, `linkify-it` MIT, `punycode.js` MIT, `dfa` MIT, `clone` MIT, `brotli` MIT, `restructure` MIT, `@swc/helpers` Apache-2.0, `tiny-inflate` MIT, `unicode-trie` MIT, `fast-deep-equal` MIT, `unicode-properties` MIT. `@unicode/unicode-16.0.0` has no dependencies. No GPL, AGPL, SSPL or share-alike package is in the tree. One deprecated transitive is present (`glob@11.1.0`, MIT) and nothing depends on its deprecated behaviour.
 
 **Recorded decisions (Session 005, P1):** `lighthouse@13.5.0` and `chrome-launcher@1.2.2` are **Apache-2.0**, development-only, used by `scripts/lighthouse.mjs` and CI. `@lhci/cli` was removed; its transitive dependency tree carried four high advisories with no upstream fix. Neither package ships in the production bundle. `qrcode` is **MIT**, shipped in the QR sample.

@@ -55,14 +55,21 @@ describe('generated Unicode data', () => {
   });
 
   it('keeps the chunks in code point order and inside their published range', () => {
-    for (const chunk of searchIndex.chunks) {
-      const rows = chunks[searchIndex.chunks.indexOf(chunk)] as Entry[];
+    // 294,579 entries: an assertion per pair costs more than the 5 s test
+    // budget on a loaded host, so the walk collects the first few offenders and
+    // asserts once. Identical guarantee, two orders of magnitude cheaper.
+    for (const [position, chunk] of searchIndex.chunks.entries()) {
+      const rows = chunks[position] as Entry[];
       expect(rows[0]?.[0]).toBe(chunk.first);
       expect(rows.at(-1)?.[0]).toBe(chunk.last);
       expect(rows).toHaveLength(chunk.count);
-      for (let position = 1; position < rows.length; position += 1) {
-        expect(rows[position]?.[0]).toBeGreaterThan(rows[position - 1]?.[0] as number);
+      const outOfOrder: number[] = [];
+      for (let index = 1; index < rows.length && outOfOrder.length < 5; index += 1) {
+        if ((rows[index]?.[0] as number) <= (rows[index - 1]?.[0] as number)) {
+          outOfOrder.push(rows[index]?.[0] as number);
+        }
       }
+      expect(outOfOrder, `${chunk.file} is not in strictly ascending order`).toEqual([]);
     }
   });
 

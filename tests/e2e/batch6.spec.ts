@@ -7,6 +7,86 @@ async function choose(page: Page, trigger: string, option: string) {
   await page.getByRole('option', { name: option, exact: true }).click();
 }
 
+test.describe('ipa-transcriber', () => {
+  test('states the one-time download, shows progress and can be cancelled', async ({ page }) => {
+    // A cold visit with no service worker: the notice and the progress state
+    // are observable because the chunks are held open until the test ends.
+    const held: (() => void)[] = [];
+    await page.route('**/pron/pron-*.json', async (route) => {
+      await new Promise<void>((resolve) => held.push(resolve));
+      // Cancelling terminates the worker, which cancels the request first.
+      await route.abort().catch(() => {});
+    });
+
+    await gotoApp(page, '/tools/ipa-transcriber');
+    await expect(
+      page.getByText(/One-time download: 0\.9 MB, stored on this device\./),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('progressbar', { name: 'Pronunciation dictionary download' }),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(page.getByText(/Download cancelled before the dictionary arrived/)).toBeVisible();
+
+    for (const release of held) release();
+    await page.unroute('**/pron/pron-*.json');
+  });
+
+  test('says what is missing when the dictionary cannot be fetched', async ({ page }) => {
+    await page.route('**/pron/manifest.json', (route) => route.abort());
+    await gotoApp(page, '/tools/ipa-transcriber');
+    await expect(
+      page.getByText(/needs the one-time download of the pronunciation dictionary/),
+    ).toBeVisible();
+  });
+
+  test('transcribes the default text once the dictionary has arrived', async ({ page }) => {
+    await gotoApp(page, '/tools/ipa-transcriber');
+    const transcription = page.locator('p.break-words').first();
+    await expect(transcription).toContainText('həˈloʊ', { timeout: 30_000 });
+    await expect(page.getByText(/dictionary is stored on this device/)).toBeVisible();
+    await expect(page.getByText('Transcribed')).toBeVisible();
+    await expect(page.getByText(/CMU Pronouncing Dictionary, commit 7479086/)).toBeVisible();
+  });
+
+  test('shows variants, flags unknown words and leaves numbers alone', async ({ page }) => {
+    await gotoApp(page, '/tools/ipa-transcriber');
+    await page.getByLabel('English text').fill('read zzzz 42');
+
+    // `read` has two dictionary pronunciations, in the dictionary's order.
+    await expect(page.getByText('ˈɹɛd / ˈɹid')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/zzzz — these are left as written/)).toBeVisible();
+    const transcription = page.locator('p.break-words').first();
+    await expect(transcription).toContainText('⟨zzzz⟩');
+    await expect(transcription).toContainText('42');
+  });
+
+  test('transcribes offline after the dictionary has been fetched once', async ({
+    page,
+    context,
+  }) => {
+    await gotoApp(page, '/tools/ipa-transcriber');
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    // Reload once the worker controls the page, so the dictionary fetches go
+    // through the cache instead of straight to the network.
+    await page.reload();
+    await expect(page.locator('p.break-words').first()).toContainText('həˈloʊ', {
+      timeout: 30_000,
+    });
+
+    await context.setOffline(true);
+    await page.reload();
+    await expect(page.getByRole('heading', { level: 1, name: 'IPA Transcription' })).toBeVisible();
+    await page.getByLabel('English text').fill('hello');
+    await expect(page.locator('p.break-words').first()).toHaveText('həˈloʊ', {
+      timeout: 30_000,
+    });
+    await context.setOffline(false);
+  });
+});
+
 test.describe('code-genny', () => {
   test('renders a validated EAN-13 and explains its check digit', async ({ page }) => {
     await gotoApp(page, '/tools/code-genny');

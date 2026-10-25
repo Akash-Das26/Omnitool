@@ -42,6 +42,7 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   'tailwind-cheatsheet': () => import('@/tools/tailwind-cheatsheet'),
   'code-genny': () => import('@/tools/code-genny'),
   'algebra-calc': () => import('@/tools/algebra-calc'),
+  'ipa-transcriber': () => import('@/tools/ipa-transcriber'),
 };
 
 /**

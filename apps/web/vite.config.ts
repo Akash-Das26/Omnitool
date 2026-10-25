@@ -120,6 +120,18 @@ export default defineConfig({
             },
           },
           {
+            // The pronunciation dictionary: seven same-origin chunks, 0.9 MB
+            // gzipped in total. Disclosed as a one-time download, then cached
+            // so a second visit transcribes with no network at all.
+            urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith('/pron/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'omnitool-pron-v1',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
             urlPattern: ({ url }) =>
               url.hostname === 'cdn.jsdelivr.net' ||
               url.hostname === 'huggingface.co' ||

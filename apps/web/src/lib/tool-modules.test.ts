@@ -24,6 +24,7 @@ describe('tool modules', () => {
         'graph-calc',
         'http-status',
         'image-converter',
+        'ipa-transcriber',
         'json-formatter',
         'jwt-decoder',
         'large-type',
