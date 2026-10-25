@@ -257,10 +257,14 @@ export default function AlgebraCalcTool() {
       </ToolStage>
 
       <ToolStage title="What this covers">
-        <p className="text-sm text-muted-foreground">{SUPPORTED}</p>
+        {/* The supported-set sentence used to be a visible paragraph and became
+            the page's LCP element, painted after hydration at 2,568 ms. It lives
+            in the disclosure now, so the prerendered description is the largest
+            element again (the sci-calc precedent). */}
         <ToolHint>
-          Write multiplication with an asterisk: 2*x, not 2x, exactly as the scientific calculator
-          requires. Every step is exact rational arithmetic, so a third of a root stays a third.
+          {SUPPORTED} Write multiplication with an asterisk: 2*x, not 2x, exactly as the scientific
+          calculator requires. Every step is exact rational arithmetic, so a third of a root stays a
+          third.
         </ToolHint>
       </ToolStage>
     </ToolFrame>

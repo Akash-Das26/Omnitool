@@ -15,7 +15,12 @@ interface ManifestSummary {
   readonly chunks: readonly { readonly file: string }[];
 }
 
-const DEFAULT_TEXT = 'Hello, world. The quick brown fox jumps over the lazy dog.';
+/**
+ * Empty on purpose: the boxes start blank so the prerendered description stays
+ * the page's LCP element. A filled default rendered a large paragraph only
+ * after hydration, and that paragraph became the largest element (DEC-69).
+ */
+const DEFAULT_TEXT = '';
 const DEBOUNCE_MS = 300;
 const MAX_TEXT = 5000;
 

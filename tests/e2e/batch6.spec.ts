@@ -19,13 +19,19 @@ test.describe('ipa-transcriber', () => {
     });
 
     await gotoApp(page, '/tools/ipa-transcriber');
+    // Empty on purpose (DEC-69): nothing is transcribed until it is asked for.
+    await expect(page.getByLabel('English text')).toHaveValue('');
+    await expect(page.locator('p.break-words')).toHaveCount(0);
     await expect(
       page.getByText(/One-time download: 0\.9 MB, stored on this device\./),
     ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+    // The download only starts when there is something to transcribe, so the
+    // progress state appears after the first word is typed.
+    await page.getByLabel('English text').fill('hello');
     await expect(
       page.getByRole('progressbar', { name: 'Pronunciation dictionary download' }),
     ).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
 
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(page.getByText(/Download cancelled before the dictionary arrived/)).toBeVisible();
@@ -42,9 +48,11 @@ test.describe('ipa-transcriber', () => {
     ).toBeVisible();
   });
 
-  test('transcribes the default text once the dictionary has arrived', async ({ page }) => {
+  test('transcribes what is typed once the dictionary has arrived', async ({ page }) => {
     await gotoApp(page, '/tools/ipa-transcriber');
     const transcription = page.locator('p.break-words').first();
+    await expect(page.locator('p.break-words')).toHaveCount(0);
+    await page.getByLabel('English text').fill('Hello, world.');
     await expect(transcription).toContainText('həˈloʊ', { timeout: 30_000 });
     await expect(page.getByText(/dictionary is stored on this device/)).toBeVisible();
     await expect(page.getByText('Transcribed')).toBeVisible();
@@ -54,6 +62,7 @@ test.describe('ipa-transcriber', () => {
   test('clearing this site data brings the one-time notice back', async ({ page }) => {
     await gotoApp(page, '/tools/ipa-transcriber');
     await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.getByLabel('English text').fill('hello');
     await expect(page.locator('p.break-words').first()).toContainText('həˈloʊ', {
       timeout: 30_000,
     });
@@ -90,8 +99,10 @@ test.describe('ipa-transcriber', () => {
     await gotoApp(page, '/tools/ipa-transcriber');
     await page.evaluate(() => navigator.serviceWorker.ready);
     // Reload once the worker controls the page, so the dictionary fetches go
-    // through the cache instead of straight to the network.
+    // through the cache instead of straight to the network. The box starts
+    // empty, so the first transcription has to be typed both times.
     await page.reload();
+    await page.getByLabel('English text').fill('Hello, world.');
     await expect(page.locator('p.break-words').first()).toContainText('həˈloʊ', {
       timeout: 30_000,
     });
@@ -225,9 +236,15 @@ test.describe('shavian-transliterator', () => {
     });
 
     await gotoApp(page, '/tools/shavian-transliterator');
+    // Empty on purpose (DEC-69): the box starts blank.
+    await expect(page.getByLabel('Latin text')).toHaveValue('');
+    await expect(page.locator('p.break-words')).toHaveCount(0);
     await expect(
       page.getByText(/One-time download: 0\.9 MB, stored on this device\./),
     ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+    // The download starts with the first word, so the bar appears after typing.
+    await page.getByLabel('Latin text').fill('hello');
     await expect(
       page.getByRole('progressbar', { name: 'Pronunciation dictionary download' }),
     ).toBeVisible();
@@ -246,9 +263,10 @@ test.describe('shavian-transliterator', () => {
     ).toBeVisible();
   });
 
-  test('writes the default line in Shavian and names the dictionary it used', async ({ page }) => {
+  test('writes a typed line in Shavian and names the dictionary it used', async ({ page }) => {
     await gotoApp(page, '/tools/shavian-transliterator');
     const output = page.locator('p.break-words').first();
+    await page.getByLabel('Latin text').fill('The quick brown fox jumps over the lazy dog.');
     // "The quick brown fox jumps over the lazy dog." is nine words, all listed.
     await expect(output).toContainText(/\p{Script=Shavian}{5,}/u, { timeout: 30_000 });
     await expect(page.getByText('Transliterated')).toBeVisible();
@@ -278,7 +296,9 @@ test.describe('shavian-transliterator', () => {
   }) => {
     await gotoApp(page, '/tools/shavian-transliterator');
     await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.getByLabel('Latin text').fill('hello world');
     await page.reload();
+    await page.getByLabel('Latin text').fill('hello world');
     await expect(page.locator('p.break-words').first()).toContainText(/\p{Script=Shavian}/u, {
       timeout: 30_000,
     });
