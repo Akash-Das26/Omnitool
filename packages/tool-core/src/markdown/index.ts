@@ -101,6 +101,8 @@ interface Token {
   readonly content: string;
   readonly info: string;
   readonly markup: string;
+  /** `h1`..`h6` on a heading, the tag name on a close token, empty otherwise. */
+  readonly tag: string;
   readonly children: readonly Token[] | null;
   attrGet(name: string): string | null;
 }
@@ -265,8 +267,10 @@ function parseBlocks(
     switch (token.type) {
       case 'heading_open': {
         const inline = tokens[index + 1];
-        // `markup` is the run of hashes: "###" is level 3.
-        const level = Math.min(6, Math.max(1, token.markup.replaceAll(' ', '').length || 1));
+        // `tag` is `h1`..`h6` for every heading markdown-it builds. `markup` is
+        // only the run of hashes for the ATX form: a setext heading's markup is
+        // its underline (`Title` / `---`), whose length is not its level.
+        const level = /^h[1-6]$/.test(token.tag) ? Number(token.tag.slice(1)) : 1;
         const children =
           inline?.type === 'inline' ? convertInline(inline.children ?? [], context) : [];
         blocks.push({ type: 'heading', level, id: headingId(textOf(children), context), children });

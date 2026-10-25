@@ -52,6 +52,17 @@ export default defineConfig({
         // behaviour rather than merely executing the line.
         branches: 90,
         statements: 90,
+        // Per-file floors for the modules that handle untrusted input
+        // (DEC-78). A sanitiser, a paste converter or a parser cannot hide
+        // behind the global figure: its refusals are the product.
+        'packages/tool-core/src/sanitize/index.ts': { branches: 90 },
+        // `markdown/index.ts` carries 80 rather than 90: 40 of its 204 branches
+        // need token types markdown-it 15.0.3 never emits with `html: false`
+        // (raw HTML, a stray inline token, an unmatched close tag). The token
+        // inventory test in `markdown.edges.test.ts` proves that claim, and
+        // `IMPLEMENTATION.md` §9 lists the branches. Deleting the dead branches
+        // or accepting the gap is the owner's call, not this file's.
+        'packages/tool-core/src/markdown/index.ts': { branches: 80 },
       },
     },
   },
