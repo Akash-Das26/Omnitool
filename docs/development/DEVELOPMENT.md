@@ -33,11 +33,13 @@ Node >= 22.19 (`nvm use`), pnpm via `corepack enable`, a current Chromium for Pl
 ## 5. Testing strategy
 | Layer | Tool | Target |
 |-------|------|--------|
-| Pure logic | Vitest | ≥ 90% lines in `tool-core` |
+| Pure logic | Vitest | ≥ 90% lines and ≥ 90% branches in `tool-core` |
 | Components | Vitest + Testing Library | key interaction states |
 | E2E | Playwright | smoke per tool, offline mode, no unexpected network |
 | A11y | axe via Playwright | zero serious/critical |
 | Performance | Lighthouse (`pnpm lighthouse`), bundle budget | NFR-002/003 |
+
+Coverage gate: `pnpm test:coverage` fails below 90% lines, functions and statements, and — since the Batch 7A gate (DEC-70) — below **90% branches**. Branch coverage is measured across `packages/tool-core/src` and `packages/tools-registry/src`. Do not lower a threshold and do not exclude a file to pass it: a branch that can be reached gets a test that asserts its output or its error message, and a branch that genuinely cannot be reached (a token type the parser never emits) is named in the review log rather than covered by a fake test. At the time of writing `markdown/index.ts` is the lowest file at 77.94% branches, because markdown-it refuses to emit `html_block`, `html_inline` and unclosed-emphasis tokens when `html: false`.
 
 E2E rules, so a loaded machine cannot turn into a false verdict:
 - Navigate with `gotoApp(page, path)` from `tests/e2e/helpers.ts`, not `page.goto`. It waits for `html[data-app-ready]`, which `apps/web/src/main.tsx` sets after the first React commit (the shell's keyboard listener and stores are live by then). It is a boot signal only — never styled, never read by the app.

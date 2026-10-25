@@ -47,7 +47,10 @@ export default defineConfig({
       thresholds: {
         lines: 90,
         functions: 90,
-        branches: 85,
+        // Raised from 85 at the Batch 7A gate (DEC-70): every batch keeps
+        // `tool-core` branch coverage at 90 or above, with tests that assert
+        // behaviour rather than merely executing the line.
+        branches: 90,
         statements: 90,
       },
     },
