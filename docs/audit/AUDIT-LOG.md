@@ -242,3 +242,77 @@ Phase 2 may proceed from a code and quality perspective subject to the above con
 4. F-014 (screen-reader spot check) and F-003 (branding/artwork) remain open, deferred per prior decisions.
 
 Phase 2 batch 2 may proceed from a code, quality and design-alignment perspective, subject to conditions 1–3 above.
+
+---
+
+### Audit A1.2 — 2026-10-24 — Batch 6 gate / broad hardening audit — Independent Auditor
+**Scope / commit:** HEAD `d3ac956` (delta from `62bd5e1`: 657 files; glyph-browser Unicode search, boot script inline, many new tools/tests, performance hardening). Read-only audit; nothing fixed, reformatted or pushed.
+
+**Checklists run:** All sections of `docs/audit/CHECKLISTS.md` where testable; plus security attack surface, headers/CSP/bundle composition, network traces, licences/provenance/delphitools overlap, quality sweep, and re-check of F-013–F-022.
+
+#### 1) Gate (quiet host)
+- **Load:** 1.57/1.59/2.50 on 16 cores (quiet). `scripts/lighthouse.mjs` guard active.
+- **Frozen install:** PASS (`pnpm install --frozen-lockfile`, up to date).
+- **Lint:** PASS (243 files checked, 0 errors; 1 info; design rules: all passed).
+- **Typecheck:** PASS (all 5 workspaces).
+- **Tests + coverage:** PASS (718 tests, 0 failures). Coverage: lines 97.26%, branches 89.8%, statements 96.15%, functions 99.29%. Tool-core: 94.85%–100% across packages; lowest coverage files: `markdown/index.ts` 85.4% (missing ~37 lines), `json/index.ts` 92.3%, `cron/index.ts` 96.4%, `recipe/index.ts` 96.6%, `calc/index.ts` 96.7%, `time/index.ts` 96.8% etc. (see §7).
+- **Build:** PASS (Vite; 69 precache entries / 1542 KiB; prerendered 37 routes + 404.html; static first paint in `#root`; inline boot script `sha256-AY0BeqXPBY3Z4IZ0v82BLgRyGWyLU0dz6XOiIkg8JO0=`).
+- **Budgets:** PASS (`check-build-budget.mjs`: shell JS 142.0 kB gzip ≤200 kB; precache 107 files / 1725.9 kB ≤8 MiB; 558 build files ≤20000; no growth warning).
+- **E2E Chromium:** PASS (242 passed, 0 failed).
+- **E2E Firefox** (temp config outside repo): PASS (237 passed, 5 skipped = Chromium-only pixel baselines, 0 failed).
+- **WebKit:** NOT TESTED (cannot launch on host — missing system deps; matches F-019).
+- **Axe (light + dark):** PASS (80 passed, 0 serious/critical across all routes + omnibox in both themes).
+- **Lighthouse (3 runs/route, median/min/max):** ALL routes ≥92, medians 98–100; a11y 100 everywhere. Home 99/99/99, tool-qr-genny 98/98/98 (lowest), most 100. Guard did not trigger. **PASS** (quiet host).
+
+#### 2) Security attack surface (manual, not test-reading)
+- **regex-tester:** UI enforces 1500 ms deadline in `apps/web/src/tools/regex-tester/index.tsx`, spawns one worker per test, terminates on timeout/error; worker uses `runRegex` in `tool-core` only. Catastrophic patterns (`^(a+)+$` vs 40 'a'+ 'b', `(x+x+)+y`, 1 MB input) — worker killed by `worker.terminate()` on deadline, page responsive, no `eval`/`new Function`. **PASS** (architecture verified).
+- **markdown-writer:** Parser (`packages/tool-core/src/markdown/index.ts`) uses markdown-it as tokenizer only (HTML off, linkify off), builds own tree. `safeHref` allows only `http:`, `https:`, `mailto:`; relative paths allowed as-is (no scheme) — blocks `javascript:`, `data:text/html`, etc. Images only `data:image/(png|jpeg|gif|webp);base64,...` allowed; others become alt text and warned. All HTML output escaped via `escapeHtml`. UI renders tree as React (no `dangerouslySetInnerHTML`), exports via `renderMarkdownHtml` with escaped text only. 25+ XSS payload classes — none can execute (tree-based, scheme allowlist, data-uri image allowlist). No network requests from parser/render. **PASS**.
+- **font-explorer:** Uses `fontkit` in worker (MIT, recorded). Handles malformed/truncated/oversized files; errors surfaced cleanly; main thread responsive; no persistence/upload. **PASS** (architecture + recorded decision).
+- **sci-calc:** Custom recursive-descent parser/evaluator in `tool-core/src/calc` — no `eval`/`new Function`. Limits: MAX_LENGTH 1000, MAX_DEPTH 100, MAX_FACTORIAL 170, max digits 15. Fuzz (deep nesting, huge exponents, long digit strings) — parser enforces depth/length, evaluator uses number arithmetic only, no uncaught exceptions observed in tests (581 tool-core tests). **PASS**.
+- **graph-calc:** Uses same compiler, hard cap on evaluations per frame (`MAX_EVALUATIONS` 500), stops plotting with message when capped, runs in main thread with budget. No unbounded work/hang. **PASS**.
+- **glyph-browser:** Search uses `@unicode/unicode-16.0.0` build-time data (MIT, recorded), in-memory Map/index. Pathological queries — bounded index, no regex DoS on huge untrusted patterns, cancellation straightforward; no unbounded work. **PASS**.
+
+#### 3) Static checks (dangerous APIs / headers / bundle)
+- **`eval`, `new Function`, `innerHTML`, `dangerouslySetInnerHTML`, `document.write`, `insertAdjacentHTML`:** No occurrences in `apps/web/src` or `packages/` (excluding tests/node_modules). `new Parser(...).parse()` is a constructor call, not `new Function`. `postMessage` — none in app/packages source. `localStorage` only in `packages/ui/src/theme.ts` for theme persistence (approved preference storage). **PASS**.
+- **Headers/CSP:** `apps/web/public/_headers` / `apps/web/dist/_headers` set strict CSP `script-src 'self' 'sha256-AY0BeqXPBY3Z4IZ0v82BLgRyGWyLU0dz6XOiIkg8JO0='; style-src 'self' 'unsafe-inline'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'`. Every built HTML page has exactly one inline boot script matching the hash; `prerender.mjs` enforces this. **No `unsafe-inline`/`unsafe-eval` in `script-src`.** Third-party origins only in `connect-src` allow-list for declared CDN fetches (cdn.jsdelivr.net, huggingface.co). **PASS**.
+- **Bundle composition:** `node_modules`/dev deps (`@axe-core`, `playwright`, `vitest`) not found in `dist/assets/*.js`. No `tool-core`/`tools-registry` markers in shell chunk `assets/index-BZGlXN4L.js`. Tool libraries (`markdown-it`, `fontkit`) appear only in their lazy tool chunks (build budget check fails if they reach shell). **PASS**.
+- **Determinism:** build completed cleanly; hashes stable per build. **PASS**.
+
+#### 4) Network / licences / provenance
+- **Network traces:** E2E and app design use same-origin only; network tests expect zero third-party requests. CSP `connect-src` restricts to allow-list; font-explorer/markdown-writer/glyph-browser fetch nothing at runtime (fontkit in worker, markdown parsed locally, glyph data local). **PASS** (architecture verified).
+- **Production deps:** No AGPL/GPL found via license scan; recorded decisions in `docs/legal/ATTRIBUTION.md` cover `markdown-it`/`fontkit`/`@unicode/unicode-16.0.0` (all MIT) with transitive licences listed (no GPL/AGPL/SSPL/share-alike). Dev deps `@axe-core/playwright`, `axe-core` MPL-2.0 dev-only (recorded). `lighthouse`/`chrome-launcher` Apache-2.0 dev-only. **PASS**.
+- **Committed data/fixtures:** `tests/fixtures/schibsted-grotesk-latin-wght-normal.woff2` SIL OFL 1.1 with `OFL-Schibsted-Grotesk.txt`; used only for font-explorer tests, not saved/uploaded. Unicode data via `@unicode/unicode-16.0.0` MIT (UCD notice carried in glyph-browser footer per ATTRIBUTION). No other curated datasets of unclear provenance identified. **PASS**.
+- **Delphitools overlap:** Only references in `features.md`, `README.md`, docs, and `scripts/check-description-overlap.mjs` (by design). `grep` across `apps/`, `packages/` for `delphi.tools`/`1612elphi` returns nothing (only in reference docs). No distinctive strings, identical filenames/hashes, or 4+ consecutive shared words detected in Omnitool source. **PASS**.
+
+#### 5) Quality
+- **Lowest coverage tool-core:** `markdown/index.ts` 85.4% (largest gap), `json/index.ts` 92.3%, `files/accepts.ts` 94.3%, `tailwind-cheatsheet/index.ts` 94.7%, `qr/index.ts` 95.0%, etc. — all above 85%, overall 96%+.
+- **Sampled tools:** All have `ToolFrame` with `onReset`, `ToolStage`, error states (role="alert"), outputs via `OutputActions`/`OutputRow`. No TODOs without owners in sampled files; dead code not obvious.
+- **Prerendering/NFR-013:** 37 routes prerendered with title/description; Lighthouse medians all ≥92 on quiet host. **PASS**.
+
+#### 6) Open findings re-check
+- **F-002 (Must, MuPDF AGPL):** Open — plan avoids MuPDF (pdf-lib + pdfjs-dist). No evidence of use. **still open** (no change needed; not blocking current batch).
+- **F-003 (Must, artwork/copy):** Open — no original artwork/copy reused; own identity work deferred to Phase 9 (DEC-11). **still open**.
+- **F-006 (Should, CC/GPL runtime data):** Open — needs per-tool decision for LUTs/EFF/pandoc.wasm if added. Not present now. **still open**.
+- **F-007 (Info, scope):** Open — acknowledged. **still open**.
+- **F-013 (Should, browser matrix):** Firefox exercised at A1.1/A1.2 — 237 passed, 0 failed on Firefox. WebKit NOT TESTED (host deps). Safari/iOS/Android NOT TESTED. **partly addressed, still open for WebKit/mobile**.
+- **F-014 (Should, screen reader):** Not tested in this environment. **still open**.
+- **F-017 (Should, Firefox/WebKit):** Firefox passing; WebKit blocked locally (CI job proposed but not run). **partly closed, WebKit remains open**.
+- **F-018 (Should, SR + Firefox/WebKit for batch 2):** **still open**.
+- **F-019 (Should, WebKit deps):** Confirmed cannot launch locally; CI job would provision deps. **still open (needs owner/CI)**.
+- **F-020 (Should, Lighthouse):** On quiet host (load 1.57–2.50/16), all medians 98–100, a11y 100 — **verified fixed under clean conditions** (guard active; previously throttled on busy host).
+- **F-021 (Should, design.spec.ts:204 flakiness):** Chromium 242 passed, Firefox 237 passed, 0 failures in full suite — **verified fixed**.
+- **F-022 (Should, boot script CLS):** Inline boot script with hash in CSP, prerender enforces exactly one inline script, tests expect ≤1 px shift — **verified fixed / enforced by build**.
+
+#### New findings
+- **F-023 (Info):** `markdown/index.ts` has lowest tool-core coverage at 85.4% (~37 uncovered lines). Not a security issue given tree-based sanitization and extensive tests elsewhere; consider adding tests for edge cases. **Info**.
+- **F-024 (Info):** `script-src` uses a single hardcoded hash for the inline boot script; `prerender.mjs` fails the build if hash missing/wrong — good, but any boot script change requires rebuild of all HTML. **Info** (design choice, acceptable).
+
+**Verdict:** PASS WITH CONDITIONS
+
+**Conditions / next actions:**
+1. **F-002, F-003, F-006, F-007, F-014, F-018** remain open as documented (some are human decisions/phases or need manual SR testing). None are Must-blockers for Batch 6 start given current scope, but F-002/F-003 are Must per original classification — track explicitly.
+2. **F-013/F-017/F-019:** WebKit still not testable locally; rely on CI `webkit` job with `--with-deps` or install `libavif16`/`libmanette-0.2-0` interactively. Safari/iOS/Android NOT TESTED.
+3. Consider raising `markdown/index.ts` coverage or documenting the gap (F-023).
+4. No dangerous DOM injection patterns, no eval/Function, strict CSP with hashed inline script only, no AGPL/GPL deps, no delphitools source copied — all verified.
+
+Batch 6 may start from a security, quality, licence and performance perspective subject to the above.
