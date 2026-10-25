@@ -1,8 +1,24 @@
 import { expect, test } from '@playwright/test';
+import { attachDiagnostics, collectConsoleErrors, gotoApp } from './helpers';
+
+/**
+ * A guard that times out with no assertion message is a page nobody can see.
+ * Every failure in this file now carries the route, the document state, whether
+ * the shell had committed and what the page logged (see `helpers.ts`).
+ */
+let consoleErrors: string[] = [];
+
+test.beforeEach(({ page }) => {
+  consoleErrors = collectConsoleErrors(page);
+});
+
+test.afterEach(async ({ page }, testInfo) => {
+  await attachDiagnostics(page, testInfo, consoleErrors);
+});
 
 test.describe('json-formatter', () => {
   test('reports a syntax location and formats valid JSON', async ({ page }) => {
-    await page.goto('/tools/json-formatter');
+    await gotoApp(page, '/tools/json-formatter');
 
     const input = page.getByLabel('JSON input');
     await input.fill('{"a": }');
@@ -26,7 +42,7 @@ test.describe('json-formatter', () => {
     });
     expect(input.length).toBeGreaterThan(1_000_000);
 
-    await page.goto('/tools/json-formatter');
+    await gotoApp(page, '/tools/json-formatter');
     await page.getByLabel('JSON input').fill(input);
     await page.getByRole('button', { name: 'Format' }).click();
 
@@ -43,7 +59,7 @@ test.describe('jwt-decoder', () => {
       'base64url',
     );
 
-    await page.goto('/tools/jwt-decoder');
+    await gotoApp(page, '/tools/jwt-decoder');
     await page.getByLabel('JSON Web Token').fill(`${header}.${payload}.c2ln`);
     await page.getByRole('button', { name: 'Decode' }).click();
 
@@ -56,7 +72,7 @@ test.describe('jwt-decoder', () => {
 
 test.describe('encoder', () => {
   test('encodes UTF-8 text to Base64', async ({ page }) => {
-    await page.goto('/tools/encoder');
+    await gotoApp(page, '/tools/encoder');
     await page.getByLabel('Text').fill('hello');
     await page.getByRole('button', { name: 'Encode' }).click();
     await expect(page.getByLabel('Base64 output')).toHaveValue('aGVsbG8=');
@@ -65,7 +81,7 @@ test.describe('encoder', () => {
 
 test.describe('base-converter', () => {
   test('converts and explains an invalid digit', async ({ page }) => {
-    await page.goto('/tools/base-converter');
+    await gotoApp(page, '/tools/base-converter');
     await page.getByLabel('Value').fill('1010');
     await page.getByLabel('From base').fill('2');
     await expect(page.getByLabel(/Result in base/)).toHaveValue('A');
@@ -77,7 +93,7 @@ test.describe('base-converter', () => {
 
 test.describe('password-genny', () => {
   test('generates a password and keeps nothing', async ({ page }) => {
-    await page.goto('/tools/password-genny');
+    await gotoApp(page, '/tools/password-genny');
     await page.getByRole('button', { name: 'Generate' }).click();
 
     const output = page.getByLabel('Generated password');
@@ -94,7 +110,7 @@ test.describe('password-genny', () => {
 
 test.describe('word-counter', () => {
   test('counts words, sentences and characters live', async ({ page }) => {
-    await page.goto('/tools/word-counter');
+    await gotoApp(page, '/tools/word-counter');
     await page.getByLabel('Text to count').fill('Hello world. This is a test!');
     await expect(page.locator('dd')).toHaveText(['6', '2', '28', '23', '1', '1', '1 min', '1 min']);
   });
@@ -102,7 +118,7 @@ test.describe('word-counter', () => {
 
 test.describe('px-to-rem', () => {
   test('converts against the default and a custom root size', async ({ page }) => {
-    await page.goto('/tools/px-to-rem');
+    await gotoApp(page, '/tools/px-to-rem');
     await expect(page.getByLabel('Pixels converted to rem')).toHaveValue('1rem');
 
     await page.getByLabel('Pixels', { exact: true }).fill('24');
@@ -115,7 +131,7 @@ test.describe('px-to-rem', () => {
 
 test.describe('text-diff', () => {
   test('shows inline and side-by-side changes', async ({ page }) => {
-    await page.goto('/tools/text-diff');
+    await gotoApp(page, '/tools/text-diff');
     await page.getByLabel('Before').fill('one\ntwo\n');
     await page.getByLabel('After').fill('one\n2\n');
     await page.getByRole('button', { name: 'Compare' }).click();
