@@ -51,6 +51,26 @@ test.describe('ipa-transcriber', () => {
     await expect(page.getByText(/CMU Pronouncing Dictionary, commit 7479086/)).toBeVisible();
   });
 
+  test('clearing this site data brings the one-time notice back', async ({ page }) => {
+    await gotoApp(page, '/tools/ipa-transcriber');
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await expect(page.locator('p.break-words').first()).toContainText('həˈloʊ', {
+      timeout: 30_000,
+    });
+    await expect(page.getByText(/dictionary is stored on this device/)).toBeVisible();
+
+    await page.evaluate(async () => {
+      const names = await caches.keys();
+      await Promise.all(names.map((name) => caches.delete(name)));
+    });
+    await page.reload();
+    await expect(page.getByRole('heading', { level: 1, name: 'IPA Transcription' })).toBeVisible();
+    await expect(
+      page.getByText(/One-time download: 0\.9 MB, stored on this device\./),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+  });
+
   test('shows variants, flags unknown words and leaves numbers alone', async ({ page }) => {
     await gotoApp(page, '/tools/ipa-transcriber');
     await page.getByLabel('English text').fill('read zzzz 42');

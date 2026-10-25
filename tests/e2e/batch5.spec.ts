@@ -193,13 +193,19 @@ test.describe('glyph-browser', () => {
 
   test('the last query wins and typing stays on the page thread', async ({ page }) => {
     await gotoApp(page, '/tools/glyph-browser');
+    // Only tasks from here on count: `buffered: true` also reports the page's
+    // own hydration, which is the load path, not typing. It measured 173–187 ms
+    // on this host and put the guard 13 ms from its limit for reasons that have
+    // nothing to do with the search. Page load is covered by NFR-013 instead.
     await page.evaluate(() => {
       (window as unknown as { __glyphLong: number[] }).__glyphLong = [];
+      const from = performance.now();
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
+          if (entry.startTime < from) continue;
           (window as unknown as { __glyphLong: number[] }).__glyphLong.push(entry.duration);
         }
-      }).observe({ type: 'longtask', buffered: true });
+      }).observe({ type: 'longtask', buffered: false });
     });
 
     const search = page.getByLabel('Words, a character or a code point');
@@ -250,7 +256,12 @@ test.describe('glyph-browser', () => {
   test('says that search needs the download when it is offline and nothing is cached', async ({
     page,
     context,
+    browserName,
   }) => {
+    // Playwright's offline emulation does not reach a service worker's own
+    // fetches in Firefox: the chunks still arrive, so the state under test
+    // cannot be reached there. Recorded as untested on Firefox, not passed.
+    test.skip(browserName === 'firefox', 'Firefox offline emulation skips service-worker fetches');
     await gotoApp(page, '/tools/glyph-browser');
     await page.evaluate(() => navigator.serviceWorker.ready);
 
