@@ -964,3 +964,70 @@ No finding was closed, marked fixed or re-classified by me: **F-002, F-003, F-00
 **Next session should:** hand the owner P2-55 (Batch 6 gate) with `docs/review/BATCH-6-REVIEW-PACK.md`, get the four descriptions approved (DEC-58), and decide P2-56 (the three routes over NFR-013, with the smallest fix proposed for each). Audit A2 is **not** requested here.
 
 **Human review:** [ ] diff read  [ ] approved
+
+### Session 023 — 2026-10-25 — Batch 6 conditions, then Batch 7A stopped at the dependency decision — agent
+**Goal:** close the three Batch 6 conditions (three routes over NFR-013, branch coverage below 90%, the Firefox 30 s timeout), then build `text-editor` and `doc-converter` and stop at the batch gate. No artwork, no unapproved library or binary.
+
+**Commits:** NFR-013 fixes and their guards · coverage edge tests and the 90% branch gate · the Firefox guard and its diagnostics · this document and the review pack. No push, no history rewritten, no attribution trailers.
+
+**The decisions block was mostly unfilled.** CI-RUN, ART-PROMPTS, DESC, HOST, LIB-EDITOR and LIB-DOC all arrived as their `<… | …>` templates. AGENTS.md says to stop when a task needs an unanswered decision, and the batch rule says a library is installed only when its line names it. So: no job results are quoted, no description was applied, no library or binary was installed, and both Batch 7 tools were left unbuilt rather than guessed at. NFR-FIX and COVERAGE were filled in and followed exactly. The unfilled ones are recorded as DEC-71..DEC-77 with what was and was not done.
+
+**NFR-013 (DEC-69, P2-56).** The smallest fix was applied per route, one attempt each:
+- `algebra-calc`: the "What this covers" paragraph is folded into the existing `ToolHint`, so the prerendered description is the largest element again (the sci-calc precedent).
+- `ipa-transcriber` and `shavian-transliterator`: the box starts empty, so nothing large is painted after the 0.9 MB dictionary arrives (the DEC-45 precedent). `tests/e2e/batch6.spec.ts` now asserts the empty box, the absence of any transcription paragraph, and that the one-time notice and Cancel are visible **before** typing, then types to reach the download and the output. That guard is what stops the two panels quietly growing a default line again.
+
+| Route | Before | After | Perf | LCP element |
+|---|---|---|---|---|
+| `/tools/algebra-calc/` | 2,568 ms | **1,664 ms** | 99 | prerendered description |
+| `/tools/ipa-transcriber/` | 2,653 ms | **1,660 ms** | 100 | prerendered description |
+| `/tools/shavian-transliterator/` | 2,508 ms | **2,495 ms** | 97 | the post-hydration count line `p.mt-2` |
+
+Measured three runs per route with `scripts/lighthouse.mjs --only <route>` on a quiet host: guard exit 0, 1-minute load 1.76 at the start and 2.64 at the worst run against the 4.00 limit on 16 cores. The host field in the decisions block was blank, so I verified the host myself before trusting it (the DEC-59 precedent) and state the numbers rather than a yes/no.
+
+**The Shavian result is a pass by 5 ms, and that is not good enough to call fixed.** It is the only one of the three whose largest painted element is still drawn after hydration, so the route is one sentence away from failing again. The one permitted attempt is spent; shortening the count line to one sentence is the DEC-64 precedent and is **P2-59**, waiting on the owner. `features.md` says exactly this in the tool's row.
+
+**Coverage (DEC-70, P2-57).** Three edge-case test files, written to assert what a person sees rather than to execute a line:
+- `algebra.edges.test.ts`: parser refusals with their exact sentences, each solve degree, exact fractions built from plain numbers, a zero denominator, an unknown operation returning the `fail` shape.
+- `markdown.edges.test.ts`: blocked images keep their alt words, unsafe destinations stay literal text, heading ids from punctuation and from mixed inline nodes, ordered list start numbers, task-list checkboxes and blockquotes in the export, a code block with no language, a titled link.
+- `core.edges.test.ts`: barcode, calculator, cipher and JSON refusals (from the earlier part of this session).
+
+Result: **88.25% → 90.36% branches**, 96.48% → 96.35% lines, **807 → 887 tests in 61 files**. The Vitest `branches` threshold was **raised** from 85 to 90 and `docs/development/DEVELOPMENT.md` §5 documents it as a per-batch gate. Nothing was lowered, excluded or skipped.
+
+`markdown/index.ts` is still the lowest file (75% → **77.94% branches**). The branches left are token types markdown-it never emits with `html: false`: `html_block`, `html_inline`, and the `if (!top) break;` guards for a closing emphasis with no matching open. They are named in `IMPLEMENTATION.md` §9 and in the review pack rather than covered by a test that fabricates tokens — a fabricated token proves the branch executes and nothing else.
+
+**Firefox timeout (P2-60).** **Not reproduced, so no cause is claimed.** The failing guard was `tests/e2e/batch1.spec.ts`'s "formats input over 1 MB in a worker". Under 12 workers plus 10 CPU burners saturating all 16 cores (1-minute load up to 32.28) it passed **114 runs in a row** before any change. Two real defects were visible in the code regardless: it was the last guard still navigating with `page.goto` instead of `gotoApp`, and it then clicked **Format**, a control that only exists after hydration — precisely the pattern DEC-45's review log blames for the earlier `design.spec.ts` flake. It now waits for `data-app-ready`, and `attachDiagnostics` in `tests/e2e/helpers.ts` puts the route, `document.readyState`, the app-ready flag and the console errors into the report of any failure in that file. Proof run after the change: **30/30 on Firefox under the same load**, no retries, no sleep, no timeout lengthened. The honest statement is "not reproduced in 114 loaded runs + 30 after the fix", not "cause found".
+
+**Batch 7 tools: not built.** `text-editor` (P2-61) and `doc-converter` (P2-62) need LIB-EDITOR and LIB-DOC, and both lines were left as templates. The rule is explicit — a library is installed only when the decision names it — so nothing was added, `pnpm-lock.yaml` is unchanged, and no `package.json` moved. Instead the review pack (§4, §5) carries the options with evidence gathered with `pnpm view … version license time.modified deprecated dist.unpackedSize` plus `dependencies --json`:
+
+- Editor: **Tiptap 3.32.0** (MIT, 3.30 MB, ~30 sibling packages), **ProseMirror 1.25.12** (MIT, 530 kB for the model), **Lexical 0.52.0** (MIT, 3.23 MB, single dependency, still 0.x), or **none**. Recommendation: ProseMirror directly. Two questions need installing to answer and are reported as unverified: whether the library writes pasted content with `innerHTML` internally, and the transitive licence list. The objective requires stopping for the owner in the first case, so no code was started.
+- Converter: **`pandoc-wasm` 1.1.0 is GPL-2.0-or-later, 58.6 MB unpacked, last published 2026-06-11** — it needs your recorded decision and an ADR before it may ship. **mammoth 1.13.0** (BSD-2-Clause) + **turndown 7.2.4** (MIT) read DOCX and write HTML/Markdown but cannot write DOCX. **docx 9.14.0** (MIT) + **jszip 3.10.2** (dual MIT/GPL-3.0-or-later — MIT available, to be stated explicitly) write DOCX and EPUB. Recommendation: start with Markdown ↔ HTML ↔ plain text, which the existing `tool-core` model already parses and renders, and add DOCX reading only if you want Word input.
+
+**Descriptions (DEC-72).** No row in `docs/review/DESCRIPTIONS-DRAFT.md` is marked "approved" or "edited" — all 97 are still `draft` — so **no registry description changed**. The overlap check against the original's description column reports **0 shared four-word runs**.
+
+**Verification (final state of the tree):**
+- `pnpm lint`: pass, **262 files**, 0 errors, 0 warnings; design rules pass.
+- `pnpm typecheck`: pass in all five workspaces.
+- `pnpm test:coverage`: **887 passed / 61 files**; **96.35% lines / 90.36% branches / 99.44% functions / 97.59% statements** (thresholds now 90/90/90/90), exit 0.
+- `pnpm build`: exit 0, 41 routes plus `404.html`, one boot hash on all 42 pages.
+- `pnpm check:budgets`: pass — shell **142.3 kB gzip** (budget 200, **+0.0 kB**), precache **117 files / 1813.0 kB** (budget 8192), 576 build files.
+- E2E Chromium: **268 passed, 0 failed** (includes the new empty-state guards and axe in both themes). E2E Firefox: **262 passed, 6 skipped, 0 failed** (five Chromium-only pixel baselines plus the Firefox offline-emulation gap from Batch 5). WebKit: **NOT TESTED** (F-019).
+- Visual baselines: **none changed** (no page geometry moved).
+- Lighthouse: three per-route `--only` sweeps, guard exit 0, as in the table above. The full sweep and the home LCP re-measure were **not** run this session.
+- GitHub Actions: **not executed** (DEC-71). Nothing pushed.
+
+**Not done / uncertain:**
+- Both Batch 7 tools are unbuilt: they are blocked on LIB-EDITOR and LIB-DOC (§4, §5 of the review pack).
+- `/tools/shavian-transliterator/` passes NFR-013 by 5 ms only, and its LCP element is still painted after hydration (P2-59).
+- The Firefox timeout's cause is unknown; the guard is deterministic now and would report its own state next time.
+- Branch coverage is 90.36%, a 0.36-point margin; the next batch has to earn the rest of its growth.
+- WebKit is untested, CI has never run, and the real-phone behaviour of the 114 MB search index and the 0.9 MB dictionary download is still a human check.
+- The decisions block being mostly unfilled cost this session the two tools it was asked to build. If the template is sent as-is again, the same two items will stop again.
+
+**Problems and risks found:**
+- **`markdown-writer` already exists and is close to "text-editor".** Any editor built next batch overlaps it, and the pack says so rather than letting the owner approve a duplicate by accident.
+- **A pass by 5 ms is a fail waiting to happen.** The Shavian route is the case in point: the element that dominates the paint is decided by a line of copy, not by the architecture.
+- **`page.goto` survived in one guard after the helper was introduced**, six sessions after DEVELOPMENT.md said every navigation uses `gotoApp`. The rule was written, tested in one place, and not swept across the suite.
+
+**Next session should:** get LIB-EDITOR and LIB-DOC answered (§4, §5 of the pack), then build the two tools against them. Decide P2-59 (shorten the Shavian count line) and P2-55 (the Batch 6 gate, still open). Audit A2 is **not** requested here.
+
+**Human review:** [ ] diff read  [ ] approved
