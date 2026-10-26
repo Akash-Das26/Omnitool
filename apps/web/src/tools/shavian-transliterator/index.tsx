@@ -167,8 +167,11 @@ export default function ShavianTransliteratorTool() {
             setText(event.target.value);
           }}
         />
+        {/* One short line on purpose (P2-59): as a two-sentence paragraph it
+            became this page's LCP element at 2,495 ms, painted only after
+            hydration. The explanation lives in the hint under the result. */}
         <p className="mt-2 text-sm text-muted-foreground">
-          {`${text.length} of ${MAX_TEXT} characters. Words are looked up in the dictionary; a word that is not there is left exactly as you typed it.`}
+          {`${text.length} of ${MAX_TEXT} characters`}
         </p>
       </ToolStage>
 
@@ -257,7 +260,7 @@ export default function ShavianTransliteratorTool() {
             : 'CMU Pronouncing Dictionary (BSD-2-Clause), General American pronunciations, rewritten with a mapping written for Omnitool.'}
         </p>
         <ToolHint>
-          {`Letter values follow the Unicode Shavian block, U+10450 to U+1047F: ${SHAVIAN_LETTERS.length} letters, of which ${unusedLetters} need a sound General American does not keep apart and so are never produced. Shavian spelling conventions vary between writers, and this output is phonemic rather than a standard orthography. It is one-way: the phonemes cannot be turned back into English spelling.`}
+          {`Words are looked up in the dictionary; a word that is not there is left exactly as you typed it. Letter values follow the Unicode Shavian block, U+10450 to U+1047F: ${SHAVIAN_LETTERS.length} letters, of which ${unusedLetters} need a sound General American does not keep apart and so are never produced. Shavian spelling conventions vary between writers, and this output is phonemic rather than a standard orthography. It is one-way: the phonemes cannot be turned back into English spelling.`}
         </ToolHint>
       </ToolStage>
     </ToolFrame>
