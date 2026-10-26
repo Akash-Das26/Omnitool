@@ -619,11 +619,11 @@
       "category": "typo-text",
       "categoryName": "Typography & Text",
       "flags": [],
-      "accepts": [".md", ".txt"],
+      "accepts": [".md", ".txt", ".html"],
       "tier": 3,
       "phase": 2,
-      "description": "",
-      "produces": ["text/markdown", "text/plain"]
+      "description": "Write Markdown in a calm, distraction-free editor.",
+      "produces": ["text/markdown", "text/plain", "text/html"]
     },
     {
       "id": "font-explorer",

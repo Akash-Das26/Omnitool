@@ -221,7 +221,10 @@ function readAttributes(source: string): Map<string, string> {
   for (const match of source.matchAll(pattern)) {
     const name = (match[1] ?? '').toLowerCase();
     if (name === '') continue;
-    attributes.set(name, match[2] ?? match[3] ?? match[4] ?? '');
+    // A browser decodes character references in an attribute before it looks
+    // at it, so `href="&#106;avascript:..."` is a script address. Decoding here
+    // is what lets the scheme check see the address it will actually follow.
+    attributes.set(name, decodeEntities(match[2] ?? match[3] ?? match[4] ?? ''));
   }
   return attributes;
 }
@@ -405,7 +408,6 @@ class ModelBuilder {
     links: 0,
     elements: 0,
   };
-  private readonly blocks: BlockNode[] = [];
 
   constructor(private readonly tokens: readonly HtmlToken[]) {}
 

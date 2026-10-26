@@ -44,6 +44,7 @@ describe('tool modules', () => {
         'stupid-units',
         'tailwind-cheatsheet',
         'text-diff',
+        'text-editor',
         'time-calc',
         'typo-calc',
         'unit-converter',

@@ -33,6 +33,7 @@ export const TOOL_LOADERS: Readonly<Record<string, () => Promise<ToolModule>>> =
   'large-type': () => import('@/tools/large-type'),
   'graph-calc': () => import('@/tools/graph-calc'),
   'markdown-writer': () => import('@/tools/markdown-writer'),
+  'text-editor': () => import('@/tools/text-editor'),
   'glyph-browser': () => import('@/tools/glyph-browser'),
   'font-explorer': () => import('@/tools/font-explorer'),
   'regex-tester': () => import('@/tools/regex-tester'),

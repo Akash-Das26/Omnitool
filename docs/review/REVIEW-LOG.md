@@ -1031,3 +1031,52 @@ Result: **88.25% → 90.36% branches**, 96.48% → 96.35% lines, **807 → 887 t
 **Next session should:** get LIB-EDITOR and LIB-DOC answered (§4, §5 of the pack), then build the two tools against them. Decide P2-59 (shorten the Shavian count line) and P2-55 (the Batch 6 gate, still open). Audit A2 is **not** requested here.
 
 **Human review:** [ ] diff read  [ ] approved
+
+### Session 024 — 2026-10-26 — P2 Batch 7B, `text-editor` — agent
+**Goal:** finish `text-editor` (P2-61) on the ProseMirror decision (DEC-80), close the four things Batch 7A listed as pending (the paste corpus through the editor, axe, the 1 MB paste guard, E2E), and stop at the batch gate. `doc-converter` (P2-62) stays unbuilt.
+
+**Done:**
+- `apps/web/src/tools/text-editor/model.ts`: the ProseMirror schema and the document model. `prosemirror-schema-basic` plus `addListNodes`; custom `task_list`/`task_item` with a real checkbox whose state is written back into the node; `code_block` with a `language` attribute; underline and strike marks; the link mark limited to http/https/mailto at parse and render time; **no image node**. Model ↔ ProseMirror conversion both ways, find and replace, commands, and the paste/drop plugin.
+- `apps/web/src/tools/text-editor/index.tsx`: the UI — toolbar, counts, find and replace, Markdown/plain text/HTML export, open a document, drafts.
+- `apps/web/src/tools/text-editor/draft.ts`: opt-in IndexedDB draft (`omnitool-text-editor`), save, restore and clear.
+- `apps/web/src/tools/text-editor/model.test.ts`: **20 tests** — schema shape, no image node, link scheme refusal, model round trips, task-list boxes, three exports, the shared 40-payload attack corpus through the editor's paste path, the paste limit, paragraph and line breaks in a plain-text paste, find/replace across blocks, and each command.
+- `packages/tool-core/src/sanitize/corpus.ts` (new) and a `@omnitool/tool-core/sanitize/corpus` export: the sanitiser's attack corpus moved out of its test file so both surfaces run the same payloads.
+- `packages/tool-core/src/sanitize/index.ts`: **attribute values are decoded before the scheme check**. `href="&#106;avascript:alert(1)"` used to be read as a relative address (no scheme match) and kept as a link; a browser decodes it to `javascript:` before following it. It is now refused, with two regression tests in `sanitize.test.ts`.
+- `apps/web/src/styles/app.css`: `.ProseMirror` focus ring, list markers and task-item layout.
+- `apps/web/src/lib/tool-modules.ts`, `packages/tools-registry/data/registry.seed.json` (`produces` gained `text/html`), `tests/e2e/a11y.spec.ts` (route added), `tests/e2e/batch7.spec.ts` (new, **6 guards**), `apps/web/src/lib/tool-modules.test.ts` (id list).
+- `apps/web/package.json`: eight `prosemirror-*` packages at the versions DEC-80 names. `prosemirror-transform` and `prosemirror-inputrules` were removed again after checking the imports: they are transitive or unused, and an unused pinned dependency is a claim nobody checked.
+- `tests/e2e/visual.spec.ts-snapshots/{home,omnibox-file}-dark-chromium-linux.png` regenerated.
+
+**Features touched:** `text-editor` 🟨 → ✅.
+
+**Decisions:** DEC-80 recorded in `todo.md` (ProseMirror directly, eight MIT packages, transitive `orderedmap` and `prosemirror-transform`); licences written into `docs/legal/ATTRIBUTION.md`. No new decision was needed for the code itself.
+
+**Verification:**
+- `pnpm lint`: pass, **270 files**, 0 errors, 0 warnings; design rules pass (the one failure was a "words · characters" meta string, now two labels).
+- `pnpm typecheck`: pass in all five workspaces.
+- `pnpm test`: **983 passed in 63 files**; coverage **96.23% lines / 90.61% branches / 97.42% statements / 99.48% functions** (thresholds 90/90/90/90).
+- `pnpm build`: exit 0, **42 routes** plus `404.html`, one boot hash on all 43 pages.
+- `pnpm check:budgets`: pass — shell **142.5 kB gzip** (budget 200, **+0.2** on the recorded 142.3), precache **121 files / 2059.8 kB** (budget 8192), **580** build files. The editor chunk is 73.6 kB gzip (241.1 kB raw) and no ProseMirror package reaches the shell.
+- E2E Chromium: **276 passed, 0 failed**. Firefox: **270 passed, 6 skipped, 0 failed**. WebKit: **NOT TESTED** (F-019).
+- axe: `/tools/text-editor` in both themes, plus the omnibox — 0 serious or critical. The first run failed with `aria-allowed-attr`/`aria-prohibited-attr` because ProseMirror's editable div had `aria-label` and no role; it is now `role="textbox"`.
+- Visual baselines: the two above, regenerated mechanically. Two consecutive runs afterwards passed; the agent cannot view images, so the geometry guards are the evidence.
+- Lighthouse: **NOT TESTED**. `--only /tools/text-editor` refused with exit 3 at 1-minute load 4.96 against 4.00 on 16 cores.
+
+**Not done / uncertain:**
+- NFR-013 has no figure for `/tools/text-editor/`. No score is claimed.
+- `tests/e2e/a11y.spec.ts` runs axe on 34 of the 38 implemented tools: `code-genny`, `algebra-calc`, `ipa-transcriber` and `shavian-transliterator` were never added in Batch 6 (the list still carries one planned route, `colour-converter`). This session added only its own route; the four are a real coverage gap and should be added (and any violations fixed) before the next gate.
+- One full-suite Chromium run failed `batch7`'s first guard with a Playwright timeout while the 1 MB paste guard ran in parallel; it passed alone and in the next full run. Not reproduced, so no cause is claimed.
+- Establishing `mammoth` 1.13.0 in `apps/web/package.json` while `doc-converter` is unbuilt remains an unused dependency, recorded in P2-63. It is not in any bundle.
+- WebKit is untested, CI has never run (DEC-71), and no real-phone check of the 1 MB paste exists.
+- The link mark has no toolbar command: links can arrive from a paste or an opened file but cannot be added by hand, and the shortcut hint that claimed Ctrl/Cmd+K was removed rather than implemented.
+
+**Problems and risks found:**
+- **The sanitiser let an entity-encoded scheme through as a link.** It was harmless in the DOM (the attribute is set literally, not decoded), but it reached Markdown export as `[click](&#106;avascript:alert(1))`, which the next renderer would decode. Found by running the shared corpus through the editor. Fixed in `tool-core` with tests; the corpus now runs on both surfaces so this class of drift has a guard.
+- **The first find/replace implementation would have replaced the wrong paragraph.** `textBetween` counts block separators; `positionFor` walked text nodes without them. Caught by asking what a match in a second paragraph maps to, and now covered by a test.
+- **The first schema had `link` as both a node and a mark, and no `doc` at all.** `OrderedMap.forEach` hands the key first, unlike a `Map`; the helper was written the wrong way round and every later error was a symptom. Worth remembering: read the collection's contract, not just its name.
+- **The plan's pending list was accurate.** The paste corpus, axe, the 1 MB guard and E2E were all still open and all needed real work; none was a formality.
+- **A big drop zone above a "distraction-free" editor looked wrong**, so opening a file lives in its own stage after the writing surface rather than at the top of it. That is a judgement call, not a measured result.
+
+**Next session should:** add the four missing tools to the axe route list and fix whatever it finds; decide P2-62 (doc-converter) and either use or remove `mammoth`; measure `/tools/text-editor/` when the host is quiet; and take the Batch 6 gate (P2-55) and this batch's gate (P2-64), both waiting on the owner. Audit A2 is **not** requested here.
+
+**Human review:** [ ] diff read  [ ] approved

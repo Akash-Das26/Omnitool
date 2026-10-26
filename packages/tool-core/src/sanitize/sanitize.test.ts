@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseMarkdown } from '../markdown/index';
+import { PASTE_CORPUS } from './corpus';
 import {
   htmlToModel,
   modelToHtml,
@@ -8,50 +9,6 @@ import {
   SANITIZE_LIMITS,
   tokenizeHtml,
 } from './index';
-
-/** One payload per family of attack; every one must arrive inert. */
-const CORPUS: readonly string[] = [
-  '<script>alert(1)</script>',
-  '<SCRIPT SRC="https://evil.example/x.js"></SCRIPT>',
-  '<img src=x onerror=alert(1)>',
-  '<IMG SRC="x" ONERROR="alert(1)">',
-  '<svg onload=alert(1)></svg>',
-  '<svg><script>alert(1)</script><circle r="1"/></svg>',
-  '<iframe src="https://evil.example"></iframe>',
-  '<object data="data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg=="></object>',
-  '<embed src="https://evil.example/x">',
-  '<style>@import url(https://evil.example/x.css);</style>',
-  '<meta http-equiv="refresh" content="0;url=https://evil.example">',
-  '<base href="https://evil.example/">',
-  '<link rel="stylesheet" href="https://evil.example/x.css">',
-  '<form action="https://evil.example"><input name="q" value="x"><button>Go</button></form>',
-  '<a href="javascript:alert(1)">click</a>',
-  '<a href="JaVaScRiPt:alert(1)">click</a>',
-  '<a href="data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==">click</a>',
-  '<a href="vbscript:msgbox">click</a>',
-  '<a href="file:///etc/passwd">click</a>',
-  '<a href="https://evil.example" onclick="alert(1)">click</a>',
-  '<div onmouseover="alert(1)" onfocusin="alert(2)">hover</div>',
-  '<a href="&#106;avascript:alert(1)">entity trick</a>',
-  '<a href="jav&#x61;script:alert(1)">entity trick two</a>',
-  '<p>text <a href="https://ok.example"><script>nope</script></a> more</p>',
-  '<div><div><div><div><div><div><div><script>alert(1)</script></div></div></div></div></div></div></div>',
-  '<p>unclosed <strong>bold <em>both',
-  'text with <notatag and a stray < alone',
-  '<p title="a b" data-x=\'c\' bare=d>attributes</p>',
-  '<VIDEO SRC="x.mp4" autoplay oncanplay="alert(1)"></VIDEO>',
-  '<canvas onpointerdown="alert(1)"></canvas>',
-  '<template><script>alert(1)</script></template>',
-  '<math><mtext><script>alert(1)</script></mtext></math>',
-  '<noscript><p>fallback</p></noscript>',
-  '<textarea><script>alert(1)</script></textarea>',
-  '<title><script>alert(1)</script></title>',
-  '<img src="https://evil.example/pixel.png" alt="tracker">',
-  '<img src="data:image/svg+xml;base64,PHN2Zz48c2NyaXB0PmFsZXJ0KDEpPC9zY3JpcHQ+PC9zdmc+">',
-  '&lt;script&gt;alert(1)&lt;/script&gt;',
-  '<p>&#60;script&#62;alert(1)&#60;/script&#62;</p>',
-  '<u>underline</u><font color="red" face="Arial">font</font><center>centred</center>',
-];
 
 function textOf(html: string): string {
   return modelToText(htmlToModel(html).document);
@@ -96,8 +53,8 @@ const ALLOWED_ATTRIBUTES =
 
 describe('nothing in the corpus survives as markup', () => {
   it('leaves no script, no event handler and no third-party address anywhere', () => {
-    for (const payload of CORPUS) {
-      const { document, dropped } = htmlToModel(payload);
+    for (const payload of PASTE_CORPUS) {
+      const { document } = htmlToModel(payload);
       const asText = modelToText(document);
       const asMarkdown = modelToMarkdown(document);
       const asHtml = modelToHtml(document, payload);
@@ -227,6 +184,19 @@ describe('ordinary documents keep their shape', () => {
       ],
     });
     expect(dropped.links).toBe(5);
+  });
+
+  it('reads an attribute the way a browser does before checking its scheme', () => {
+    const { document } = htmlToModel('<p><a href="&#106;avascript:alert(1)">click</a></p>');
+    expect(document.blocks[0]).toEqual({
+      type: 'paragraph',
+      children: [{ type: 'text', value: 'click' }],
+    });
+  });
+
+  it('keeps an ampersand in a real address, escaped on the way out', () => {
+    const { document } = htmlToModel('<a href="https://ok.example/?a=1&amp;b=2">q</a>');
+    expect(modelToHtml(document)).toContain('href="https://ok.example/?a=1&amp;b=2"');
   });
 
   it('reads bullet, ordered and task lists', () => {
@@ -371,7 +341,7 @@ describe('malformed input cannot be repaired into markup', () => {
       name: 'a',
       attributes: { get: expect.any(Function) },
     });
-    const attributes = (tokens[0] as { attributes: Map<string, string> }).attributes;
+    const attributes = (tokens[0] as unknown as { attributes: Map<string, string> }).attributes;
     expect([...attributes.entries()]).toEqual([
       ['href', '/x'],
       ['class', 'y'],

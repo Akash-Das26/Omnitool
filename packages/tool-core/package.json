@@ -21,6 +21,7 @@
     "./px": "./src/px/index.ts",
     "./qr": "./src/qr/index.ts",
     "./sanitize": "./src/sanitize/index.ts",
+    "./sanitize/corpus": "./src/sanitize/corpus.ts",
     "./shavian": "./src/shavian/index.ts",
     "./unicode": "./src/unicode/index.ts",
     "./unicode/search": "./src/unicode/search.ts",

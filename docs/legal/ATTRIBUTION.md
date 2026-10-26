@@ -36,6 +36,24 @@ Omnitool's identity assets (logo, icons, social image, empty-state illustrations
 | `fontkit` | 2.0.4 | MIT | `font-explorer` | `pnpm view fontkit@2.0.4`; parsing runs in a worker. Types from `@types/fontkit@2.0.9` (MIT, development only) |
 | `@unicode/unicode-16.0.0` | 2.0.8 | MIT | `glyph-browser` (build-time data, not shipped as a module) | `pnpm view @unicode/unicode-16.0.0@2.0.8`; generated from the Unicode 16.0 Character Database. The Unicode Character Database itself is distributed under the Unicode Licence v3; the block index Omnitool writes carries the UCD version and this notice in the tool footer |
 
+**Recorded decision (DEC-80, implemented in Session 024, Batch 7): ProseMirror for `text-editor`.** The owner approved ProseMirror directly rather than a wrapper (Tiptap would add ~30 sibling packages; Lexical is still 0.x). Eight packages, all MIT, all pinned exactly and imported only by the editor's lazy chunk, which `scripts/check-build-budget.mjs` checks against the shell:
+
+| Package | Version | Licence | Role |
+|---|---|---|---|
+| `prosemirror-model` | 1.25.12 | MIT | document model and schema |
+| `prosemirror-state` | 1.4.4 | MIT | editor state, transactions, selections |
+| `prosemirror-view` | 1.42.8 | MIT | the editable surface |
+| `prosemirror-transform` | 1.12.4 | MIT | steps and position mapping |
+| `prosemirror-commands` | 1.7.2 | MIT | base keymap and block type commands |
+| `prosemirror-history` | 1.5.1 | MIT | undo and redo |
+| `prosemirror-keymap` | 1.2.3 | MIT | shortcut binding |
+| `prosemirror-schema-basic` | 1.2.5 | MIT | the starting schema, ours extends it |
+| `prosemirror-schema-list` | 1.5.1 | MIT | list nodes and list commands |
+
+Transitive: `orderedmap` 2.1.1 (MIT) and `prosemirror-transform` 1.12.4 (MIT), which `-state` and `-view` depend on; neither is imported directly, so neither is in `package.json`. Licences read from each installed package's own `package.json`. **Pasted markup never reaches ProseMirror's clipboard parser:** the editor's `handlePaste` and `handleDrop` handlers run first, read the clipboard with `getData` and hand it to `@omnitool/tool-core/sanitize`, which never builds a DOM. The sanitised model is converted into ProseMirror nodes, so `readHTML` (which sets `innerHTML` on a detached document) is never handed reader-supplied markup. The schema also has no image node, so a document cannot point at a remote resource.
+
+**Prepared but unused (Session 023, DEC-75):** `mammoth` 1.13.0 is **BSD-2-Clause** and is pinned in `apps/web/package.json` for the unbuilt `doc-converter`. No code imports it, so it is not in any bundle; it must be either used or removed when P2-62 is decided.
+
 **Test fixture:** `tests/fixtures/schibsted-grotesk-latin-wght-normal.woff2` is the Schibsted Grotesk variable font (SIL Open Font License 1.1), copied unmodified from `@fontsource-variable/schibsted-grotesk@5.3.0`, which the app already ships for its own UI. Its licence text sits beside it as `tests/fixtures/OFL-Schibsted-Grotesk.txt`. It is used only by the font-explorer E2E test; fonts supplied by users are never saved or uploaded.
 
 **Committed data set (Session 022, Batch 6): the CMU Pronouncing Dictionary.** Used by `ipa-transcriber` and (for phonemes only) `shavian-transliterator`. Provenance and licence, all read from the upstream source, not from a mirror:
