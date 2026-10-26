@@ -5,6 +5,8 @@ import {
   type MarkdownDocument,
   parseMarkdown,
   renderMarkdownHtml,
+  safeHref,
+  safeImageSrc,
 } from '@omnitool/tool-core';
 import { DownloadIcon } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
@@ -47,12 +49,12 @@ function inlineToReact(nodes: readonly InlineNode[], prefix = 'i'): ReactNode[] 
       case 'break':
         return <br key={key} />;
       case 'link':
-        // `safeHref` has already run in the parser; a null href never becomes a
-        // link node, so this is always http, https, mailto or a relative path.
+        // The parser has already checked the destination, and it is checked
+        // again here: the DOM is the boundary where a bad href would bite.
         return (
           <a
             key={key}
-            href={node.href}
+            href={safeHref(node.href) ?? '#'}
             title={node.title}
             rel="noopener noreferrer"
             target="_blank"
@@ -61,15 +63,21 @@ function inlineToReact(nodes: readonly InlineNode[], prefix = 'i'): ReactNode[] 
             {inlineToReact(node.children, key)}
           </a>
         );
-      case 'image':
+      case 'image': {
+        // A remote image would be a third-party request; only an inline data
+        // image survives the check.
+        const src = safeImageSrc(node.src);
+        if (src === null) return null;
         return (
           <img
             key={key}
-            src={node.src}
+            // url-check: checked-above — both values come from safeImageSrc above
+            src={src}
             alt={node.alt}
             className="max-w-full rounded-control border border-border"
           />
         );
+      }
       default:
         return null;
     }

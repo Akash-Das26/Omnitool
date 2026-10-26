@@ -28,6 +28,21 @@ describe('matchesFilePattern', () => {
     expect(matchesFilePattern({ type: '', name: 'doc.pdf' }, 'image/*')).toBe(false);
   });
 
+  it('reads an extension only when there is one after a dot', () => {
+    expect(matchesFilePattern({ type: '', name: 'README' }, 'text/plain')).toBe(false);
+    expect(matchesFilePattern({ type: '', name: '.hidden' }, '.md')).toBe(false);
+    expect(matchesFilePattern({ type: '', name: 'archive.tar.gz' }, '.gz')).toBe(true);
+  });
+
+  it('checks the MIME type behind an extension when the name does not carry it', () => {
+    expect(matchesFilePattern({ type: 'text/plain', name: 'notes.txt' }, '.md')).toBe(false);
+    expect(matchesFilePattern({ type: 'text/markdown', name: 'notes.txt' }, '.md')).toBe(true);
+  });
+
+  it('ignores a blank pattern when building an accept attribute', () => {
+    expect(buildAcceptAttribute(['', '  ', '.md'])).toBe('.md');
+  });
+
   it('rejects empty or unrelated patterns', () => {
     expect(matchesFilePattern({ type: 'image/png', name: 'a.png' }, '  ')).toBe(false);
     expect(matchesFilePattern({ type: 'image/png', name: 'a.png' }, 'video/mp4')).toBe(false);

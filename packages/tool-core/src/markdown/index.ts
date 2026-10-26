@@ -8,7 +8,9 @@
  * https and mailto; images keep only inline data: URIs, because a remote image
  * would be a third-party request.
  */
+
 import Markdown from 'markdown-it';
+import { checkUrl, DATA_IMAGE, IMAGE_RULES, LINK_RULES } from '../url/index';
 
 export type InlineNode =
   | { readonly type: 'text'; readonly value: string }
@@ -65,24 +67,22 @@ export interface MarkdownDocument {
 
 export const MAX_MARKDOWN_LENGTH = 2_000_000;
 
-const LINK_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
-const IMAGE_DATA = /^data:image\/(?:png|jpeg|gif|webp);base64,[a-z0-9+/=\s]+$/i;
-
-/** A URL markdown-it allows to become a link, or null if it must stay text. */
+/**
+ * A destination markdown-it may turn into a link, or null if it must stay text.
+ * The rules live in `@omnitool/tool-core/url` so every producer agrees.
+ */
 export function safeHref(raw: string): string | null {
-  const value = raw.trim();
-  if (value === '') return null;
-  // A protocol-relative URL inherits ours, which is fine; anything with an
-  // explicit scheme must be on the allow-list.
-  if (/^[a-z][a-z0-9+.-]*:/i.test(value)) {
-    try {
-      const url = new URL(value);
-      return LINK_PROTOCOLS.has(url.protocol) ? value : null;
-    } catch {
-      return null;
-    }
-  }
-  return value;
+  return checkUrl(raw, LINK_RULES);
+}
+
+/**
+ * An image source. Only inline raster data and a same-origin or http(s)
+ * address survive; a remote image would be a third-party request, so the
+ * markdown parser still refuses http(s) images at the model level.
+ */
+export function safeImageSrc(raw: string): string | null {
+  const value = checkUrl(raw, IMAGE_RULES);
+  return value !== null && DATA_IMAGE.test(value) ? value : null;
 }
 
 /** A stable, readable id for a heading; never derived from raw markup. */
@@ -217,7 +217,8 @@ function convertInline(tokens: readonly Token[], context: Context): InlineNode[]
       case 'image': {
         const src = token.attrGet('src') ?? '';
         const alt = token.content;
-        if (IMAGE_DATA.test(src)) {
+        if (safeImageSrc(src) !== null) {
+          // url-check: checked-above — safeImageSrc(src) is the branch condition
           push({ type: 'image', src: src.trim(), alt });
         } else {
           context.blockedImages += 1;
@@ -484,7 +485,7 @@ function inlineHtml(nodes: readonly InlineNode[]): string {
           return `<a href="${escapeHtml(href)}" rel="noopener noreferrer"${title}>${inlineHtml(node.children)}</a>`;
         }
         case 'image':
-          return IMAGE_DATA.test(node.src)
+          return safeImageSrc(node.src) !== null
             ? `<img src="${escapeHtml(node.src)}" alt="${escapeHtml(node.alt)}">`
             : escapeHtml(node.alt);
         default:
@@ -579,5 +580,5 @@ ${blocksHtml(document.blocks)}
 
 export const MARKDOWN_LIMITS = Object.freeze({
   maxLength: MAX_MARKDOWN_LENGTH,
-  protocols: [...LINK_PROTOCOLS],
+  protocols: ['http:', 'https:', 'mailto:'],
 });

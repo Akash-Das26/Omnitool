@@ -38,6 +38,7 @@ import {
   markdownSlug,
   renderMarkdownHtml,
   safeHref,
+  safeImageSrc,
   type TableRow,
 } from '../markdown/index';
 
@@ -897,10 +898,16 @@ function markdownInline(nodes: readonly InlineNode[]): string {
           return `*${markdownInline(node.children)}*`;
         case 'del':
           return `~~${markdownInline(node.children)}~~`;
-        case 'link':
-          return `[${markdownInline(node.children)}](${node.href})`;
-        case 'image':
-          return `![${node.alt}](${node.src})`;
+        case 'link': {
+          const href = safeHref(node.href);
+          return href === null
+            ? markdownInline(node.children)
+            : `[${markdownInline(node.children)}](${href})`;
+        }
+        case 'image': {
+          const src = safeImageSrc(node.src);
+          return src === null ? '' : `![${node.alt}](${src})`;
+        }
         case 'break':
           return '  \n';
         default:

@@ -25,6 +25,7 @@
     "./shavian": "./src/shavian/index.ts",
     "./unicode": "./src/unicode/index.ts",
     "./unicode/search": "./src/unicode/search.ts",
+    "./url": "./src/url/index.ts",
     "./uuid": "./src/uuid/index.ts",
     "./words": "./src/words/index.ts"
   },
