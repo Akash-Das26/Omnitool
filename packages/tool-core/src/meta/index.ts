@@ -1,3 +1,5 @@
+import { checkUrl, type UrlRules } from '../url/index';
+
 /**
  * Meta tag composition.
  *
@@ -52,10 +54,23 @@ export interface UrlCheck {
   readonly message?: string;
 }
 
+/** What a canonical address or a preview image may be: absolute https, nothing else. */
+const ABSOLUTE_HTTPS_RULES: UrlRules = Object.freeze({
+  allowRelative: false,
+  allowFragment: false,
+  allowMailto: false,
+  allowProtocolRelative: false,
+});
+
 /**
  * Accepts an absolute https URL with a host. Relative URLs, other schemes and
  * anything that will not parse are rejected with a readable reason. No request
  * is made.
+ *
+ * The scheme itself is judged by `checkUrl`, which sees through the entity,
+ * escape and control-character tricks a browser decodes before it follows a
+ * URL. `new URL` is used afterwards only for the checks a scheme table cannot
+ * express: that the host exists and looks like a domain.
  */
 export function checkAbsoluteHttpsUrl(value: string): UrlCheck {
   if (value.trim() === '') return { ok: false, message: 'Enter a URL' };
@@ -69,11 +84,24 @@ export function checkAbsoluteHttpsUrl(value: string): UrlCheck {
   if (parsed.protocol !== 'https:') {
     return { ok: false, message: `Use https:// rather than ${parsed.protocol}//` };
   }
+  if (checkUrl(value, ABSOLUTE_HTTPS_RULES) === null) {
+    return { ok: false, message: 'That is not a plain https URL' };
+  }
   if (parsed.hostname === '') return { ok: false, message: 'The URL needs a host name' };
   if (!parsed.hostname.includes('.')) {
     return { ok: false, message: 'The host name needs a dot, such as example.com' };
   }
   return { ok: true };
+}
+
+/**
+ * The checked value written into `href`, `og:url`, `og:image` or
+ * `twitter:image`, or null. Every URL in the generated snippet goes through
+ * here, so the markup can only ever hold something this project would follow.
+ */
+export function absoluteHttpsHref(value: string): string | null {
+  if (!checkAbsoluteHttpsUrl(value).ok) return null;
+  return checkUrl(value, ABSOLUTE_HTTPS_RULES);
 }
 
 /** `en-GB` becomes `en_GB`, the form Open Graph expects. */
@@ -115,11 +143,12 @@ export function buildMetaTags(input: MetaInput): MetaResult {
   const canonical = input.canonical.trim();
   if (canonical !== '') {
     const check = checkAbsoluteHttpsUrl(canonical);
-    if (!check.ok) {
+    const canonicalHref = absoluteHttpsHref(canonical);
+    if (!check.ok || canonicalHref === null) {
       warnings.push(`Canonical URL: ${check.message ?? 'invalid'}`);
     } else {
-      lines.push(`<link rel="canonical" href="${escapeAttribute(canonical)}" />`);
-      lines.push(`<meta property="og:url" content="${escapeAttribute(canonical)}" />`);
+      lines.push(`<link rel="canonical" href="${escapeAttribute(canonicalHref)}" />`);
+      lines.push(`<meta property="og:url" content="${escapeAttribute(canonicalHref)}" />`);
     }
   }
 
@@ -149,12 +178,13 @@ export function buildMetaTags(input: MetaInput): MetaResult {
   }
 
   const ogImage = input.ogImage.trim();
+  const ogImageHref = ogImage === '' ? null : absoluteHttpsHref(ogImage);
   if (ogImage !== '') {
     const check = checkAbsoluteHttpsUrl(ogImage);
-    if (!check.ok) {
+    if (!check.ok || ogImageHref === null) {
       warnings.push(`Open Graph image: ${check.message ?? 'invalid'}`);
     } else {
-      lines.push(`<meta property="og:image" content="${escapeAttribute(ogImage)}" />`);
+      lines.push(`<meta property="og:image" content="${escapeAttribute(ogImageHref)}" />`);
     }
   }
 
@@ -169,8 +199,8 @@ export function buildMetaTags(input: MetaInput): MetaResult {
   if (ogDescription !== '') {
     lines.push(`<meta name="twitter:description" content="${escapeAttribute(ogDescription)}" />`);
   }
-  if (ogImage !== '' && checkAbsoluteHttpsUrl(ogImage).ok) {
-    lines.push(`<meta name="twitter:image" content="${escapeAttribute(ogImage)}" />`);
+  if (ogImageHref !== null) {
+    lines.push(`<meta name="twitter:image" content="${escapeAttribute(ogImageHref)}" />`);
   }
   if (input.twitterSite.trim() !== '') {
     const handle = input.twitterSite.trim();

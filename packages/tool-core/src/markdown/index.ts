@@ -484,10 +484,12 @@ function inlineHtml(nodes: readonly InlineNode[]): string {
           const title = node.title ? ` title="${escapeHtml(node.title)}"` : '';
           return `<a href="${escapeHtml(href)}" rel="noopener noreferrer"${title}>${inlineHtml(node.children)}</a>`;
         }
-        case 'image':
-          return safeImageSrc(node.src) !== null
-            ? `<img src="${escapeHtml(node.src)}" alt="${escapeHtml(node.alt)}">`
+        case 'image': {
+          const src = safeImageSrc(node.src);
+          return src !== null
+            ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(node.alt)}">`
             : escapeHtml(node.alt);
+        }
         default:
           return '';
       }

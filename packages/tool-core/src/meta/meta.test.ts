@@ -120,6 +120,26 @@ describe('buildMetaTags', () => {
     expect(warnings[0]).toContain('https');
   });
 
+  it('refuses a URL whose scheme is hidden behind entities, escapes or controls', () => {
+    const tricks = [
+      'javascript:alert(1)',
+      '&#106;avascript:alert(1)',
+      'javascript&colon;alert(1)',
+      'java\tscript:alert(1)',
+      'ｊａｖａｓｃｒｉｐｔ:alert(1)',
+      '//evil.example/x',
+      '/relative/path',
+      'data:text/html,<script>alert(1)</script>',
+    ];
+    for (const trick of tricks) {
+      const { html, warnings } = buildMetaTags({ ...EMPTY, canonical: trick, ogImage: trick });
+      expect(html, trick).not.toContain('<link rel="canonical"');
+      expect(html, trick).not.toContain('property="og:image"');
+      expect(html, trick).not.toContain('name="twitter:image"');
+      expect(warnings.length, trick).toBeGreaterThan(0);
+    }
+  });
+
   it('warns about a missing dot in the host and about a handle without @', () => {
     const { warnings } = buildMetaTags({
       ...EMPTY,

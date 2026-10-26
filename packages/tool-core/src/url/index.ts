@@ -130,8 +130,10 @@ export function checkUrl(raw: string, rules: UrlRules = {}): string | null {
   if (value === '') return null;
   // A backslash is not valid in a URL. Browsers coerce it to a slash for the
   // special schemes, which turns `https:\\evil.example` into another host, so
-  // refuse the whole shape rather than guess what it meant.
-  if (value.includes('\\')) return null;
+  // refuse the whole shape rather than guess what it meant. The encoded form
+  // matters too: markdown-it turns `\\evil.example\x` into `%5Cevil.example%5Cx`
+  // before any check sees it, which would pass as a harmless relative path.
+  if (value.includes('\\') || /%5c/i.test(value)) return null;
   // A stray percent sign is not a valid escape, and `%%%` is not a path.
   if (/%(?![0-9a-f]{2})/i.test(value)) return null;
 

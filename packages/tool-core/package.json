@@ -26,6 +26,7 @@
     "./unicode": "./src/unicode/index.ts",
     "./unicode/search": "./src/unicode/search.ts",
     "./url": "./src/url/index.ts",
+    "./url/corpus": "./src/url/corpus.ts",
     "./uuid": "./src/uuid/index.ts",
     "./words": "./src/words/index.ts"
   },

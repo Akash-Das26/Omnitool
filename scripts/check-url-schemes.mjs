@@ -10,7 +10,10 @@
  *      an expression that does not go through `safeHref`, `checkUrl` or
  *      `safeImageSrc`, unless the expression is a literal path;
  *   2. the same shapes written as object properties, which is how a ProseMirror
- *      `toDOM` or an anchor spec is built;
+ *      `toDOM` or an anchor spec is built, and inside template-literal markup
+ *      (`<a href="${...}">`), which is how the Markdown HTML export and the
+ *      meta tag snippet are built. A variable counts as checked when it was
+ *      assigned from one of the shared checks earlier in the same file;
  *   3. `window.open`, `location.assign`, `location.replace` and assigning to
  *      `location.href` with a non-literal argument;
  *   4. markup and code injection sinks: `innerHTML`/`outerHTML` assignment,
@@ -33,7 +36,7 @@ import { extname, join, relative } from 'node:path';
 const root = new URL('..', import.meta.url).pathname;
 const roots = ['apps/web/src', 'packages/tool-core/src', 'packages/tools-registry/src'];
 const extensions = new Set(['.ts', '.tsx']);
-const SAFE = /(?:safeHref|checkUrl|safeImageSrc)\s*\(/;
+const SAFE = /(?:safeHref|checkUrl|safeImageSrc|absoluteHttpsHref)\s*\(/;
 const LITERAL_PATH = /^\s*(?:['"`])(?:[.#]|\.{0,2}\/|https?:\/\/|mailto:)/;
 
 const violations = [];
@@ -50,6 +53,11 @@ function walk(directory) {
 
 const ATTRIBUTE = /\b(?:href|src|action|formAction)=\{([^}]*)\}/g;
 const PROPERTY = /(?:^|[\s{,])(?:href|src|action)\s*:\s*([^,}\n]+)/g;
+/** `<a href="${expr}">` inside a template literal. */
+const TEMPLATE = /\b(?:href|src|action)\s*=\s*[\\]?"\$\{([^}]*)\}/g;
+/** A binding whose value came from the shared check: `const href = safeHref(x)`. */
+const SAFE_BINDING =
+  /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*[^;\n]*?(?:safeHref|checkUrl|safeImageSrc|absoluteHttpsHref)\s*\(/;
 
 function report(file, line, message) {
   violations.push({ file, line, message });
@@ -60,6 +68,10 @@ for (const directory of roots) {
     const relativePath = relative(root, file);
     if (relativePath.endsWith('packages/tool-core/src/url/index.ts')) continue;
     const lines = readFileSync(file, 'utf8').split('\n');
+    /** Names in this file known to hold a checked URL. Per file, not per scope. */
+    const safeNames = new Set();
+    const mentionsChecked = (expression) =>
+      [...safeNames].some((name) => new RegExp(`\\b${name}\\b`).test(expression));
     lines.forEach((raw, index) => {
       const trimmed = raw.trim();
       if (
@@ -76,10 +88,24 @@ for (const directory of roots) {
 
       for (const match of raw.matchAll(ATTRIBUTE)) {
         const expression = match[1] ?? '';
-        if (!SAFE.test(expression) && !LITERAL_PATH.test(expression) && !exemptLine) {
+        const checked =
+          SAFE.test(expression) || LITERAL_PATH.test(expression) || mentionsChecked(expression);
+        if (!checked && !exemptLine) {
           report(relativePath, index + 1, `${match[0]} is not passed through the shared URL check`);
         }
       }
+
+      for (const match of raw.matchAll(TEMPLATE)) {
+        const expression = match[1] ?? '';
+        const checked =
+          SAFE.test(expression) || LITERAL_PATH.test(expression) || mentionsChecked(expression);
+        if (!checked && !exemptLine) {
+          report(relativePath, index + 1, `${match[0]} is not passed through the shared URL check`);
+        }
+      }
+
+      const binding = SAFE_BINDING.exec(raw);
+      if (binding) safeNames.add(binding[1]);
 
       for (const match of raw.matchAll(PROPERTY)) {
         const value = (match[1] ?? '').trim();
