@@ -42,7 +42,14 @@ export default defineConfig({
     ],
     coverage: {
       provider: 'v8',
-      include: ['packages/tool-core/src/**/*.ts', 'packages/tools-registry/src/**/*.ts'],
+      include: [
+        'packages/tool-core/src/**/*.ts',
+        'packages/tools-registry/src/**/*.ts',
+        // The paste, drop and open-a-document converter turns untrusted markup
+        // into the editor's model, so its refusals are measured like a
+        // sanitiser's rather than left to the app project.
+        'apps/web/src/tools/text-editor/model.ts',
+      ],
       exclude: ['**/*.test.ts'],
       thresholds: {
         lines: 90,
@@ -56,6 +63,9 @@ export default defineConfig({
         // (DEC-78). A sanitiser, a paste converter or a parser cannot hide
         // behind the global figure: its refusals are the product.
         'packages/tool-core/src/sanitize/index.ts': { branches: 90 },
+        'apps/web/src/tools/text-editor/model.ts': { branches: 90 },
+        'packages/tool-core/src/url/index.ts': { branches: 90 },
+        'packages/tool-core/src/meta/index.ts': { branches: 90 },
         // `markdown/index.ts` carries 80 rather than 90: 40 of its 204 branches
         // need token types markdown-it 15.0.3 never emits with `html: false`
         // (raw HTML, a stray inline token, an unmatched close tag). The token
