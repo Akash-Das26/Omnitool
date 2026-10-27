@@ -32,24 +32,6 @@ test.describe('json-formatter', () => {
     await page.getByRole('button', { name: 'Minify' }).click();
     await expect(page.getByLabel('Formatted JSON')).toHaveValue('{"b":2,"a":1}');
   });
-
-  test('formats input over 1 MB in a worker', async ({ page }) => {
-    const input = JSON.stringify({
-      items: Array.from({ length: 20_000 }, (_, index) => ({
-        index,
-        value: 'x'.repeat(40),
-      })),
-    });
-    expect(input.length).toBeGreaterThan(1_000_000);
-
-    await gotoApp(page, '/tools/json-formatter');
-    await page.getByLabel('JSON input').fill(input);
-    await page.getByRole('button', { name: 'Format' }).click();
-
-    const output = page.getByLabel('Formatted JSON');
-    await expect(output).not.toHaveValue('', { timeout: 30_000 });
-    expect(await output.inputValue()).toContain('"index": 0,');
-  });
 });
 
 test.describe('jwt-decoder', () => {

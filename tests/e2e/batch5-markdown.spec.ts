@@ -63,32 +63,6 @@ test.describe('markdown-writer', () => {
     await expect(page.getByText(/image was blocked/)).toBeVisible();
   });
 
-  test('stays usable with a 1 MB document', async ({ page }) => {
-    await gotoApp(page, '/tools/markdown-writer');
-    const input = page.getByLabel('Markdown');
-    const chunk = '# Section\n\nSome text with **bold** and a [link](https://example.com).\n\n';
-    const large = chunk.repeat(Math.ceil(1_000_000 / chunk.length)).slice(0, 1_000_000);
-    // A 1 MB paste arrives as one input event; setting the value through
-    // Playwright's fill would have it serialise the field for stability first.
-    await page.evaluate((value) => {
-      const textarea = document.querySelector<HTMLTextAreaElement>('#markdown-input');
-      if (!textarea) throw new Error('no textarea');
-      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
-      setter?.call(textarea, value);
-      textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    }, large);
-
-    const preview = page.getByLabel('Preview', { exact: true });
-    await expect(preview.getByRole('heading', { level: 1 }).first()).toBeVisible({
-      timeout: 20_000,
-    });
-
-    // Typing still works afterwards.
-    await input.press('Control+End');
-    await input.type('x');
-    await expect(input).toHaveValue(/x$/);
-  });
-
   test('formats through the toolbar and keeps the word count', async ({ page }) => {
     await gotoApp(page, '/tools/markdown-writer');
     const input = page.getByLabel('Markdown');

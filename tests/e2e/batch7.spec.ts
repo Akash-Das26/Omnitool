@@ -66,41 +66,6 @@ test.describe('text-editor', () => {
     expect(file.suggestedFilename()).toBe('notes.md');
   });
 
-  test('stays usable with a 1 MB paste and warns for one past the limit', async ({ page }) => {
-    await gotoApp(page, '/tools/text-editor');
-    const editor = page.locator('[data-testid="editor"] .ProseMirror');
-    await editor.click();
-
-    const paste = async (html: string) => {
-      await page.evaluate((payload) => {
-        const target = document.querySelector('.ProseMirror');
-        if (!target) throw new Error('no editor');
-        const event = new Event('paste', { bubbles: true, cancelable: true });
-        Object.defineProperty(event, 'clipboardData', {
-          value: {
-            getData: (type: string) => (type === 'text/html' ? payload : 'plain'),
-          },
-        });
-        target.dispatchEvent(event);
-      }, html);
-    };
-
-    const block = '<p>Some <strong>bold</strong> words for the document.</p>';
-    await paste(block.repeat(Math.ceil(1_000_000 / block.length)).slice(0, 1_000_000));
-    await expect(editor.locator('p').first()).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText(/\d[\d,]* words/)).toBeVisible({ timeout: 20_000 });
-
-    // Typing still works after a megabyte has been read into the document.
-    await page.keyboard.press('ControlOrMeta+End');
-    await page.keyboard.type(' end');
-    await expect(editor).toHaveText(/end$/);
-
-    // Past the converter's limit the words go in, the markup is not parsed,
-    // and the reader is told rather than left guessing.
-    await paste(`<p>${'a'.repeat(2_100_000)}</p>`);
-    await expect(page.getByText(/longer than [\d,]+ characters/)).toBeVisible({ timeout: 20_000 });
-  });
-
   test('opens a Markdown file and drops a script in an HTML one', async ({ page }) => {
     await gotoApp(page, '/tools/text-editor');
     const editor = page.locator('[data-testid="editor"] .ProseMirror');

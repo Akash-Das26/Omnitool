@@ -23,6 +23,37 @@ const extraProjects = everyBrowser
     ]
   : [];
 
+const baseProjects = [
+  { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+  ...extraProjects,
+];
+
+/** The one file whose tests put a megabyte through the page's main thread. */
+const HEAVY_FILE = /heavy\.spec\.ts$/;
+
+/**
+ * The megabyte guards run in their own project, after every other project has
+ * finished, and in file order within it, so exactly one of them is ever running
+ * on the machine. They were previously in the general run and shared the page's
+ * main thread with other workers; one recorded failure (Session 024) timed out
+ * beside them, and the cause was never reproduced, so the competition is
+ * removed rather than assumed to be the cause.
+ *
+ * The chain runs backwards: the last heavy project depends only on the normal
+ * projects, and each one before it waits for the one after, so no two heavy
+ * projects overlap and no cycle is possible.
+ */
+const heavyProjects = baseProjects.map((project, index) => ({
+  name: `${project.name}-heavy`,
+  testMatch: [HEAVY_FILE],
+  fullyParallel: false,
+  use: project.use,
+  dependencies: [
+    ...baseProjects.map((entry) => entry.name),
+    ...baseProjects.slice(index + 1).map((entry) => `${entry.name}-heavy`),
+  ],
+}));
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -43,10 +74,7 @@ export default defineConfig({
     timeout: 120_000,
   },
   projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    ...extraProjects,
+    ...baseProjects.map((project) => ({ ...project, testIgnore: [HEAVY_FILE] })),
+    ...heavyProjects,
   ],
 });
