@@ -18,6 +18,7 @@ describe('tool modules', () => {
         'code-genny',
         'cron-builder',
         'decoder',
+        'doc-converter',
         'encoder',
         'font-explorer',
         'glyph-browser',

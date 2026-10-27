@@ -52,7 +52,15 @@ Omnitool's identity assets (logo, icons, social image, empty-state illustrations
 
 Transitive: `orderedmap` 2.1.1 (MIT) and `prosemirror-transform` 1.12.4 (MIT), which `-state` and `-view` depend on; neither is imported directly, so neither is in `package.json`. Licences read from each installed package's own `package.json`. **Pasted markup never reaches ProseMirror's clipboard parser:** the editor's `handlePaste` and `handleDrop` handlers run first, read the clipboard with `getData` and hand it to `@omnitool/tool-core/sanitize`, which never builds a DOM. The sanitised model is converted into ProseMirror nodes, so `readHTML` (which sets `innerHTML` on a detached document) is never handed reader-supplied markup. The schema also has no image node, so a document cannot point at a remote resource.
 
-**Prepared but unused (Session 023, DEC-75):** `mammoth` 1.13.0 is **BSD-2-Clause** and is pinned in `apps/web/package.json` for the unbuilt `doc-converter`. No code imports it, so it is not in any bundle; it must be either used or removed when P2-62 is decided.
+**Recorded decision (DEC-85, implemented in Session 025, Batch 7): `mammoth` for `doc-converter`.** The owner approved DOCX **input** only — `pandoc-wasm` (GPL-2.0-or-later, 58.6 MB) stays out, so nothing here writes DOCX and LaTeX and EPUB are out of scope. `mammoth` 1.13.0 is **BSD-2-Clause**, pinned exactly, imported only by the converter's worker, and its HTML output is never rendered directly: it goes through `@omnitool/tool-core/sanitize`, which builds no DOM.
+
+| Package | Version | Licence | Role |
+|---|---|---|---|
+| `mammoth` | 1.13.0 | BSD-2-Clause | DOCX → HTML in the converter's worker |
+
+Transitive dependencies, each licence read from the installed package's own `package.json`: `jszip` 3.10.2 (**MIT OR GPL-3.0-or-later — the MIT option is taken**, as DEC-85 records), `underscore` 1.13.8 (MIT), `@xmldom/xmldom` 0.8.15 (MIT), `argparse` 3.0.3 (PSF-2.0), `base64-js` 1.5.1 (MIT), `dingbat-to-unicode` 1.0.2 (BSD-2-Clause), `lop` 0.4.2 (BSD-2-Clause), `xmlbuilder` 10.1.1 (MIT), `pako` 1.0.11 (MIT AND Zlib), `lie` 3.3.0 (MIT), `readable-stream` 2.3.8 (MIT), `setimmediate` 1.0.5 (MIT), `duck` 0.1.12 (BSD) and `option` 0.2.4 (BSD-2-Clause). None is imported directly.
+
+The archive is checked by Omnitool's own zip guard (`packages/tool-core/src/zip`, DEC-86) before `mammoth` sees it: 20 MB in, at most 1,000 entries, 100 MB uncompressed in total, 50 MB in one entry, 100:1 compression ratio. Embedded images are dropped before they are decoded, so no data URI is ever built and the sanitiser's image rule is not the only thing standing between a Word file and a remote request.
 
 **Test fixture:** `tests/fixtures/schibsted-grotesk-latin-wght-normal.woff2` is the Schibsted Grotesk variable font (SIL Open Font License 1.1), copied unmodified from `@fontsource-variable/schibsted-grotesk@5.3.0`, which the app already ships for its own UI. Its licence text sits beside it as `tests/fixtures/OFL-Schibsted-Grotesk.txt`. It is used only by the font-explorer E2E test; fonts supplied by users are never saved or uploaded.
 

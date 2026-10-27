@@ -56,7 +56,7 @@ Overlap check: no draft shares four or more consecutive words with the "Original
 | `video-trimmer` | Video Trimmer | Set in and out points and export just that part of a video. | draft |
 | `voice-recorder` | Voice Recorder | Record a voice memo in the browser and download it. | draft |
 | `waveform-genny` | Waveform Generator | Draw an audio waveform and save it as an image or vector file. | draft |
-| `doc-converter` | Document Converter | Read and write Word, EPUB, LaTeX, HTML and Markdown files. | draft |
+| `doc-converter` | Document Converter | Turn Word, Markdown, HTML and plain text into each other on your device. | draft |
 | `text-editor` | Text Editor | Write Markdown in a calm, distraction-free editor. | draft |
 | `font-explorer` | Font File Explorer | Inspect a font file's glyphs, metrics and naming details. | draft |
 | `glyph-browser` | Glyph Browser | Browse Unicode characters and copy the ones you need. | draft |

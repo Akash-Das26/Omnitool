@@ -607,11 +607,11 @@
       "category": "typo-text",
       "categoryName": "Typography & Text",
       "flags": [],
-      "accepts": [".md", ".html", ".docx", ".tex", ".epub"],
+      "accepts": [".md", ".markdown", ".html", ".htm", ".txt", ".docx"],
       "tier": 3,
       "phase": 2,
-      "description": "",
-      "produces": ["text/markdown", "text/html", "application/epub+zip", "application/pdf"]
+      "description": "Turn Word, Markdown, HTML and plain text into each other on your device.",
+      "produces": ["text/markdown", "text/html", "text/plain"]
     },
     {
       "id": "text-editor",
