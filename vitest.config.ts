@@ -3,6 +3,13 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    // Vitest starts one worker per test file. With 70 files on a 16-core host
+    // that oversubscribes the machine while the workers start up, and the
+    // wall-clock guard in `sanitize.test.ts` (a 1 MB paste in under 2 s) read
+    // 2,143 ms twice in a row at 1-minute load 8-17 while the same call took
+    // 826 ms on its own. At half the cores the guard reads 994 ms and the
+    // whole suite is green; the run costs about ten seconds more.
+    maxWorkers: '50%',
     projects: [
       {
         test: {
