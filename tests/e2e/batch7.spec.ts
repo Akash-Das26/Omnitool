@@ -1,5 +1,116 @@
 import { expect, test } from '@playwright/test';
+import { DOCX_MIME, makeDocx } from './docx-fixture';
 import { gotoApp } from './helpers';
+
+test.describe('doc-converter', () => {
+  test('converts pasted Markdown and switches the output without rereading it', async ({
+    page,
+  }) => {
+    await gotoApp(page, '/tools/doc-converter');
+    const input = page.getByLabel('Document text');
+    const output = page.getByRole('textbox', { name: 'Converted document' });
+    await expect(output).toHaveValue('');
+
+    await input.fill('# Notes\n\nSome **bold** words.');
+    await expect(output).toHaveValue('# Notes\n\nSome **bold** words\\.');
+
+    await page.getByRole('combobox', { name: 'Output format' }).click();
+    await page.getByRole('option', { name: 'HTML' }).click();
+    await expect(output).toHaveValue(/<h1[^>]*>Notes<\/h1>/);
+    await expect(output).toHaveValue(/<strong>bold<\/strong>/);
+    await expect(output).toHaveValue(/<title>Notes<\/title>/);
+    await expect(page.getByText('document.html')).toBeVisible();
+
+    await page.getByRole('combobox', { name: 'Output format' }).click();
+    await page.getByRole('option', { name: 'Plain text' }).click();
+    await expect(output).toHaveValue('Notes\n\nSome bold words.');
+  });
+
+  test('removes a script from HTML and says what it dropped', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+
+    await gotoApp(page, '/tools/doc-converter');
+    await page.getByRole('combobox', { name: 'Input format' }).click();
+    await page.getByRole('option', { name: 'HTML' }).click();
+
+    await page
+      .getByLabel('Document text')
+      .fill('<h2>Page</h2><p>Kept<script>window.__converted = true;</script></p>');
+    const output = page.getByRole('textbox', { name: 'Converted document' });
+    await expect(output).toHaveValue('## Page\n\nKept');
+    await expect(page.getByText('1 script removed.')).toBeVisible();
+    expect(await page.evaluate(() => (window as { __converted?: boolean }).__converted)).toBe(
+      undefined,
+    );
+    expect(errors).toEqual([]);
+  });
+
+  test('reads a Word document in a worker and refuses the link it carries', async ({ page }) => {
+    const requests: string[] = [];
+    page.on('request', (request) => {
+      const url = new URL(request.url());
+      if (url.hostname !== '127.0.0.1' && url.hostname !== 'localhost')
+        requests.push(request.url());
+    });
+
+    await gotoApp(page, '/tools/doc-converter');
+    await page.getByRole('combobox', { name: 'Output format' }).click();
+    await page.getByRole('option', { name: 'HTML' }).click();
+
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'report.docx',
+      mimeType: DOCX_MIME,
+      buffer: makeDocx(),
+    });
+
+    await expect(page.getByText('Word document: report.docx')).toBeVisible();
+    const output = page.getByRole('textbox', { name: 'Converted document' });
+    await expect(output).toHaveValue(/Quarterly update/, { timeout: 30_000 });
+    await expect(output).toHaveValue(/<strong>bold<\/strong>/);
+    // A literal <b>tag</b> in the document stays text, and a javascript: link is
+    // refused by the sanitiser rather than written into the output.
+    await expect(output).toHaveValue(/&lt;b&gt;tag/);
+    await expect(output).not.toHaveValue(/javascript:/);
+    await expect(page.getByText(/1 link with an unsupported address removed/)).toBeVisible();
+    await expect(page.getByText('report.html')).toBeVisible();
+    expect(requests).toEqual([]);
+  });
+
+  test('refuses a file that claims to be a Word document and is not one', async ({ page }) => {
+    await gotoApp(page, '/tools/doc-converter');
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'notes.docx',
+      mimeType: DOCX_MIME,
+      buffer: Buffer.from('This is a text file with the wrong extension.\n'),
+    });
+    await expect(page.getByText(/not a Word document/i)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('textbox', { name: 'Converted document' })).toHaveValue('');
+  });
+
+  test('opens a Markdown file, converts it, and downloads it under its own name', async ({
+    page,
+  }) => {
+    await gotoApp(page, '/tools/doc-converter');
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'notes.md',
+      mimeType: 'text/markdown',
+      buffer: Buffer.from('## Opened\n\nFrom a **file**.\n'),
+    });
+    await expect(page.getByLabel('Document text')).toHaveValue(/^## Opened/);
+    const output = page.getByRole('textbox', { name: 'Converted document' });
+    await expect(output).toHaveValue(/From a \*\*file\*\*\\\./);
+
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Download' }).click();
+    expect((await download).suggestedFilename()).toBe('notes.md');
+
+    await page.getByRole('button', { name: 'Reset' }).click();
+    await expect(page.getByLabel('Document text')).toHaveValue('');
+    await expect(output).toHaveValue('');
+    await expect(page.getByRole('button', { name: 'Download' })).toBeDisabled();
+  });
+});
 
 test.describe('text-editor', () => {
   test('starts empty, formats, and never asks a third party for anything', async ({ page }) => {
