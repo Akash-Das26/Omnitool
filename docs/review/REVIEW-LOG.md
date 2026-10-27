@@ -1080,3 +1080,53 @@ Result: **88.25% → 90.36% branches**, 96.48% → 96.35% lines, **807 → 887 t
 **Next session should:** add the four missing tools to the axe route list and fix whatever it finds; decide P2-62 (doc-converter) and either use or remove `mammoth`; measure `/tools/text-editor/` when the host is quiet; and take the Batch 6 gate (P2-55) and this batch's gate (P2-64), both waiting on the owner. Audit A2 is **not** requested here.
 
 **Human review:** [ ] diff read  [ ] approved
+
+---
+
+### Session 025 — 2026-10-27 — P2 Batch 7B (`doc-converter`, DOCX input) and the checks — agent
+
+**Goal:** build `doc-converter` (P2-62) on the two decisions the owner had already taken — `mammoth` 1.13.0 for DOCX **input** only (DEC-85) and Omnitool's own guard on every number a ZIP writes about itself (DEC-86) — add its guards, run the Batch 7B checks and stop at the batch gate. `text-editor` and the rest of Batch 7A stay as Session 024 left them.
+
+**Done:**
+- **Session start (committed as `f25baeb`, DEC-87):** the three guards that push a megabyte through a page moved out of `batch1`, `batch5-markdown` and `batch7` into `tests/e2e/heavy.spec.ts`, which runs in a `*-heavy` project per browser that depends only on its own browser's project. They used to share the page's main thread with five other workers; the Session 024 timeout was never reproduced, so the competition was removed rather than assumed to be its cause.
+- `packages/tool-core/src/doc/index.ts` (new, 249 lines): one document model behind three inputs and three outputs. Markdown is read by the Markdown parser, HTML by the sanitiser, and plain text by this module on purpose — a `#` or a `[words](https://example.com)` in a `.txt` file stays text instead of becoming markup. `convertDocument`, `renderDocument`, `documentTitle` (the document's own first heading, else the file's name), `outputFilename`/`outputMime`/`outputLabel`, `TEXT_INPUT_LIMIT` (2,000,000 characters) and `FILE_INPUT_LIMIT`, which is the zip guard's 20 MB applied to every format so a text file cannot be larger than the archive the same tool will unpack. `describeDropped` turns the sanitiser's counts into sentences ("1 script removed.", "2 images removed.").
+- `packages/tool-core/src/zip/index.ts` (new, 165 lines): a central-directory reader plus the DEC-86 refusals **before anything is inflated** — 20 MB in, 1,000 entries, 100 MB uncompressed in total, 50 MB in one entry, 100:1. `inspectZip` returns a reason rather than throwing.
+- `apps/web/src/tools/doc-converter/worker.ts` and `types.ts` (new): a Comlink worker that checks the size, calls `inspectZip`, then hands the file to `mammoth` with `images.imgElement` returning an empty `src`, so no image is decoded into a base64 data URI that the sanitiser would then throw away. The HTML `mammoth` produces goes through the same sanitiser as a paste, and its notes are de-duplicated and cut at five.
+- `apps/web/src/tools/doc-converter/index.tsx` (new, 393 lines): input format and output format selects, file intake, progress with Cancel, the output panel, a download named after the file it came from, the drop counts and the warnings.
+- `tests/e2e/docx-fixture.ts` (new, 148 lines): a DOCX built by hand in the test — the minimum Word parts in a ZIP, carrying a literal `<b>tag</b>` and a `javascript:` link — so the refusal path is exercised by a real file rather than a mock.
+- `tests/e2e/batch7.spec.ts`: **five** `doc-converter` guards — Markdown pasted and the output switched without rereading it; a `<script>` removed and counted; the DOCX read in a worker with no third-party request and its unsupported link refused; a file that claims to be a `.docx` and is not one; a `.md` file opened, converted, downloaded under its own name and reset.
+- Registered in `apps/web/src/lib/tool-modules.ts`, `packages/tool-core/package.json` (`./doc`, `./zip`), `packages/tools-registry/data/registry.seed.json` (`accepts` `.md .markdown .html .htm .txt .docx`, `produces` `text/markdown`, `text/html`, `text/plain` — the LaTeX, EPUB and PDF the seed row promised are not built), `docs/review/DESCRIPTIONS-DRAFT.md` (new draft, DEC-83), the axe route list, and `docs/legal/ATTRIBUTION.md` (mammoth BSD-2-Clause; jszip's MIT option taken over its GPL alternative).
+- The two visual baselines `home-dark` and `omnibox-file-dark` regenerated: home lists a new tool and the dropped-file chip lists the new file types. `docs/design/ART-PROMPTS.md`'s 41-line uncommitted change was left exactly as DEC-82 requires — not read, not modified, not staged.
+
+**Features touched:** `doc-converter` ⬜ → ✅. No other row changed.
+
+**Decisions:** DEC-85 and DEC-86 (owner, carried into code), DEC-87 (the heavy guards), DEC-88 (the DOCX worker awaits its last proxied progress call before it answers), **DEC-89 (new: vitest is bounded to `maxWorkers: '50%'`)**.
+
+**Verification:** (all on the closing tree — the earlier figures in P2-65 predate this re-run)
+- `pnpm lint`: pass, **287 files**, 0 errors, 0 warnings; the design rules and the URL-scheme check both pass.
+- `pnpm typecheck`: pass in all five workspaces.
+- `pnpm test`: **1,109 passed in 70 files**, green in two consecutive runs. `pnpm test:coverage`: **1,109 passed**, coverage **96.32% statements / 90.69% branches / 98.82% functions / 97.58% lines** (thresholds 90/90/90/90).
+- `packages/tool-core/src/doc` plus `.../zip`: **48 tests** (33 + 15).
+- `pnpm build`: exit 0, **43 routes** plus `404.html`, one boot hash on all 44 pages.
+- `pnpm check:budgets`: pass — shell **142.7 kB gzip** (budget 200, **+0.2** on the recorded 142.5), precache **126 files / 2502.6 kB** (budget 8192), **585** build files. The `mammoth` worker is 428 kB raw and is precached like every other tool chunk; nothing from `mammoth` or `jszip` reaches the shell.
+- E2E Chromium: **290 passed, 0 failed** at 6 workers from a 1-minute load of 4.11 (7.1 min). Firefox: **284 passed / 6 skipped** recorded earlier in the session, and a re-run at 6 workers starting at load 12.16 lost five timeout-prone tests that then passed in a targeted 2-worker run (**16 passed / 1 skipped**). See P2-69.
+- axe: `/tools/doc-converter` in both themes, 0 serious or critical. WebKit: **NOT TESTED** (F-019).
+- Lighthouse: **NOT TESTED**, and `reports/lighthouse/summary.md` is untouched, so no score is claimed anywhere. See P2-66.
+
+**Not done / uncertain:**
+- NFR-013 has no figure for `/tools/doc-converter/` or `/tools/text-editor/`. Two `--only` attempts today ran past **600 s** with the 1-minute load at 6.3-8.5 and wrote **no report at all** — the script neither refused (exit 3) nor finished, which is not the behaviour its own guard should produce. No cause is claimed and no score is implied.
+- The 1 MB paste guard in `sanitize.test.ts` is now within 120 ms of its 2,000 ms bound under v8 instrumentation: 1,880 ms passed, 2,255 ms and 2,550 ms failed in the two runs before it. The bound and the assertion were left exactly as they were; the coverage figure above therefore comes from a run that only just cleared it. Whether a wall-clock guard belongs in the coverage gate is the owner's call (P2-68).
+- The E2E suite at its configured worker count loses four to five timeout-prone tests on a busy host and is clean at 6 workers from a quiet start. Options are in P2-69; nothing was changed to hide it.
+- LaTeX, EPUB and DOCX **output** are out of scope (DEC-85), the UI says so, and the seed row no longer promises them.
+- WebKit is untested, CI has never run (DEC-71), and no real-phone check of a DOCX or of the 1 MB paste exists.
+- The E2E DOCX fixture covers a well-formed document and a file that is not a ZIP at all. The hand-built bombs (entry count, total size, per-entry size, ratio) are unit tests over `inspectZip`, not E2E.
+
+**Problems and risks found:**
+- **A Comlink proxied progress callback loses the worker's answer in Firefox when the worker returns or throws in the same task** (DEC-88). It showed as a panel stuck at 8% with no error while Chromium delivered the same refusal. This is the identical failure the glyph search hit in Session 021, so it is a property of the pattern, not of this tool, and the guard was written against Firefox first.
+- **A ZIP's own numbers are the cheapest attack surface a DOCX reader has.** The guard reads the central directory and refuses before `mammoth` inflates a byte, which is the only ordering that makes the limits worth having.
+- **Both failing checks this session were about the host, not the code** (P2-68, P2-69): a wall-clock guard reading 2.1 s where the same call takes 0.8 s, and 30 s test timeouts at the configured worker count. Both were measured rather than argued about; one was fixed (DEC-89) and one is the owner's call.
+- **The pending list was accurate again.** The DOCX path, its guard, axe and the checks were all still open, and none of them was a formality.
+
+**Next session should:** re-measure NFR-013 for `/tools/doc-converter/` and `/tools/text-editor/` on a quiet host (and look at `scripts/lighthouse.mjs` if it hangs instead of refusing); take the owner's answer on P2-69 and on the 1 MB guard; then continue with the remaining P2 rows once the two batch gates (P2-64, P2-67) are answered. Audit A2 is **not** requested here.
+
+**Human review:** [ ] diff read  [ ] approved
