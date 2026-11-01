@@ -1270,7 +1270,7 @@ No `FAIL` and no `warn` line was printed, and the summary reports 43 of 43 valid
 | E2E chromium | pass, 3 m 13 s | — | — | **286 pass / 1 fail** (the floating assertion below) |
 | E2E firefox | pass, 4 m 59 s | — | — | pass, 4 m 27 s |
 | E2E webkit | **7 failed**, 4 m 33 s | see below | see below | 1 failed (same floating assertion) |
-| Lighthouse (advisory) | never finished | superseded by the next push (`cancel-in-progress: true`) | — | superseded again |
+| Lighthouse (advisory) | cancelled by the next push (`cancel-in-progress: true`) | — | cancelled again | ran to completion on run 4 (below) |
 
 WebKit's seven, in three groups, each a real defect rather than a WebKit quirk to suppress:
 
@@ -1314,11 +1314,11 @@ Every route is inside the target under both methods. The reason the simulated me
 - E2E, focused on the four changed spec files, Chromium + Firefox: **92 passed**.
 - E2E, full Chromium at CI's **2 workers**: **287 passed in 1.8 min**, the `text-editor` guard at **613 ms** — which is why a 30 s stall had to be a bug, not slowness.
 - **CI, run 3 (`bc271e5`):** quality pass, Chromium pass 4 m 00 s, Firefox pass 5 m 55 s, **WebKit pass 7 m 43 s**.
-- Lighthouse, CI job: advisory and never completed because each push superseded the run (`cancel-in-progress`). No CI Lighthouse figure is claimed; the local sweep from Session 027 (43/43 valid) plus the applied cross-check above are the evidence.
+- **CI Lighthouse, the first completed run** (`52445fb`, 17 m 06 s, job green): **43 of 43 routes valid** on a 4-core runner at a 3.00 load limit, quiet after 30 s; measurement `mobile · simulated · 150 ms RTT / 1,638.4 kbps / CPU ×4 · Lighthouse 13.5.0 · Chrome 156.0.0.0 · benchmark index 1,931.5`. Performance medians **94–100** (lowest minimum run 88) and accessibility 100 everywhere. **One route over NFR-013: `/tools/shavian-transliterator/` 2,614 ms**, the same post-hydration character-count line the local sweep names at 2,488 ms. No `FAIL` or `warn` line was printed. The earlier local sweep (43/43 valid) and the applied cross-check above stand beside it.
 
 **Not done / uncertain:**
 - **WebKit loses the clipboard-content assertion** in four tests (reason above). That is the price of running WebKit at all today, and it is recorded rather than hidden.
-- The CI Lighthouse job has still never produced a summary, because pushes keep cancelling it. It is advisory by design, but "written, never observed" remains true for that job specifically.
+- The CI Lighthouse job now has one completed run (above), but it is **advisory only** and it took 17 minutes; any further push cancels it again. It is not the gate and its numbers are not a substitute for a quiet-host run.
 - No screen-reader session was run; F-014/F-018 stay open.
 - **No audit finding was closed.** F-025, F-027 and F-028 still read "fix applied, awaiting independent verification"; `docs/audit/VERIFICATION-CHECKLISTS.md` is for the reviewer, and only a reviewer changes a status.
 - The three finding fixes themselves were not re-verified this session: the checklists describe steps, they do not constitute verification.
