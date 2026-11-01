@@ -1,9 +1,12 @@
 name: CI
 
+# Pull requests only: this is the gate a reviewer reads before merging. Nothing
+# is deployed from here.
 on:
-  push:
-    branches: [main]
   pull_request:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -12,66 +15,124 @@ concurrency:
 jobs:
   quality:
     name: Lint, types, unit tests, build, budgets
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # pnpm comes from package.json "packageManager" via corepack; the shim is
+      # installed into a writable directory so the runner image's Node install
+      # does not need sudo.
+      - name: Enable corepack
+        run: |
+          mkdir -p "$RUNNER_TEMP/pnpm-bin"
+          corepack enable --install-directory "$RUNNER_TEMP/pnpm-bin"
+          echo "$RUNNER_TEMP/pnpm-bin" >> "$GITHUB_PATH"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          version: 11.24.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Advisory, not a gate: the counts and the dependency path of every advisory
+      # go into the job summary so a reviewer can see them. The script always
+      # exits 0 (scripts/audit-summary.mjs); upgrading or accepting one is a
+      # decision for a person, not for a build.
+      - name: Dependency advisories (advisory)
+        continue-on-error: true
+        run: |
+          pnpm audit:summary | tee audit-summary.txt
+          { echo '### Dependency advisories'; echo '```'; cat audit-summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test:coverage
       - run: pnpm build
       - run: pnpm check:budgets
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 7
 
   e2e:
-    name: Playwright, axe, offline and network checks
-    runs-on: ubuntu-latest
+    name: E2E (${{ matrix.browser }})
+    runs-on: ubuntu-24.04
     needs: quality
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    env:
+      # playwright.config.ts adds the Firefox and WebKit projects when set.
+      PLAYWRIGHT_BROWSERS: all
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Enable corepack
+        run: |
+          mkdir -p "$RUNNER_TEMP/pnpm-bin"
+          corepack enable --install-directory "$RUNNER_TEMP/pnpm-bin"
+          echo "$RUNNER_TEMP/pnpm-bin" >> "$GITHUB_PATH"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          version: 11.24.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
       - run: pnpm build
-      - run: pnpm e2e
-      - uses: actions/upload-artifact@v4
+      - run: pnpm exec playwright test --project=${{ matrix.browser }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: playwright-${{ matrix.browser }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
           retention-days: 7
 
   lighthouse:
-    name: Lighthouse mobile budget
-    runs-on: ubuntu-latest
+    name: Lighthouse (3 runs per route, non-blocking)
+    runs-on: ubuntu-24.04
     needs: quality
+    timeout-minutes: 45
+    # Advisory only: a shared runner is a poor place to judge performance, so a
+    # budget miss or an INVALID (busy host) verdict is reported, not enforced.
+    # The gate stays the quiet-host local run at the default 0.25 share.
+    continue-on-error: true
+    env:
+      # A GitHub runner is shared and small: allow three quarters of its cores
+      # before declaring the host too busy to measure. Locally the default is 0.25.
+      LIGHTHOUSE_LOAD_SHARE: '0.75'
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Enable corepack
+        run: |
+          mkdir -p "$RUNNER_TEMP/pnpm-bin"
+          corepack enable --install-directory "$RUNNER_TEMP/pnpm-bin"
+          echo "$RUNNER_TEMP/pnpm-bin" >> "$GITHUB_PATH"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          version: 11.24.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      # Prints 3-run medians and minimums, plus the load average per run. Exits 3
+      # with "INVALID: host busy" when the runner is too loaded to measure on, in
+      # which case the run is NOT TESTED and must be repeated.
       - run: pnpm lighthouse
-      - uses: actions/upload-artifact@v4
+      - name: Write the Lighthouse summary
+        if: always()
+        run: |
+          if [ -f reports/lighthouse/summary.md ]; then
+            cat reports/lighthouse/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Lighthouse produced no summary; see the job log.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: lighthouse-report
           path: reports/lighthouse/
+          if-no-files-found: ignore
           retention-days: 7

@@ -176,6 +176,7 @@ export default function ImageConverterTool() {
           <div className="mt-4 flex flex-wrap items-center gap-4">
             {preview ? (
               <img
+                // url-check: local-asset — an object URL for the file just chosen
                 src={preview}
                 alt="Preview of the selected file"
                 className="max-h-32 max-w-48 rounded-control border border-border object-contain"

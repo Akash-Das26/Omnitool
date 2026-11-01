@@ -74,6 +74,34 @@ export function ToolFrame({
   );
 }
 
+/**
+ * Guidance for a stage, folded away.
+ *
+ * It used to be a plain paragraph under the first stage. That paragraph is
+ * longer than the tool description, so on eight tool routes the largest block on
+ * the page was text that only exists after the hydrated commit: Lighthouse put
+ * their LCP at 2.56–2.79 s while every other tool painted its description at
+ * 1.51–1.66 s, and the whole gap was one long task just before the LCP. A closed
+ * `details` is not painted, so the prerendered description stays the largest
+ * element; the text is still one click away and keeps its place in the DOM.
+ */
+export function ToolHint({
+  children,
+  className,
+}: {
+  readonly children: ReactNode;
+  readonly className?: string;
+}) {
+  return (
+    <details className={cn('text-sm text-muted-foreground', className ?? 'mt-3')}>
+      <summary className="w-fit cursor-pointer rounded-control font-medium text-foreground underline-offset-4 hover:underline">
+        How this works
+      </summary>
+      <div className="mt-2 max-w-prose space-y-2">{children}</div>
+    </details>
+  );
+}
+
 export function ToolStage({
   title,
   children,

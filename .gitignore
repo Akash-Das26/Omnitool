@@ -5,6 +5,8 @@ coverage/
 playwright-report/
 test-results/
 reports/lighthouse/
+# Wrangler local dev state (generated, never committed).
+.wrangler/
 .DS_Store
 *.log
 .env
@@ -16,3 +18,5 @@ delphitools-main/
 CLAUDE.local.md
 .claude/settings.local.json
 docs/design/stitch/
+# Generated audit evidence (screenshots and measurements.json).
+docs/design/built/

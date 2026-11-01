@@ -182,6 +182,7 @@ export default function QrGennyTool() {
           <div className="flex min-h-40 min-w-40 items-center justify-center rounded-panel border border-border bg-white p-3">
             {png ? (
               <img
+                // url-check: local-asset — a data URL drawn from the entered text
                 src={png}
                 alt={`QR code for ${text.trim() || 'the entered text'}`}
                 width={192}

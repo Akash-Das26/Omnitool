@@ -54,7 +54,7 @@ Rules: Marker is a fill for selection/"new" only, never body text colour, never 
 - **Workflow step:** numbered card (numbers are allowed here, a real sequence) with status, input source, parameters and an empty "add step" slot; up to three steps; state lives in the URL.
 - **Editor:** full-screen route with its own chrome (tool column, canvas, inspector, layers/history tabs, one status line); follows the theme setting.
 - **Buttons:** primary (Cobalt fill), secondary (border), ghost; min height 40 px desktop, 44 px mobile.
-- **Toasts:** bottom-left, concise, past tense ("Copied"). Errors persist until dismissed and say how to fix.
+- **Toasts:** bottom-right on desktop and above the sticky action bar on mobile; never over the rail or its Collapse control. Concise, past tense ("Copied"). Errors persist until dismissed and say how to fix.
 - **Icons:** Lucide, 1.5 px stroke, 20 px.
 
 ## Do

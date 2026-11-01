@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
@@ -7,6 +7,64 @@ const dist = join(root, 'apps/web/dist');
 const manifestPath = join(dist, '.vite/manifest.json');
 
 const SHELL_JS_GZIP_BUDGET = 200 * 1024;
+/** Warn when a batch adds more than this to the shell; the 200 kB limit still applies. */
+const SHELL_GROWTH_WARNING = 10 * 1024;
+/**
+ * Libraries that belong to one tool's lazy chunk and must never appear in the
+ * shell. The build has no sourcemaps, so each entry is a string that only that
+ * library emits; add one whenever a tool gains a library.
+ */
+const TOOL_LIBRARIES = [{ name: 'qrcode', marker: 'getSymbolSize' }];
+/**
+ * Packages that may only be reached from a tool's lazy chunk. The source walk
+ * below follows static imports from main.tsx and stops at `import()`, so a
+ * library added to a tool cannot arrive in the shell unnoticed.
+ */
+const TOOL_ONLY_PACKAGES = new Set(['qrcode', 'markdown-it', 'fontkit', '@unicode/unicode-16.0.0']);
+/** The tool-core barrel pulls every tool's data into whatever imports it. */
+const FORBIDDEN_IN_SHELL = new Set(['@omnitool/tool-core']);
+
+/** Walks static imports from `apps/web/src/main.tsx` and returns bare specifiers. */
+function shellSourceGraph() {
+  const dir = join(root, 'apps/web/src');
+  const seen = new Set();
+  const bare = new Set();
+  const queue = [join(dir, 'main.tsx')];
+  const resolveImport = (from, specifier) => {
+    let base;
+    if (specifier.startsWith('@/')) base = join(dir, specifier.slice(2));
+    else if (specifier.startsWith('.')) base = join(from, '..', specifier);
+    else return null;
+    for (const candidate of [
+      base,
+      `${base}.ts`,
+      `${base}.tsx`,
+      join(base, 'index.ts'),
+      join(base, 'index.tsx'),
+    ]) {
+      if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
+    }
+    return null;
+  };
+
+  while (queue.length > 0) {
+    const file = queue.pop();
+    if (seen.has(file) || !existsSync(file)) continue;
+    seen.add(file);
+    const source = readFileSync(file, 'utf8');
+    // `import(` and `import.meta` are not static imports; this regex asks for
+    // `from "x"` or a bare `import "x"`, which is what the bundler follows.
+    const specifiers = [...source.matchAll(/(?:from|import)\s*['"]([^'"]+)['"]/g)].map(
+      (match) => match[1],
+    );
+    for (const specifier of specifiers) {
+      const resolved = resolveImport(file, specifier);
+      if (resolved) queue.push(resolved);
+      else if (!specifier.startsWith('.') && !specifier.startsWith('@/')) bare.add(specifier);
+    }
+  }
+  return bare;
+}
 const PRECACHE_TOTAL_BUDGET = 8 * 1024 * 1024;
 const PRECACHE_FILE_LIMIT = 2 * 1024 * 1024;
 const CLOUDFLARE_FILE_LIMIT = 20 * 1024 * 1024;
@@ -60,6 +118,32 @@ if (shellJsGzip > SHELL_JS_GZIP_BUDGET) {
   );
 }
 
+for (const specifier of shellSourceGraph()) {
+  const name = specifier.startsWith('@')
+    ? specifier.split('/').slice(0, 2).join('/')
+    : specifier.split('/')[0];
+  if (TOOL_ONLY_PACKAGES.has(name) || FORBIDDEN_IN_SHELL.has(specifier)) {
+    failures.push(`${specifier} is imported by the shell source graph; it belongs to a tool chunk`);
+  }
+}
+
+const shellText = shellJs.map((path) => readFileSync(path, 'utf8')).join('\n');
+for (const library of TOOL_LIBRARIES) {
+  if (shellText.includes(library.marker)) {
+    failures.push(
+      `${library.name} is in the shell chunk; tool libraries must stay in their tool's lazy chunk`,
+    );
+  }
+}
+
+/** The last shell size recorded in IMPLEMENTATION.md section 9, or null. */
+function recordedShellSize() {
+  const notes = join(root, 'docs/implementation/IMPLEMENTATION.md');
+  const text = readFileSync(notes, 'utf8');
+  const matches = [...text.matchAll(/Shell JS: \*\*([\d.]+) kB gzip\*\*/g)];
+  return matches.length > 0 ? Number(matches.at(-1)[1]) : null;
+}
+
 const allFiles = walk(dist);
 let precacheTotal = 0;
 let precacheCount = 0;
@@ -100,6 +184,22 @@ console.log(
   `Precache candidates: ${precacheCount} files, ${formatBytes(precacheTotal)} (budget ${formatBytes(PRECACHE_TOTAL_BUDGET)})`,
 );
 console.log(`Build files: ${allFiles.length} (limit ${MAX_FILES})`);
+
+const recorded = recordedShellSize();
+if (recorded !== null) {
+  const growth = shellJsGzip / 1024 - recorded;
+  const sign = growth >= 0 ? '+' : '';
+  console.log(
+    `Shell growth: ${sign}${growth.toFixed(1)} kB since the recorded ${recorded.toFixed(1)} kB (warn above +10 kB per batch)`,
+  );
+  if (growth > SHELL_GROWTH_WARNING / 1024) {
+    console.warn(
+      `WARN: the shell grew ${sign}${growth.toFixed(1)} kB. Attribute it with \`node scripts/shell-attribution.mjs <dist built with --sourcemap>\` before recording the batch.`,
+    );
+  }
+} else {
+  console.warn('WARN: no recorded shell size found in docs/implementation/IMPLEMENTATION.md');
+}
 
 if (failures.length > 0) {
   for (const failure of failures) console.error(`FAIL: ${failure}`);

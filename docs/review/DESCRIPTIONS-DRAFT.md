@@ -1,6 +1,6 @@
 # Tool descriptions — draft for owner approval
 
-One sentence per tool, written in Omnitool's own words in British English, at most 100 characters. None of these is in the registry yet: `packages/tools-registry/data/registry.seed.json` is unchanged. Owner review under DEC-12; the eight Batch 1 descriptions already in the registry are repeated here so that all 97 can be reviewed together.
+One sentence per tool, written in Omnitool's own words in British English, at most 100 characters. Each description is entered in the registry when its tool ships, but every row stays `draft` until the owner approves the whole set under DEC-12 and P2-10; all 97 are repeated here so they can be reviewed together.
 
 Overlap check: no draft shares four or more consecutive words with the "Original description" column in `features.md` (checked by normalising case and punctuation, then comparing four-word runs).
 
@@ -56,16 +56,16 @@ Overlap check: no draft shares four or more consecutive words with the "Original
 | `video-trimmer` | Video Trimmer | Set in and out points and export just that part of a video. | draft |
 | `voice-recorder` | Voice Recorder | Record a voice memo in the browser and download it. | draft |
 | `waveform-genny` | Waveform Generator | Draw an audio waveform and save it as an image or vector file. | draft |
-| `doc-converter` | Document Converter | Read and write Word, EPUB, LaTeX, HTML and Markdown files. | draft |
+| `doc-converter` | Document Converter | Turn Word, Markdown, HTML and plain text into each other on your device. | draft |
 | `text-editor` | Text Editor | Write Markdown in a calm, distraction-free editor. | draft |
 | `font-explorer` | Font File Explorer | Inspect a font file's glyphs, metrics and naming details. | draft |
 | `glyph-browser` | Glyph Browser | Browse Unicode characters and copy the ones you need. | draft |
 | `large-type` | Large Type | Show a line of text at full-screen size for reading aloud. | draft |
-| `line-height-calc` | Line Height Calculator | Work out comfortable line heights for a given font size and measure. | draft |
-| `paper-sizes` | Paper Sizes | Look up international and US paper sizes in millimetres and inches. | draft |
+| `line-height-calc` | Line Height Calculator | Turn a font size and ratio, or a baseline grid, into a line height. | draft |
+| `paper-sizes` | Paper Sizes | Look up paper sizes in millimetres, inches, points and pixels. | draft |
 | `px-to-rem` | PX to REM | Convert pixel values to rem and back against a root font size you choose. | draft |
 | `text-diff` | Text Diff | Compare two pieces of text by line, word or character, with inline and side-by-side views. | draft |
-| `typo-calc` | Typography Calculator | Convert between points, picas, ems, rems and millimetres. | draft |
+| `typo-calc` | Typography Calculator | Build a modular type scale from a base size and ratio, with CSS variables. | draft |
 | `word-counter` | Word Counter | Count words, sentences and characters, and estimate reading and speaking time. | draft |
 | `pdf-preflight` | PDF Preflight | Check a PDF for missing fonts, low-resolution images and colour issues. | draft |
 | `pdf-organiser` | PDF Organiser | Reorder, merge, split and delete pages in a PDF. | draft |
@@ -87,14 +87,14 @@ Overlap check: no draft shares four or more consecutive words with the "Original
 | `code-genny` | Barcode Generator | Generate 1D and 2D barcodes for products and labels. | draft |
 | `decoder` | Cipher Decoder | Decode classical ciphers by hand or let the tool guess the method. | draft |
 | `password-genny` | Password Generator | Make random passwords or passphrases in the browser with the Web Crypto API. | draft |
-| `qr-genny` | QR Generator | Create QR codes as PNG or SVG, with size and error correction controls. | draft |
+| `qr-genny` | QR Generator | Create QR codes with PNG or SVG output, size and error correction controls. | draft |
 | `markdown-writer` | Text Scratchpad | Draft and tidy Markdown with a set of text manipulation tools. | draft |
 | `algebra-calc` | Algebra Calculator | Simplify, expand, factor or solve algebraic expressions step by step. | draft |
 | `base-converter` | Base Converter | Convert whole numbers between any two bases from 2 to 36 without losing precision. | draft |
 | `encoder` | Encoding Tools | Convert text to and from Base64, URL, HTML entity and hexadecimal forms. | draft |
 | `graph-calc` | Graph Calculator | Plot mathematical functions on an adjustable graph. | draft |
 | `sci-calc` | Scientific Calculator | Run scientific calculations and keep a history of results. | draft |
-| `time-calc` | Time Calculator | Convert timestamps and add or subtract dates, times and time zones. | draft |
+| `time-calc` | Time Calculator | Add durations, compare times across zones and break seconds into days. | draft |
 | `unit-converter` | Unit Converter | Convert length, weight, temperature, data and other units. | draft |
 | `shavian-transliterator` | Shavian Transliterator | Rewrite English text in the Shavian alphabet. | draft |
 | `morse-code` | Morse Code | Turn text into Morse code, decode it, or play the beeps. | draft |

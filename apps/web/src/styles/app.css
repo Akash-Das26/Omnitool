@@ -4,6 +4,16 @@
 @import "@fontsource-variable/schibsted-grotesk/index.css";
 @import "@fontsource-variable/geist-mono/index.css";
 
+/*
+ * The inline boot script sets data-rail on <html> before first paint. The rail
+ * width follows that attribute, so the static markup in #root and the hydrated
+ * rail agree and a visitor who collapsed the rail sees no shift on boot. Kept
+ * unlayered because it has to beat the `w-14` / `w-60` utilities.
+ */
+html[data-rail="collapsed"] [data-slot="rail"] {
+  width: 3.5rem;
+}
+
 @layer base {
   #root {
     min-height: 100dvh;
@@ -12,6 +22,54 @@
   /* Long-form content keeps a readable measure. */
   .prose-measure {
     max-width: 70ch;
+  }
+
+  /*
+   * The text editor's editable surface. Its wrapper draws the frame, so the
+   * ProseMirror element only carries the focus ring and the list markers that
+   * Tailwind's preflight would otherwise reset.
+   */
+  .ProseMirror {
+    min-height: 15rem;
+    outline: none;
+  }
+
+  .ProseMirror:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  .ProseMirror ul,
+  .ProseMirror ol {
+    padding-left: 1.5rem;
+  }
+
+  .ProseMirror ul {
+    list-style: disc;
+  }
+
+  .ProseMirror ol {
+    list-style: decimal;
+  }
+
+  .ProseMirror ul[data-task-list] {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .ProseMirror .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .ProseMirror .task-item > input {
+    margin-top: 0.35rem;
+  }
+
+  .ProseMirror .task-item > .task-item-body {
+    flex: 1;
+    min-width: 0;
   }
 
   /* Touch targets: 44 px minimum on coarse pointers (audit checklist, NFR-004). */

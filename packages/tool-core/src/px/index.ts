@@ -1,3 +1,7 @@
+import { roundTo } from '../number/index';
+
+export { roundTo };
+
 export const DEFAULT_ROOT_FONT_SIZE = 16;
 
 export const COMMON_PX_VALUES: readonly number[] = [
@@ -15,11 +19,6 @@ function assertPositive(value: number, label: string): void {
   if (!Number.isFinite(value) || value <= 0) {
     throw new LengthConversionError(`${label} must be a number greater than zero`);
   }
-}
-
-export function roundTo(value: number, places = 4): number {
-  const factor = 10 ** places;
-  return Math.round(value * factor) / factor;
 }
 
 export function pxToRem(px: number, root: number = DEFAULT_ROOT_FONT_SIZE): number {

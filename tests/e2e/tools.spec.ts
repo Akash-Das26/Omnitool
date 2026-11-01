@@ -1,19 +1,32 @@
-import { expect, test } from '@playwright/test';
+import { type BrowserContext, expect, test } from '@playwright/test';
+import { canReadClipboard, gotoApp } from './helpers';
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
-test.describe('uuid-genny', () => {
-  test('generates and copies UUIDs', async ({ page, context }) => {
+/**
+ * Chromium needs the clipboard permissions granted by name; Firefox and WebKit
+ * expose the clipboard to the page without a grant (audit F-013 matrix runs).
+ */
+async function allowClipboard(browserName: string, context: BrowserContext) {
+  if (browserName === 'chromium') {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-    await page.goto('/tools/uuid-genny');
+  }
+}
+
+test.describe('uuid-genny', () => {
+  test('generates and copies UUIDs', async ({ page, context, browserName }) => {
+    await allowClipboard(browserName, context);
+    await gotoApp(page, '/tools/uuid-genny');
 
     const outputValues = () =>
       page
         .locator('[data-output-value]')
         .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-output-value') ?? ''));
 
+    // The rows are generated on mount, so wait for them rather than reading the
+    // DOM the instant the navigation returns.
+    await expect(page.locator('[data-output-value]')).toHaveCount(5);
     const first = await outputValues();
-    expect(first).toHaveLength(5);
     for (const value of first) expect(value).toMatch(UUID_V4);
 
     await page.getByRole('button', { name: 'Generate' }).click();
@@ -21,25 +34,29 @@ test.describe('uuid-genny', () => {
     await page.getByRole('button', { name: 'Copy all' }).click();
     await expect(page.getByRole('button', { name: 'Copied all' })).toBeVisible();
 
-    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipboard).toBe((await outputValues()).join('\n'));
+    if (canReadClipboard(browserName)) {
+      const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+      expect(clipboard).toBe((await outputValues()).join('\n'));
+    }
   });
 
-  test('copies a single value from its row', async ({ page, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-    await page.goto('/tools/uuid-genny');
+  test('copies a single value from its row', async ({ page, context, browserName }) => {
+    await allowClipboard(browserName, context);
+    await gotoApp(page, '/tools/uuid-genny');
 
     await page.getByRole('button', { name: 'Copy value 2' }).click();
 
-    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
     const values = await page
       .locator('[data-output-value]')
       .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-output-value') ?? ''));
-    expect(clipboard).toBe(values[1]);
+    if (canReadClipboard(browserName)) {
+      const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+      expect(clipboard).toBe(values[1]);
+    }
   });
 
   test('downloads a text file', async ({ page }) => {
-    await page.goto('/tools/uuid-genny');
+    await gotoApp(page, '/tools/uuid-genny');
     const downloadPromise = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Download .txt' }).click();
     const download = await downloadPromise;
@@ -49,7 +66,7 @@ test.describe('uuid-genny', () => {
 
 test.describe('qr-genny', () => {
   test('renders a QR code and downloads PNG and SVG', async ({ page }) => {
-    await page.goto('/tools/qr-genny');
+    await gotoApp(page, '/tools/qr-genny');
 
     await expect(page.getByRole('img', { name: /QR code/ })).toBeVisible();
 
@@ -67,7 +84,7 @@ test.describe('qr-genny', () => {
 
 test.describe('image-converter', () => {
   test('shows the first-use download, cancels, then converts and downloads', async ({ page }) => {
-    await page.goto('/tools/image-converter');
+    await gotoApp(page, '/tools/image-converter');
 
     await page.locator('input[type="file"]').setInputFiles('tests/fixtures/sample.png');
     await expect(page.getByText('sample.png')).toBeVisible();

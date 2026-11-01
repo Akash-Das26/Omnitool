@@ -1,20 +1,23 @@
-import { applyTheme, readStoredTheme, resolveInitialTheme, type Theme } from '@omnitool/ui';
+import { applyTheme, type Theme } from '@omnitool/ui';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { initialRailState, RAIL_COLLAPSED, UI_STORAGE_KEY } from './preferences';
 
 interface UiState {
   readonly railCollapsed: boolean;
   toggleRail(): void;
 }
 
+// Seeded from what the inline boot script already painted, not from storage: a
+// second source would let hydration move the rail after first paint.
 export const useUiStore = create<UiState>()(
   persist(
     (set) => ({
-      railCollapsed: false,
+      railCollapsed: initialRailState() === RAIL_COLLAPSED,
       toggleRail: () => set((state) => ({ railCollapsed: !state.railCollapsed })),
     }),
     {
-      name: 'omnitool-ui',
+      name: UI_STORAGE_KEY,
       partialize: (state) => ({ railCollapsed: state.railCollapsed }),
     },
   ),
@@ -31,11 +34,10 @@ interface ThemeState {
   toggleTheme(): void;
 }
 
+// Likewise seeded from the class the boot script already set. Reading storage a
+// second time would let a blocked or stale preference repaint after hydration.
 export const useThemeStore = create<ThemeState>()((set, get) => ({
-  theme: resolveInitialTheme(
-    readStoredTheme(),
-    typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches,
-  ),
+  theme: currentTheme(),
   setTheme: (theme) => {
     applyTheme(theme);
     set({ theme });
@@ -44,13 +46,6 @@ export const useThemeStore = create<ThemeState>()((set, get) => ({
     get().setTheme(get().theme === 'dark' ? 'light' : 'dark');
   },
 }));
-
-if (typeof document !== 'undefined') {
-  const stored = currentTheme();
-  if (useThemeStore.getState().theme !== stored) {
-    useThemeStore.setState({ theme: stored });
-  }
-}
 
 export interface IntakeFile {
   readonly name: string;

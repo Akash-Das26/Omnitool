@@ -9,8 +9,13 @@
       "!**/playwright-report",
       "!**/test-results",
       "!**/reports/lighthouse",
+      "!**/.wrangler",
       "!delphitools-main",
-      "!docs/design/stitch"
+      "!docs/design/stitch",
+      "!docs/design/built",
+      "!apps/web/public/unicode",
+      "!apps/web/public/pron",
+      "!data/pronunciation"
     ]
   },
   "formatter": {

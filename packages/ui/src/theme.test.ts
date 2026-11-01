@@ -1,20 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { applyTheme, isTheme, readStoredTheme, resolveInitialTheme } from './theme';
+import { applyTheme, isTheme } from './theme';
 
-describe('resolveInitialTheme', () => {
-  it('prefers a stored choice', () => {
-    expect(resolveInitialTheme('light', true)).toBe('light');
-    expect(resolveInitialTheme('dark', false)).toBe('dark');
-  });
-
-  it('falls back to the system preference', () => {
-    expect(resolveInitialTheme(null, true)).toBe('dark');
-    expect(resolveInitialTheme('nonsense', false)).toBe('light');
-  });
-
+describe('isTheme', () => {
   it('recognises valid themes only', () => {
     expect(isTheme('dark')).toBe(true);
+    expect(isTheme('light')).toBe(true);
     expect(isTheme('system')).toBe(false);
+    expect(isTheme(null)).toBe(false);
   });
 });
 
@@ -31,17 +23,5 @@ describe('applyTheme', () => {
 
     applyTheme('light', root, storage);
     expect(root.classList.contains('dark')).toBe(false);
-  });
-});
-
-describe('readStoredTheme', () => {
-  it('returns null when storage throws', () => {
-    expect(
-      readStoredTheme({
-        getItem: () => {
-          throw new Error('blocked');
-        },
-      }),
-    ).toBeNull();
   });
 });

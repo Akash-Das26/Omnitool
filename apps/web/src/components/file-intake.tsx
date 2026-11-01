@@ -1,4 +1,4 @@
-import { buildAcceptAttribute, matchesFilePattern } from '@omnitool/tool-core';
+import { buildAcceptAttribute, matchesFilePattern } from '@omnitool/tool-core/files';
 import { UploadIcon } from 'lucide-react';
 import {
   type ChangeEvent,

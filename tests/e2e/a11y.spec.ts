@@ -1,22 +1,36 @@
+import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
+import { gotoApp } from './helpers';
 
-const routes = [
-  '/',
-  '/privacy',
-  '/about',
-  '/tools/uuid-genny',
-  '/tools/qr-genny',
-  '/tools/image-converter',
-  '/tools/json-formatter',
-  '/tools/jwt-decoder',
-  '/tools/encoder',
-  '/tools/base-converter',
-  '/tools/password-genny',
-  '/tools/word-counter',
-  '/tools/px-to-rem',
-  '/tools/text-diff',
-];
+const fixedRoutes = ['/', '/privacy', '/about', '/experiments'];
+
+const SEED_TOOL_IDS: readonly string[] = (
+  JSON.parse(readFileSync('packages/tools-registry/data/registry.seed.json', 'utf8')) as {
+    tools: { id: string }[];
+  }
+).tools.map((tool) => tool.id);
+
+/**
+ * The loader map decides what is built, and it is the only list that does.
+ * Importing it here would drag the application, its `@/` aliases and its CSS
+ * into the E2E project's typecheck, so its keys are read from its source
+ * instead: one list, and a tool that gains a loader entry without an axe run
+ * cannot be missed. The hand-kept list this replaces had missed four tools.
+ */
+function builtToolIds(): string[] {
+  const source = readFileSync('apps/web/src/lib/tool-modules.ts', 'utf8');
+  const start = source.indexOf('TOOL_LOADERS');
+  const end = source.indexOf('};', start);
+  if (start === -1 || end === -1) throw new Error('the loader map is not where it was');
+  return [
+    ...source.slice(start, end).matchAll(/'?([a-z][a-z0-9-]*)'?:\s*\(\)\s*=>\s*import\(/g),
+  ].map((match) => match[1] as string);
+}
+
+const BUILT_TOOL_IDS = builtToolIds();
+
+const routes = [...fixedRoutes, ...BUILT_TOOL_IDS.map((id) => `/tools/${id}`)];
 
 const themes = ['light', 'dark'] as const;
 
@@ -24,8 +38,7 @@ async function openInTheme(page: Page, route: string, theme: 'light' | 'dark') {
   await page.addInitScript((value) => {
     window.localStorage.setItem('omnitool-theme', value);
   }, theme);
-  await page.goto(route);
-  await page.waitForTimeout(300);
+  await gotoApp(page, route);
   if (theme === 'dark') await expect(page.locator('html')).toHaveClass(/dark/);
 }
 
@@ -35,6 +48,19 @@ async function seriousViolations(page: Page) {
     (violation) => violation.impact === 'serious' || violation.impact === 'critical',
   );
 }
+
+test('the axe list covers every built tool and nothing else', () => {
+  const toolRoutes = routes.filter((route) => route.startsWith('/tools/'));
+  expect(toolRoutes).toEqual(BUILT_TOOL_IDS.map((id) => `/tools/${id}`));
+  expect(BUILT_TOOL_IDS.length).toBeGreaterThan(30);
+  // A built tool must also be a registry row; the reverse is not required,
+  // because planned tools are catalogued but deliberately not built.
+  for (const id of BUILT_TOOL_IDS) {
+    expect(SEED_TOOL_IDS, `${id} is in the registry seed`).toContain(id);
+  }
+  expect(new Set(routes).size).toBe(routes.length);
+  expect(routes.length).toBe(fixedRoutes.length + BUILT_TOOL_IDS.length);
+});
 
 for (const theme of themes) {
   for (const route of routes) {

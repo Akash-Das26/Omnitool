@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { gotoApp } from './helpers';
 
 /**
  * A small tolerance for anti-aliasing between runs. It is far below the size of
@@ -15,13 +16,14 @@ async function openDark(page: Page, route: string) {
   await page.addInitScript(() => {
     window.localStorage.setItem('omnitool-theme', 'dark');
   });
-  await page.goto(route);
+  await gotoApp(page, route);
   await expect(page.locator('html')).toHaveClass(/dark/);
   // Fonts and the theme class settle before the shot.
   await page.evaluate(() => document.fonts.ready);
 }
 
-test('dark home matches its layout reference', async ({ page }) => {
+test('dark home matches its layout reference', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Pixel baselines exist for Chromium only');
   await openDark(page, '/');
   const surface = await page.evaluate(
     () => getComputedStyle(document.querySelector('html') as HTMLElement).backgroundColor,
@@ -33,7 +35,8 @@ test('dark home matches its layout reference', async ({ page }) => {
   });
 });
 
-test('dark tool page matches its layout reference', async ({ page }) => {
+test('dark tool page matches its layout reference', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Pixel baselines exist for Chromium only');
   // A tool with deterministic output, so the baseline is meaningful.
   await openDark(page, '/tools/qr-genny');
   await expect(page.getByRole('img', { name: /QR code/ })).toBeVisible();
@@ -43,7 +46,8 @@ test('dark tool page matches its layout reference', async ({ page }) => {
   });
 });
 
-test('dark image converter shows the first-use codec state', async ({ page }) => {
+test('dark image converter shows the first-use codec state', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Pixel baselines exist for Chromium only');
   await openDark(page, '/tools/image-converter');
   await page.locator('input[type="file"]').setInputFiles('tests/fixtures/sample.png');
   await expect(page.getByText('Image codec (sample)')).toBeVisible();
@@ -80,7 +84,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.addInitScript((value) => {
         window.localStorage.setItem('omnitool-theme', value);
       }, theme);
-      await page.goto(route);
+      await gotoApp(page, route);
       if (theme === 'dark') await expect(page.locator('html')).toHaveClass(/dark/);
       if (route === '/tools/image-converter') {
         await page.locator('input[type="file"]').setInputFiles('tests/fixtures/sample.png');
@@ -94,7 +98,7 @@ for (const theme of ['light', 'dark'] as const) {
     await page.addInitScript((value) => {
       window.localStorage.setItem('omnitool-theme', value);
     }, theme);
-    await page.goto('/');
+    await gotoApp(page, '/');
     await page.keyboard.press('Control+K');
     await expect(page.getByRole('dialog')).toBeVisible();
 
@@ -102,7 +106,11 @@ for (const theme of ['light', 'dark'] as const) {
   });
 }
 
-test('dark omnibox shows the Marker selected row and the key hints', async ({ page }) => {
+test('dark omnibox shows the Marker selected row and the key hints', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'Pixel baselines exist for Chromium only');
   await openDark(page, '/');
   await page.keyboard.press('Control+K');
   const dialog = page.getByRole('dialog');
@@ -110,7 +118,7 @@ test('dark omnibox shows the Marker selected row and the key hints', async ({ pa
   await dialog.getByRole('combobox').fill('uuid');
 
   const selected = dialog.getByRole('option').first();
-  await expect(selected).toHaveAttribute('data-selected', 'true');
+  await expect(selected).toHaveAttribute('aria-selected', 'true');
   const colours = await selected.evaluate((node) => {
     const style = getComputedStyle(node);
     return { background: style.backgroundColor, color: style.color };
@@ -131,7 +139,8 @@ test('dark omnibox shows the Marker selected row and the key hints', async ({ pa
   await expect(page).toHaveScreenshot('omnibox-dark.png', SCREENSHOT_OPTIONS);
 });
 
-test('the dropped-file chip shows the name, size and type', async ({ page }) => {
+test('the dropped-file chip shows the name, size and type', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Pixel baselines exist for Chromium only');
   await openDark(page, '/');
 
   await page.evaluate(() => {

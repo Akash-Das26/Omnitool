@@ -12,7 +12,7 @@ export function UpdatePrompt() {
   return (
     <div
       role="status"
-      className="fixed bottom-4 left-4 z-50 flex max-w-sm items-start gap-3 rounded-panel border border-border bg-popover p-3 text-sm text-popover-foreground shadow-popover"
+      className="fixed right-4 bottom-4 z-50 flex max-w-sm items-start gap-3 rounded-panel border border-border bg-popover p-3 text-sm text-popover-foreground shadow-popover max-md:bottom-[calc(5rem_+_env(safe-area-inset-bottom))]"
     >
       <p className="pt-1">
         {needRefresh
@@ -29,6 +29,7 @@ export function UpdatePrompt() {
             type="button"
             variant="ghost"
             size="icon"
+            className="rounded-control!"
             aria-label="Dismiss offline notice"
             onClick={() => setOfflineReady(false)}
           >

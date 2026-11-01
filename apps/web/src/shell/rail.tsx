@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Link, useRouterState } from '@/lib/navigation';
 import { useUiStore } from '@/lib/stores';
+import { isToolImplemented } from '@/lib/tool-modules';
 import { cn } from '@/lib/utils';
 
 const CATEGORY_ICONS: Record<CategoryId, LucideIcon> = {
@@ -47,15 +48,19 @@ export function Rail() {
   return (
     <aside
       aria-label="Tool categories"
+      data-slot="rail"
       className={cn(
         'sticky top-14 hidden h-[calc(100dvh-3.5rem)] shrink-0 flex-col border-r border-border bg-background transition-[width] md:flex',
         collapsed ? 'w-14' : 'w-60',
       )}
     >
       <nav className="flex-1 overflow-y-auto p-2">
+        {!collapsed ? <p className="px-2 pb-1 text-xs text-muted-foreground">Available</p> : null}
         <ul className="space-y-0.5">
           {CATEGORIES.map((category) => {
             const Icon = CATEGORY_ICONS[category.id];
+            const available = category.tools.filter((tool) => isToolImplemented(tool.id)).length;
+            const planned = category.tools.length - available;
             return (
               <li key={category.id}>
                 <Link
@@ -71,12 +76,15 @@ export function Rail() {
                 >
                   <Icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
                   {collapsed ? (
-                    <span className="sr-only">{category.name}</span>
+                    <span className="sr-only">
+                      {category.name} {available} available, {planned} planned
+                    </span>
                   ) : (
                     <>
                       <span className="min-w-0 flex-1 break-words">{category.name}</span>
                       <span className="ml-auto text-xs text-muted-foreground">
-                        {category.tools.length}
+                        {available}
+                        <span className="sr-only"> available, {planned} planned</span>
                       </span>
                     </>
                   )}
@@ -89,7 +97,13 @@ export function Rail() {
 
       <div className="border-t border-border p-2">
         {!collapsed ? (
-          <nav aria-label="About Omnitool" className="mb-2 space-y-0.5 text-sm">
+          <nav aria-label="More pages" className="mb-2 space-y-0.5 text-sm">
+            <Link
+              to="/experiments"
+              className="block rounded-control px-2 py-2 hover:bg-surface-hover"
+            >
+              Experiments
+            </Link>
             <Link to="/privacy" className="block rounded-control px-2 py-2 hover:bg-surface-hover">
               Privacy
             </Link>
