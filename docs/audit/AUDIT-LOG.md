@@ -26,6 +26,10 @@ Audits happen at each phase gate (A1..A9) using `CHECKLISTS.md`. Findings have a
 | F-020 | A1.1 | Should | Lighthouse mobile performance medians 58–70 on all 22 routes (under the 92 flag); measured under system load (load avg 5–7 on 16 cores); A1 baseline home was 96. Uniformly depressed scores indicate CPU throttling, not a design-alignment regression. Lighthouse accessibility = 100 on all routes. | Fix applied, awaiting re-verification: `scripts/lighthouse.mjs` now reads the 1-minute load average before and after every run and aborts with exit code 3 and `INVALID: host busy` when it exceeds 25% of the core count; a busy host is recorded as NOT TESTED, never passed or failed, and every run prints its load. Guard verified by pushing load to 12.23 on 16 cores (limit 4.00) → exit 3. Clean-host sweep (Session 015): 22 routes × 3 runs, exit 0, every performance median ≥ 92, accessibility 100, LCP 2,409–2,767 ms, maximum load 3.02. After the static first paint (Session 016) the four measured routes are 98–99 performance with FCP 909–1,366 ms and LCP 1,663–2,413 ms. Status stays open until an audit re-verifies it. | agent |
 | F-021 | A1.1 | Should | E2E `tests/e2e/design.spec.ts:204` ("no roadmap strings") fails consistently under the Chromium full parallel suite but passes in isolation and on Firefox (133 pass, 5 skipped, 0 fail). Test-isolation/timing under parallel load, not a design regression. | Fix applied, awaiting re-verification: two causes found — the guard pressed Ctrl+K before the shell's keydown listener existed (nothing to wait on, so a fixed 150 ms sleep), and one test walked 43 routes inside a single 30 s timeout. Fixed with an `html[data-app-ready]` boot marker, web-first waits on the omnibox filter state, and one test per route. Proof: 30 repeats × 25 guard tests under deliberate load (up to 46 on 16 cores) passed 750/750 on Chromium and 750/750 on Firefox, 0 retries. | agent |
 | F-022 | P2 batch 2 gate | Should | Render-blocking `/theme.js` in `<head>` (784 B, **305 ms** in Lighthouse) delayed first paint on every route, and the collapsed-rail preference was applied only after hydration, so a visitor who had collapsed the rail saw the main column move **184 px** at boot | Fix applied, awaiting re-verification (Session 017): one inline boot script (`apps/web/boot/boot.js`) replaces the external file and applies the theme and the rail preference before first paint; `scripts/prerender.mjs` hashes it into `script-src` and fails the build if a page has anything but that one inline script or if the hash is missing; `tests/e2e/boot-script.spec.ts` proves zero CSP violations and ≤1 px geometry change at 1280×720 and 390×844. Status stays open until an audit re-verifies it. | agent |
+| F-025 | A1.3 | Should | `pnpm audit` reports **10 advisories (4 low, 6 moderate, 0 high/critical)** where A1.2 recorded 0: `serialize-javascript` 7.1.2 (via `@rollup/plugin-terser`), `fast-uri` 3.1.8 ×4 (via `ajv` 8.20.0), `deepmerge` 4.3.1 (via `@rollup/plugin-node-resolve`), `seroval` 1.6.9 ×2 (runtime dependency of `@tanstack/router-core`), `minimatch` 5.1.9/10.2.6 and `glob` 11.1.0 | **Fix applied, awaiting independent verification (Session 026): 10 → 1 advisory.** `fast-uri` 3.1.8 → **3.1.9** and `seroval` 1.6.9 → **1.7.6** by an in-range update; `glob` 11.1.0 → **14.0.3**, `minimatch` 5.1.9/10.2.6 → **11.0.3** and `serialize-javascript` 7.1.2 → **7.1.4** through `overrides` in `pnpm-workspace.yaml` (pnpm 11 ignores a `pnpm` key in `package.json`), after updating the parents within their declared ranges was tried and would not move them. `glob` and `minimatch` are BlueOak-1.0.0, Node 18/20/≥22; build, budgets and E2E re-run clean. **One remains and cannot be fixed: `deepmerge` 4.3.1 has no patched version published** (`patched_versions: null`); it is build-time only, reached by `workbox-build > @rollup/plugin-node-resolve`, and absent from `dist` including sourcemaps. Recorded, not hidden. Not closed — an audit must re-verify. | agent |
+| F-026 | A1.3 | Should | The E2E suite loses 4–5 timeout-prone tests at its configured worker count (half the cores, 8 here) on a loaded host (P2-69); every one passes alone and at 6 workers from a quiet start | Open: **not reproduced at this audit** — `playwright test` at the default 8 workers from a 1-minute load of 2.99 passed **290/290 in 1.3 min**. The failure mode is host contention, not code, but the suite is the variable and the owner's option list (fewer workers, explicit timeouts for the service-worker and axe routes, quiet-host-only gate) is unanswered | human |
+| F-027 | A1.3 | Should | The 1 MB paste guard in `sanitize.test.ts` sits about **120 ms under its 2,000 ms bound** under v8 coverage instrumentation (P2-68): 1,880 ms passed after 2,255 ms and 2,550 ms failed. A wall-clock assertion inside the coverage gate measures the instrumenter as much as the code | **Fix applied, awaiting independent verification (Session 026): the finding was a misdiagnosis, and no code change was needed.** Ten runs of the guard's own call, same input (1,000,020 characters, 130,955 tokens): **median 73 ms, max 120 ms** in normal mode and **median 133 ms, max 148 ms** under v8 coverage — a **93% margin** against the unchanged 2,000 ms bound, not 4%. Tokenising dominates at 45 ms (53 ms under coverage), the model build accounts for the rest. The 1,880/2,255/2,550 ms readings were the whole suite competing for 16 cores (DEC-89's contention), not the cost of the paste. Bound and assertion untouched; the margin is now stated with numbers instead of assumed. | agent |
+| F-028 | A1.3 | Info | `features.md` rows for `text-editor` and `doc-converter` still say "NFR-013 **NOT TESTED**" and P2-66 is unticked, although the audit measured 1,522 ms and 1,667 ms median LCP | **Fix applied, awaiting independent verification (Session 026):** both rows now record **1,522 ms** and **1,667 ms** (99 performance, measured 2026-11-01), P2-66 is ticked, and the two stale counts on PF-02/PF-04 were corrected. `pnpm lint` now runs `scripts/check-features-ledger.mjs`, which fails when the loader map, the registry seed and the ledger disagree (39 built · 37 done · 58 planned · 97 catalogued). | agent |
 
 ## Pre-audit evidence for A1 — collected 2026-10-18 — not a verdict
 
@@ -316,3 +320,107 @@ Phase 2 batch 2 may proceed from a code, quality and design-alignment perspectiv
 4. No dangerous DOM injection patterns, no eval/Function, strict CSP with hashed inline script only, no AGPL/GPL deps, no delphitools source copied — all verified.
 
 Batch 6 may start from a security, quality, licence and performance perspective subject to the above.
+
+---
+
+### Audit A1.3 — 2026-11-01 — Batch 7B gate (`text-editor`, `doc-converter`) — agent, same host as the implementing session
+**Scope / commit:** HEAD `045b70f` ("docs(review): record Batch 7B, its checks and the two host-bound failures"), 5 commits after the A1.2 scope at `d3ac956`. Working tree carries one modification, `docs/design/ART-PROMPTS.md`, left untouched per DEC-51/DEC-57/DEC-82. Read-only audit: nothing fixed, reformatted, re-baselined or pushed; `features.md` and `todo.md` were not edited.
+
+**Independence — read this first.** This audit was run by the same agent that built Batch 7B, on the same machine, in a session immediately after. It re-ran every gate against the committed tree and checked the claims by reading the code, but it is **not** an independent audit: it cannot self-approve the batch, and it closes no finding it did not re-verify from evidence. The verdict below is a recommendation to the owner, not a sign-off.
+
+**Checklists run:** all eight sections of `docs/audit/CHECKLISTS.md` where testable, plus a re-check of every open finding F-002–F-028.
+
+#### 1) Gate commands (re-run on this tree)
+- **Host:** 16 cores, 1-minute load **2.99** at the start of the E2E gate, 3.55 at the start of the Lighthouse subset (limit 4.00); the host was quiet for every measurement quoted below.
+- `pnpm install --frozen-lockfile`: **PASS**, exit 0.
+- `pnpm lint` (`biome check` + design rules + URL schemes): **PASS**, 287 files, 0 errors, 0 warnings.
+- `pnpm typecheck`: **PASS**, all five workspaces.
+- `pnpm test:coverage`: **PASS**, **1,109 tests in 70 files**; **96.32% statements / 90.69% branches / 98.82% functions / 97.58% lines** (thresholds 90/90/90/90). Branch margin +0.69.
+- `pnpm build`: **PASS**, exit 0; **43 routes + `404.html`**, one inline boot script on all 44 pages.
+- `node scripts/check-build-budget.mjs`: **PASS** — shell **142.7 kB gzip** (budget 200), precache **126 files / 2502.6 kB** (budget 8192), **585** build files (limit 20,000), no file near 20 MiB; growth warning quiet at +0.2 kB since the recorded 142.5.
+- **E2E Chromium:** **290 passed, 0 failed** (1.3 min) at the default 8 workers. **E2E Firefox:** **284 passed, 6 skipped, 0 failed** (2.2 min); the 6 skips are the five Chromium-only pixel baselines and the Firefox service-worker offline-emulation gap recorded in Batch 5. **WebKit: NOT TESTED** (F-019).
+- **axe:** inside both runs — 43 routes × 2 themes plus the omnibox in two states × 2 themes, **0 serious or critical**. The route list is no longer hand-kept: `a11y.spec.ts` derives it from `TOOL_LOADERS` and fails if the two disagree, which closes the coverage gap Session 024 found (four Batch 6 tools had never been scanned); the check now covers all **39** built tools.
+- **Lighthouse (mobile, 3 runs/route, medians; subset reports, not the batch gate):**
+
+| Route | Perf med (runs) | A11y | LCP med | TBT med | CLS | NFR-013 |
+|---|---|---|---|---|---|---|
+| `/tools/text-editor/` | **99** (98/100/99) | 100 | **1,522 ms** | 111 ms | 0.000 | pass |
+| `/tools/doc-converter/` | **99** (99/99/99) | 100 | **1,667 ms** | 100 ms | 0.000 | pass |
+
+  This is the first NFR-013 figure either route has had. P2-66's "NOT TESTED" is answered by measurement, and its "ran past 600 s with no report" hangs did **not** recur: both subset runs finished inside their timeout and wrote reports. **Home was not re-measured** (P1-27 is a per-batch item): `/` remains at its Session 022 median of **2,116 ms** from the 41-route sweep, and that figure is not claimed as today's.
+
+#### 2) Privacy and offline (NFR-001, FR-007) — PASS
+- `tests/e2e/offline.spec.ts` and `tests/e2e/network.spec.ts` are inside the 290 Chromium passes: shell and tools work with the context offline after first load, and a trace of normal use makes zero third-party requests.
+- The two new tools add no origin: `doc-converter`'s DOCX path runs in a Comlink worker from the same bundle and `text-editor` stores drafts only in IndexedDB (`apps/web/src/tools/text-editor/draft.ts`, database `omnitool-text-editor`), on request, with Restore and Clear.
+- CSP `connect-src` still lists only the declared CDN hosts; no new one was added.
+
+#### 3) Security (NFR-007) — PASS, with F-025
+- **CSP and inline script, verified independently of the build script:** for all **44** built pages, each was parsed, every `<script>` without `src` hashed with SHA-256, and the result compared with the single hash in `dist/_headers` (`sha256-AY0BeqXPBY3Z4IZ0v82BLgRyGWyLU0dz6XOiIkg8JO0=`). **0 pages failed**, no page has more than one inline script, and `script-src` contains no `'unsafe-inline'` or `'unsafe-eval'`.
+- **Dangerous APIs:** `scripts/check-url-schemes.mjs` runs in `pnpm lint` and refuses `eval`, `new Function`, `dangerouslySetInnerHTML`, `document.write` and `insertAdjacentHTML`; it passed. No occurrence in `apps/web/src` or `packages/*/src` outside that checker.
+- **New attack surface read, not assumed:** `packages/tool-core/src/zip/index.ts` reads only the end-of-central-directory record and the central directory, never inflates, refuses the ZIP64 sentinels (`0xffff`/`0xffffffff`), and applies 20 MB in / 1,000 entries / 100 MB total / 50 MB per entry / 100:1 **before** `mammoth` is handed the buffer. A zero-compressed entry is refused by the ratio rule rather than special-cased. The DOCX HTML then goes through the same sanitiser as a paste, and `images.imgElement` returns an empty `src` so no image is decoded into a data URI.
+- **The sanitiser now decodes attribute entities before the scheme check** (`sanitize/index.ts`), with `safeHref` as the second line — `href="&#106;avascript:..."` is refused rather than kept as a relative address. The 40-payload corpus is shared by the sanitiser's tests and the editor's paste path (`sanitize/corpus.ts`).
+- `pnpm audit`: **10 advisories, 4 low and 6 moderate, no high or critical** — a regression against A1.2's zero, recorded as **F-025**. None of the flagged packages is in the shipped bundle; `seroval` is a runtime dependency of TanStack Router, whose vulnerable paths need attacker-controlled serialized data that this app never receives.
+- No secrets, tokens or personal data in the tree or in fixtures; the DOCX test file is built in the test (`tests/e2e/docx-fixture.ts`).
+
+#### 4) Accessibility (NFR-004) — PASS, screen reader still open
+- axe: 0 serious/critical on every route and the omnibox, both themes, both engines.
+- Keyboard and focus: the editor is a `role="textbox"` ProseMirror surface with a visible focus ring; the Batch 7 guards drive it by keyboard. Focus-visible and reduced-motion rules are unchanged.
+- Touch targets: unchanged coarse-pointer rules at 44 px.
+- **Screen-reader spot check: NOT DONE** (F-014/F-018) — still needs a human with NVDA or VoiceOver.
+
+#### 5) Performance (NFR-002/003) — PASS
+- Shell **142.7 kB gzip** against 200; every tool is a lazy chunk and `check:budgets` fails if a tool library reaches the shell graph — the ProseMirror packages sit only in the editor chunk, `mammoth`/`jszip` only in the converter worker.
+- TBT 100–111 ms on the two measured routes, well under the 200 ms long-task ceiling; CLS 0.000 on both.
+- Heavy-file behaviour: the 1 MB paste and 1 MB JSON guards ran inside the heavy projects, alone, and passed; the DOCX bomb classes are unit tests over `inspectZip`, not E2E.
+
+#### 6) Licence and provenance (NFR-009) — PASS
+- `pip`-equivalent scan of `node_modules/.pnpm`: **0 packages declaring AGPL or GPL**. ProseMirror (8 packages, MIT) and `mammoth` (BSD-2-Clause) are recorded in `ATTRIBUTION.md` with their decisions (DEC-80, DEC-85); `jszip`'s MIT option is the one taken. The CMU Pronouncing Dictionary (BSD-2) keeps its verbatim licence in `data/pronunciation/LICENSE`.
+- `pandoc-wasm` (GPL-2.0-or-later) is still **not** installed and the converter does not write DOCX; LaTeX and EPUB output are out of scope and the UI says so.
+- No artwork, copy, dataset or source from the original: the only references to `delphi.tools`/`1612elphi` are in reference documents; `scripts/check-description-overlap.mjs` reports 0 shared four-word runs.
+
+#### 7) Code quality (NFR-008) — PASS
+- Green lint, typecheck, tests; coverage above all four thresholds; **0** TODO/FIXME/XXX in source.
+- Module contract holds for both new tools: loader entry, registry row, lazy route, `ToolFrame` with Reset, `role="alert"` errors, output actions, and Playwright guards (`tests/e2e/batch7.spec.ts`, 11 guards across the two tools).
+- `markdown/index.ts` remains the lowest-covered file (77.94% branches, F-023) — documented, not closed.
+
+#### 8) Documentation sync — PASS, with F-028
+- Spot-checked five rows against the code: `PF-09` (workbox precache, offline test passes), `PF-20` (`FileIntake`/`downloadBlob` in use by both new tools), `text-editor`, `doc-converter` and `PF-10` (43 prerendered routes — the build agrees).
+- `todo.md`: P2-61, P2-62, P2-63 and P2-68 tick with their evidence; **P2-66 should be ticked now that both figures exist**, and P2-69, P2-64 and P2-67 correctly remain open (owner's call).
+- `REVIEW-LOG.md` has an entry for Session 025 covering every commit in scope. **F-028** records the stale "NFR-013 NOT TESTED" text in the two `features.md` rows.
+
+#### 9) Open findings re-check
+| Finding | State after this audit |
+|---|---|
+| F-002 (Must, MuPDF AGPL) | **Open** — no PDF code exists; the plan still uses pdf-lib/pdfjs-dist, which needs its own recorded decision. |
+| F-003 (Must, artwork/copy) | **Open** — no art generated; wordmark placeholder stands; P9-01 is the owner's. |
+| F-006, F-007 | **Open** — no new CC/GPL runtime data this batch; scope note unchanged. |
+| F-013, F-017 | **Partly** — Firefox re-verified clean (284/0); WebKit still cannot launch here. |
+| F-014, F-018 | **Open** — no screen-reader spot check. |
+| F-019 | **Open** — the CI `webkit` job still has never run (DEC-71/DEC-56). |
+| F-020 | **Verified fixed** — quiet-host subset runs, 98–100 performance, a11y 100, guard exit 0. |
+| F-021, F-022 | **Verified fixed / enforced** — 290 Chromium passes; boot hash present and correct on all 44 pages. |
+| F-023 | **Open (Info)** — `markdown/index.ts` coverage gap documented in `IMPLEMENTATION.md` §9. |
+| F-024 | **Open (Info)** — single hardcoded boot hash, enforced by `prerender.mjs`. |
+| **F-025** | **New** — 10 advisories, none shipped. |
+| **F-026** | **New** — E2E worker-count contention, not reproduced at this audit. |
+| **F-027** | **New** — the 1 MB guard's 120 ms margin in the coverage gate. |
+| **F-028** | **New (Info)** — stale NFR-013 text in two `features.md` rows. |
+
+#### Limits of this audit
+- Not independent: same agent, same host, immediately after the build. See the note at the top.
+- **WebKit, Safari desktop, iOS Safari and Android Chrome: NOT TESTED.** The only route is the CI job, and nothing has been pushed.
+- **Home LCP: NOT TESTED today** (last figure 2,116 ms at Session 022). P1-27 stays open as the recurring per-batch item.
+- No real-phone check of a 1 MB paste, a DOCX or the 0.9 MB dictionary download; no screen-reader pass.
+- The landmark ZIP *bomb* files (entry count, total size, per-entry size, ratio) are covered by unit tests over `inspectZip`; the E2E DOCX fixture covers a well-formed file and a non-ZIP only.
+- Lighthouse numbers come from subset runs (`--only`), which are deliberately **not** the batch gate and do not overwrite `reports/lighthouse/summary.md`.
+
+**Verdict: PASS WITH CONDITIONS.** No new Must finding; nothing in the two new tools breaks a checklist. The conditions are the owner's two open batch gates and the three findings above.
+
+**Conditions / next actions:**
+1. **Owner:** review P2-64 (`text-editor`) and P2-67 (`doc-converter`, including the `accepts`/`produces` narrowing — LaTeX, EPUB and PDF output were promised by the seed row and are not built). These are human decisions and this audit cannot make them.
+2. **Owner:** answer P2-69 (E2E worker policy on a busy host) and P2-68/F-027 (the wall-clock guard in the coverage gate).
+3. **Agent, next session:** tick P2-66 and correct the two `features.md` NFR-013 notes to 1,522 ms and 1,667 ms (F-028); nothing else in the ledger was found wrong.
+4. **Agent, next session:** address F-025 — an `overrides` bump for `minimatch`, `glob` and `fast-uri` where upstream allows it, and a written note on `seroval`; re-run `pnpm audit` and record the count either way.
+5. **Carried forward unchanged:** F-002, F-003, F-006, F-007, F-013, F-014, F-017, F-018, F-019, F-023, F-024, and the unanswered CI run (DEC-71).
+
+**What this audit does not do:** it does not approve Batch 7B, does not close any pre-existing finding, and does not change the thresholds, the budgets, the worker count or any test. The batch gate remains the owner's.

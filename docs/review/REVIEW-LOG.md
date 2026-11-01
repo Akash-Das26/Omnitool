@@ -1130,3 +1130,69 @@ Result: **88.25% → 90.36% branches**, 96.48% → 96.35% lines, **807 → 887 t
 **Next session should:** re-measure NFR-013 for `/tools/doc-converter/` and `/tools/text-editor/` on a quiet host (and look at `scripts/lighthouse.mjs` if it hangs instead of refusing); take the owner's answer on P2-69 and on the 1 MB guard; then continue with the remaining P2 rows once the two batch gates (P2-64, P2-67) are answered. Audit A2 is **not** requested here.
 
 **Human review:** [ ] diff read  [ ] approved
+
+### Session 026 — 2026-11-01 — the three small audit findings: advisories, the paste guard, the ledger — agent
+
+**Goal:** close F-025 (10 `pnpm audit` advisories), F-027 (the 1 MB paste guard's thin margin) and F-028 (stale ledger rows), fix ledger accuracy, and stop for the owner's review. No new tools, no new direct dependencies, no thresholds moved.
+
+**Decisions:** the block arrived as templates again (CI-RUN, ART-PROMPTS, DESC, HOST, INDEPENDENT-AUDIT), so nothing was inferred from a blank field: no job result is quoted, `docs/design/ART-PROMPTS.md` was not read or touched, no description changed (98 rows, all `draft`), the host was measured rather than answered yes/no, and **no audit finding was closed**. Recorded as DEC-90 to DEC-94 in `todo.md`.
+
+**F-025 — advisories, 10 → 1.** Every advisory was triaged with its path from our direct dependencies before anything was changed:
+
+| Advisory | Package | Scope | Path | Fixed by |
+|---|---|---|---|---|
+| GHSA-w74x-v6f9-j3xg, GHSA-xhq7-xmqj-769h, GHSA-wjr9-j795-jxcr, GHSA-333x-w4r6-6crp | `fast-uri` 3.1.8 | dev | `lighthouse>ajv`, `vite-plugin-pwa>workbox-build>ajv` | in-range update → **3.1.9** |
+| GHSA-f86p-h4j2-7qgj, GHSA-9wx9-5pv9-3349 | `seroval` 1.6.9 | **runtime** | `@tanstack/react-router>@tanstack/router-core>seroval` | in-range update → **1.7.6** |
+| GHSA-m5mm-p8h7-m29v | `serialize-javascript` 7.1.2 | dev | `workbox-build>@rollup/plugin-terser>serialize-javascript` | override → **7.1.4** |
+| GHSA-3g3m-2fjr-6pw4 | `glob` 11.1.0 | dev | `workbox-build>glob` | override → **14.0.3** |
+| GHSA-g3hv-75wg-m249 | `minimatch` 5.1.9 + 10.2.6 | dev | `…>filelist>minimatch`, `glob>minimatch` | override → **11.0.3** |
+| GHSA-gcqx-w48m-w2h4 | `deepmerge` 4.3.1 | dev | `workbox-build>@rollup/plugin-node-resolve>deepmerge` | **none: no patched version published** |
+
+- In-range first: `fast-uri` and `seroval` were patches their parents already allowed, and `pnpm -r update` took both. `serialize-javascript` did **not** move through `pnpm -r update` even at 7.1.4, and `glob`/`minimatch` are major jumps outside their parents' ranges, so those three are `overrides`.
+- **pnpm 11 ignores `pnpm.overrides` in `package.json`** — the install said so in a warning — so the overrides live in `pnpm-workspace.yaml`, with the four versions added to `minimumReleaseAgeExclude`.
+- Licences checked before use: `glob` and `minimatch` are both **BlueOak-1.0.0** and declare Node `18 || 20 || >=22` (we require ≥22.19). `serialize-javascript` is BSD-3-Clause.
+- Nothing is reachable from the shipped output: `grep` across `dist` including sourcemaps finds none of the six packages (`glob`'s 11 hits are the word "global"). `seroval` is imported **only** by `@tanstack/router-core`'s SSR server path (`dist/esm/ssr/ssr-server.js`); `apps/web/src` has no `dehydrate`/`hydrate` call and no `Seroval` symbol reaches the bundle, so its two advisories were unreachable before the update as well.
+- `deepmerge` is the one left: `patched_versions: null`, build-time only, not in `dist`. Recorded as **P2-70** rather than papered over.
+- `pnpm audit` before: **10 (4 low, 6 moderate, 0 high/critical)**. After: **1 (low)**.
+- Evidence the overrides did not break the toolchain: `pnpm build` exit 0 with workbox writing `sw.js`, budgets unchanged (shell 142.7 kB, precache 126 files / 2502.6 kB), and the full E2E suite green afterwards.
+
+**The advisory is visible without becoming a gate.** `scripts/audit-summary.mjs` (`pnpm audit:summary`) prints counts by severity and the shortest path per advisory and always exits 0; the CI quality job runs it with `continue-on-error` and appends the table to the job summary. Nothing else in the workflow changed, and the workflow still has never run (DEC-71).
+
+**F-027 — the margin was not what it looked like.** The guard's own call was timed ten times with its own input (1,000,020 characters, 130,955 tokens):
+
+| Stage | Normal mode (median / max) | v8 coverage (median / max) |
+|---|---|---|
+| tokenise | 45 / 62 ms | 53 / 73 ms |
+| `htmlToModel` (the guard) | **73 / 120 ms** | **133 / 148 ms** |
+
+Against the unchanged 2,000 ms bound that is a **93% margin**, not the 120 ms the audit recorded: the 1,880/2,255/2,550 ms readings were the whole suite competing for 16 cores (DEC-89's contention), not the cost of the sanitiser. **No optimisation was applied** — there was no 30% to win, and changing working parsing code to buy margin it already has would be the wrong trade. The bound, the assertion and the input are untouched. Tokenising is the larger half, which is where a future optimisation would start if one were ever needed.
+
+**F-028 — the ledger is now checked, not remembered.** `scripts/check-features-ledger.mjs` runs inside `pnpm lint` and fails when: a built tool's row is not ✅; a ✅ row has no loader entry or registry row; a registry id has no row; a category heading's count no longer matches the rows beneath it; or a named partial tool's row is not 🟨. `qr-genny` and `image-converter` are the two built-but-deliberately-partial tools, named in the script with their reason so 🟨 is allowed there and nowhere else. Mismatches fixed in this session: `text-editor` and `doc-converter` NFR-013 notes (now 1,522 ms and 1,667 ms), PF-02 and PF-04 counts (39 available / 58 planned / thirty-nine implemented), PF-10's "33 built tool routes" and its NFR-013 sentence. The check now reports **39 built · 37 marked done · 58 planned · 99 rows · 97 in the registry · 13 category headings** and passes.
+
+**Verification (final tree):**
+- `pnpm install --frozen-lockfile`: pass (378 ms). `pnpm audit`: **1 advisory** (deepmerge, no patch).
+- `pnpm lint`: pass, **289 files**, **0 errors, 0 warnings**, including the design rules, the URL-scheme check and the new ledger check.
+- `pnpm typecheck`: pass in all five workspaces.
+- `pnpm test:coverage`: **1,109 passed in 70 files**; **96.32% statements / 90.69% branches / 98.82% functions / 97.58% lines** (thresholds unchanged at 90/90/90/90).
+- `pnpm build`: exit 0, **43 routes** plus `404.html`, one boot hash on all 44 pages. `pnpm check:budgets`: shell **142.7 kB gzip**, precache **126 files / 2502.6 kB**, **585** build files.
+- E2E: Chromium **290 passed**, Firefox **284 passed / 6 skipped**, **0 failed**, 3.4 min for both engines; axe in both themes inside those runs, 0 serious or critical. Visual baselines unchanged.
+- Lighthouse: the two Batch 7B routes were measured before the dependency work, and the build output is byte-identical afterwards (same shell chunk `assets/index-BEFeV7Tj.js`, same precache totals): `/tools/text-editor/` **1,522 ms** median LCP (98/100/99 performance, 111 ms TBT), `/tools/doc-converter/` **1,667 ms** (99/99/99, 100 ms TBT, 0.000 CLS).
+- **Full 43-route sweep: NOT TESTED.** It started at 1-minute load 2.77 and ran 11 routes (all at performance 99–100), then the guard exited 3 with `INVALID: host busy — after /tools/encoder/ run 2 of 3: 1-minute load 4.16 > 4.00` — the guard doing its job, and no score is claimed for the sweep. **Home was re-measured inside those completed runs: 2,124 / 2,114 / 2,115 ms → median 2,114 ms**, 99 performance, 30 ms TBT, which answers P1-27 for this batch.
+- GitHub Actions: **not executed** (nothing pushed).
+
+**Not done / uncertain:**
+- The full 43-route sweep has no valid run this session; 11 routes and home are measured, the other 32 are carried from earlier sweeps.
+- `deepmerge` cannot be fixed until upstream publishes a patch or drops it.
+- The `overrides` change the build toolchain's file matching (`glob` 11→14, `minimatch` 5/10→11). The build, budgets and E2E are evidence it works; the workbox service-worker generation is not otherwise exercised.
+- F-025, F-027 and F-028 are recorded as "fix applied, awaiting independent verification". None was closed, because this session is the one that made the fixes.
+- WebKit is still NOT TESTED (F-019); CI has still never run; no screen-reader pass.
+
+**Problems and risks found:**
+- **The audit's own number was the misleading one.** F-027 described a 120 ms margin; the function needs 73 ms on a quiet core. A measurement taken while the whole suite runs is a measurement of the suite. The new number is recorded with its method so the next reader can repeat it.
+- **`pnpm` 11 silently ignores `package.json`'s `pnpm.overrides`.** An override that looks correct and does nothing is worse than no override; the install warning is the only clue, and it is easy to miss in a long log.
+- **A gate that trips mid-sweep throws away the whole run.** The 11 completed routes were valid individually but the summary is written only on success, so `summary.md` is untouched and the sweep has to be repeated. Worth a `--resume` or per-route summary if this recurs.
+- **`features.md` had drifted by one tool and one count** in three separate places (PF-02, PF-04, PF-10). Hand-maintained counts in prose do not survive; the new check only covers the ones it can parse.
+
+**Next session should:** re-run the full Lighthouse sweep on a genuinely idle host (and consider whether the guard should keep or resume completed routes); take P2-69 and the two batch gates (P2-64, P2-67) from the owner; then continue the remaining P2 rows. Audit A2 is **not** requested here.
+
+**Human review:** [ ] diff read  [ ] approved
