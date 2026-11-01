@@ -1253,3 +1253,81 @@ No `FAIL` and no `warn` line was printed, and the summary reports 43 of 43 valid
 **Next session should:** take P2-69's remaining question (the suite's worker count on a loaded host) now that the policy is written down, then the two batch gates (P2-64, P2-67). Audit A2 is **not** requested here.
 
 **Human review:** [ ] diff read  [ ] approved
+
+### Session 028 — 2026-11-02 — the first CI run, trustworthy sweep evidence, and the WebKit matrix — agent
+
+**Goal:** get the gate running for the first time on a branch, make the Lighthouse evidence say what it was measured under, write independent-verification checklists, attempt WebKit, and stop claiming accessibility more strongly than the evidence allows. No dependencies, no threshold changes, nothing merged.
+
+**The PR.** Branch `ci/verify-sweep-and-evidence` from `main` (94 commits ahead of `origin/main`), pushed and opened as **PR #1**, deliberately **not merged**. `main` is the releasable branch and the workflow only triggers on `pull_request`, so a branch is the only place to exercise it without putting an unverified gate on `main`.
+
+**One correction to the record.** Earlier entries say "CI has never run". That is true of the current `on: pull_request` workflow, but not of the repository: `gh run list` shows two **push** runs on `main` from 2026-10-18 under an older workflow, where quality and Playwright passed and a job named "Lighthouse mobile budget" failed. Their logs have expired (`gh run view --log-failed` returns nothing), so no cause is claimed for that failure. The unrun-workflow entries (DEC-71 and the rest) were right about the workflow they describe and wrong about the repository.
+
+**CI-only failures, and what each one was.**
+
+| Job (run 1, `43ee874`) | Result | Cause | Fix | Run 2 (`14ff939`) |
+|---|---|---|---|---|
+| Quality | pass, 37 s | — | — | pass, 51 s |
+| E2E chromium | pass, 3 m 13 s | — | — | **286 pass / 1 fail** (the floating assertion below) |
+| E2E firefox | pass, 4 m 59 s | — | — | pass, 4 m 27 s |
+| E2E webkit | **7 failed**, 4 m 33 s | see below | see below | 1 failed (same floating assertion) |
+| Lighthouse (advisory) | never finished | superseded by the next push (`cancel-in-progress: true`) | — | superseded again |
+
+WebKit's seven, in three groups, each a real defect rather than a WebKit quirk to suppress:
+
+1. **Clipboard, 4 tests** (`tools.spec.ts` ×2, `batch4.spec.ts` ×2): `page.evaluate(() => navigator.clipboard.readText())` throws `NotAllowedError`. WebKit refuses `readText()` to a page without a user gesture and Playwright cannot grant it — the `clipboard-read` permission name is Chromium-only. The visible confirmation (`Copied all`, `Copied gap-x-2`, `Table copied`) is still asserted on every browser; the clipboard's **contents** are read only where the platform allows it (`canReadClipboard` in `tests/e2e/helpers.ts`). That is a documented reduction of WebKit coverage, not a skipped test, and it is the one thing here a reviewer may want to overrule.
+2. **A detached button, 1 test** (`batch6.spec.ts`, IPA cancel): `locator.click: Test timeout of 30000ms exceeded … element was detached from the DOM, retrying`. The progress row was rendered conditionally *before* the Cancel button, so when the first chunk reported, React reused that child slot for the progress row and rebuilt the button in a different element. A person clicking Cancel at that instant would lose the click too. The progress slot is now always present and only its contents are conditional.
+3. **A poisoned page, 2 tests** (`prerender.spec.ts`, hydration geometry at two viewports): `gotoApp` timed out waiting for `data-app-ready`. The guard refused every `*.js`, measured, unrouted, and re-navigated **in the same page**; WebKit keeps the refused script responses for that page, so the entry chunk never ran on the second visit. The hydrated pass now runs in a fresh `browser.newContext()` with the same viewport, which also leaves no service worker or storage behind.
+
+Then run 2 failed Chromium **and** WebKit on the same `text-editor` guard, always at the same line, with `Error: expect(locator).toHaveCount(expected) failed … Error: Test ended`. The trace artifact settled it: the test body finished in **1.2 s** (`Navigate` 217 ms, `Type "Hello world"` 145 ms), both trailing `toEqual([])` assertions **passed**, and the only call still open was `Close context`. The line was `expect(await editor.locator('script')).toHaveCount(0);` — the `await` was on the locator, and `toHaveCount` is web-first, so the assertion kept polling after the body ended and its rejection surfaced as a 30 s timeout. It passes locally because the count resolves in milliseconds before teardown. Fixed by awaiting the assertion.
+
+**Measurement method, now recorded with every figure.** `scripts/lighthouse.mjs` reads the profile out of `lhr.configSettings`, `lhr.environment` and `lhr.lighthouseVersion` and prints it, writes it to `summary.md` and stores it in `summary.json`:
+
+```
+Measurement: mobile form factor (412×823 at DPR 1.75) · throttling applied through CDP (devtools)
+· network 150 ms RTT / 1638.4 kbps down / 675 kbps up · CPU slowdown ×4 · Lighthouse 13.5.0
+· Chrome 155.0.0.0 · benchmark index 3136.5
+```
+
+**NFR-013's 2,500 ms bar is measured under the simulated mobile profile** (`throttlingMethod: simulate`, the default), not under applied throttling. `--throttle applied` runs the same profile through CDP into `reports/lighthouse/applied/` so the two are never mixed, and the three-route cross-check on a quiet host (load 1.59–3.26 against 4.00, 3 runs each, exit 0) reads:
+
+| Route | Simulated (NFR-013 profile) | Applied through CDP | Performance (sim / applied) |
+|---|---|---|---|
+| `/` | 2,118 ms | **1,416 ms** | 99 / 100 |
+| `/tools/qr-genny/` | 1,810 ms | **1,533 ms** | 98 / 98 |
+| `/tools/shavian-transliterator/` | 2,488 ms | **2,458 ms** | 98 / 97 |
+
+Every route is inside the target under both methods. The reason the simulated medians cluster within a few milliseconds on nearly every tool route is stated in `DEVELOPMENT.md`: in that profile the LCP element is the prerendered description, a text block in the initial HTML, so LCP ≈ first byte plus the estimated parse and render delay — one shared shell cost. The routes in the full sweep that name an element at all (`/` 2,118, `/privacy/` 2,117, shavian 2,488) are the three whose LCP element is produced after hydration.
+
+**`LCP element: not reported`, answered.** Lighthouse 13.5 builds the node item from the trace's LCP candidate and resolves its id against the end-of-trace DOM (`makeNodeItemForNodeId(artifacts.TraceElements, insight.lcpEvent?.args.data?.nodeId)`). `createRoot().render()` replaces the prerendered `#root` children, so a candidate painted from the static markup no longer exists to resolve. It is an attribution limitation, not a missing element; the LCP time and its subparts are still measured, and the prerender guard proves what the static paint contains. Not "fixed", documented.
+
+**Exit codes are now evidence.** `bash scripts/lighthouse-sweep.sh` (`pnpm lighthouse:sweep`) tees to `reports/lighthouse/sweep.log`, writes the status to `reports/lighthouse/exit-code.txt` and exits with it under `pipefail`. The applied cross-check wrote **0**. The script also forces a non-zero status whenever it prints a `FAIL` line, whatever the assertions above it do. `--routes /` now matches the home route alone instead of every route (it was a substring).
+
+**Advisories, re-measured:** `pnpm audit:summary` reports **1 advisory** — `deepmerge` 4.3.1, low, `dev`, `apps__web>vite-plugin-pwa>workbox-build>@rollup/plugin-node-resolve>deepmerge`, with `no patched version published`. `pnpm audit --json` agrees (low 1, moderate 0, high 0, critical 0, 795 dependencies). F-025's fix still stands as recorded; it is still awaiting independent verification.
+
+**Accessibility honesty.** `docs/accessibility/MANUAL-CHECK.md` says plainly what axe and a Lighthouse 100 do not cover and gives a VoiceOver/NVDA script for `/`, `text-editor`, `doc-converter`, `glyph-browser` and `ipa-transcriber`; every route is recorded **NOT RUN**. No WCAG conformance is claimed.
+
+**Verification (all local unless marked CI):**
+- `pnpm lint`: pass, 0 errors, 0 warnings; `ledger: 39 built · 37 marked done · 58 planned · 97 in the registry · 13 category headings`, `the loader map, the registry and features.md agree`.
+- `pnpm typecheck`: pass in every workspace.
+- `pnpm test:coverage`: **1,123 passed in 71 files**; **96.32% statements / 90.69% branches / 98.82% functions / 97.58% lines** (thresholds unchanged).
+- `pnpm build` + `pnpm check:budgets`: **43 routes** plus `404.html`; shell **142.6 kB gzip** (budget 200), precache **126 files / 2502.6 kB** (budget 8192).
+- E2E, focused on the four changed spec files, Chromium + Firefox: **92 passed**.
+- E2E, full Chromium at CI's **2 workers**: **287 passed in 1.8 min**, the `text-editor` guard at **613 ms** — which is why a 30 s stall had to be a bug, not slowness.
+- **CI, run 3 (`bc271e5`):** quality pass, Chromium pass 4 m 00 s, Firefox pass 5 m 55 s, **WebKit pass 7 m 43 s**.
+- Lighthouse, CI job: advisory and never completed because each push superseded the run (`cancel-in-progress`). No CI Lighthouse figure is claimed; the local sweep from Session 027 (43/43 valid) plus the applied cross-check above are the evidence.
+
+**Not done / uncertain:**
+- **WebKit loses the clipboard-content assertion** in four tests (reason above). That is the price of running WebKit at all today, and it is recorded rather than hidden.
+- The CI Lighthouse job has still never produced a summary, because pushes keep cancelling it. It is advisory by design, but "written, never observed" remains true for that job specifically.
+- No screen-reader session was run; F-014/F-018 stay open.
+- **No audit finding was closed.** F-025, F-027 and F-028 still read "fix applied, awaiting independent verification"; `docs/audit/VERIFICATION-CHECKLISTS.md` is for the reviewer, and only a reviewer changes a status.
+- The three finding fixes themselves were not re-verified this session: the checklists describe steps, they do not constitute verification.
+
+**Problems and risks found:**
+- **The workflow cancels itself.** `concurrency: cancel-in-progress` plus a PR under active development means the longest job (Lighthouse, 45 min timeout) is the one that always dies. If that job is meant to produce evidence, it needs its own trigger or a longer-lived run.
+- **Two CI failures were green locally and had been all along**: the floating assertion and the poisoned hydration page. Neither was a threshold problem; both were defects in tests that had only ever run on one engine.
+- **`--throttle applied` is not the gate.** It answers "what if the network really waited", and it made the routes *faster* on this host, which is worth knowing before anyone re-baselines on it.
+
+**Next session should:** run the F-025/F-027/F-028 checklists as an independent reviewer, then take the two batch gates (P2-64, P2-67), and decide whether the advisory Lighthouse job should run at all if it cannot finish.
+
+**Human review:** [ ] diff read  [ ] approved
