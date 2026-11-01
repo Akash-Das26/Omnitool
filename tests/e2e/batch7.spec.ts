@@ -156,7 +156,11 @@ test.describe('text-editor', () => {
     });
     await expect(page.getByText(/Pasted\. Removed: 1 script/)).toBeVisible();
     expect(await page.evaluate(() => (window as { __pasted?: boolean }).__pasted)).toBeUndefined();
-    expect(await editor.locator('script')).toHaveCount(0);
+    // Await the assertion, not the locator: `toHaveCount` is web-first and
+    // returns a promise. Left floating it kept polling after the test body had
+    // finished, the fixture closed the context underneath it and CI reported a
+    // 30 s "Test ended" at this line while every assertion after it had passed.
+    await expect(editor.locator('script')).toHaveCount(0);
 
     // Nothing outside this origin was requested at any point.
     expect(requests).toEqual([]);
