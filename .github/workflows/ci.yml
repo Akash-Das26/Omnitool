@@ -32,6 +32,15 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Advisory, not a gate: the counts and the dependency path of every advisory
+      # go into the job summary so a reviewer can see them. The script always
+      # exits 0 (scripts/audit-summary.mjs); upgrading or accepting one is a
+      # decision for a person, not for a build.
+      - name: Dependency advisories (advisory)
+        continue-on-error: true
+        run: |
+          pnpm audit:summary | tee audit-summary.txt
+          { echo '### Dependency advisories'; echo '```'; cat audit-summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test:coverage
