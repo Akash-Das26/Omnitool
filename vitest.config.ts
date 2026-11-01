@@ -12,6 +12,15 @@ export default defineConfig({
     maxWorkers: '50%',
     projects: [
       {
+        // The Lighthouse load guard and its retry/resume decisions, tested with a
+        // fake load source and clock so no browser and no real waiting is needed.
+        test: {
+          name: 'scripts',
+          environment: 'node',
+          include: ['scripts/**/*.test.mjs'],
+        },
+      },
+      {
         test: {
           name: 'tool-core',
           environment: 'node',
