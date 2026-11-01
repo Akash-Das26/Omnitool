@@ -9,6 +9,20 @@ export async function expectAppReady(page: Page) {
   await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true');
 }
 
+/**
+ * Whether a test may read the clipboard back. Chromium needs the permission
+ * granted by name and can be given it; Firefox exposes `readText()` to the page
+ * without a grant; **WebKit denies it** — `navigator.clipboard.readText()`
+ * rejects with `NotAllowedError` outside a user gesture, and Playwright cannot
+ * grant it because the `clipboard-read` permission name is Chromium-only. The
+ * copy's visible confirmation is asserted on every browser; the clipboard's
+ * contents only where the platform lets a test look. Recorded as a limitation
+ * in `docs/accessibility/MANUAL-CHECK.md` and the review log rather than hidden.
+ */
+export function canReadClipboard(browserName: string): boolean {
+  return browserName !== 'webkit';
+}
+
 /** Navigate and wait for the shell to be interactive. */
 export async function gotoApp(page: Page, path: string) {
   await page.goto(path);

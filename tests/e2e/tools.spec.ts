@@ -1,5 +1,5 @@
 import { type BrowserContext, expect, test } from '@playwright/test';
-import { gotoApp } from './helpers';
+import { canReadClipboard, gotoApp } from './helpers';
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -34,8 +34,10 @@ test.describe('uuid-genny', () => {
     await page.getByRole('button', { name: 'Copy all' }).click();
     await expect(page.getByRole('button', { name: 'Copied all' })).toBeVisible();
 
-    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipboard).toBe((await outputValues()).join('\n'));
+    if (canReadClipboard(browserName)) {
+      const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+      expect(clipboard).toBe((await outputValues()).join('\n'));
+    }
   });
 
   test('copies a single value from its row', async ({ page, context, browserName }) => {
@@ -44,11 +46,13 @@ test.describe('uuid-genny', () => {
 
     await page.getByRole('button', { name: 'Copy value 2' }).click();
 
-    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
     const values = await page
       .locator('[data-output-value]')
       .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-output-value') ?? ''));
-    expect(clipboard).toBe(values[1]);
+    if (canReadClipboard(browserName)) {
+      const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+      expect(clipboard).toBe(values[1]);
+    }
   });
 
   test('downloads a text file', async ({ page }) => {

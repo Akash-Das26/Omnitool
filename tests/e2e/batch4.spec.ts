@@ -1,5 +1,5 @@
 import { type BrowserContext, expect, test } from '@playwright/test';
-import { gotoApp } from './helpers';
+import { canReadClipboard, gotoApp } from './helpers';
 
 /**
  * Chromium needs the clipboard permissions granted by name; Firefox and WebKit
@@ -134,8 +134,10 @@ test.describe('tailwind-cheatsheet', () => {
 
     await page.getByRole('button', { name: 'Copy class gap-x-2' }).click();
     await expect(page.getByRole('button', { name: 'Copied gap-x-2' })).toContainText('Copied');
-    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipboard).toBe('gap-x-2');
+    if (canReadClipboard(browserName)) {
+      const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+      expect(clipboard).toBe('gap-x-2');
+    }
 
     await page.getByRole('button', { name: 'Reset' }).click();
     await expect(page.getByLabel('Class, property or words')).toHaveValue('');
@@ -223,9 +225,11 @@ test.describe('recipe-table', () => {
 
     await page.getByRole('button', { name: 'Copy table' }).click();
     await expect(page.getByText('Table copied')).toBeVisible();
-    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipboard).toContain('Recipe for 4 servings (metric)');
-    expect(clipboard).toContain('roughly 244 g milk');
+    if (canReadClipboard(browserName)) {
+      const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+      expect(clipboard).toContain('Recipe for 4 servings (metric)');
+      expect(clipboard).toContain('roughly 244 g milk');
+    }
 
     await page.getByRole('button', { name: 'Reset' }).click();
     await expect(page.getByLabel('Ingredients, one per line')).toHaveValue('');

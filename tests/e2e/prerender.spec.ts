@@ -126,40 +126,53 @@ for (const viewport of [
   test.describe(`hydration at ${viewport.name}`, () => {
     test.use({ viewport: { width: viewport.width, height: viewport.height } });
 
-    test('does not move the heading or the description', async ({ page }) => {
+    test('does not move the heading or the description', async ({ page, browser }) => {
       // Static first paint: every script request is refused, so nothing hydrates.
       await page.route('**/*.js', (route) => route.abort());
       await page.goto(`/tools/${TOOL}/`);
       const before = await boxes(page);
       await page.unroute('**/*.js');
 
-      // Hydrated: the boot marker replaces any timeout.
-      await page.addInitScript(CLS_OBSERVER);
-      await gotoApp(page, `/tools/${TOOL}/`);
-      await page.evaluate(() => document.fonts.ready);
-      await page.evaluate(
-        () =>
-          new Promise<void>((resolve) =>
-            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-          ),
-      );
-      const after = await boxes(page);
+      // The hydrated pass runs in its own context. On WebKit the page keeps the
+      // refused script responses, so visiting the same URL again in this page
+      // never ran the entry chunk and `data-app-ready` never appeared — the
+      // guard reported a boot timeout that was really a poisoned resource
+      // cache. A fresh context also leaves behind no service worker or storage
+      // from the first pass, so the geometry compared below is a first visit.
+      const hydratedContext = await browser.newContext({
+        viewport: { width: viewport.width, height: viewport.height },
+      });
+      const hydrated = await hydratedContext.newPage();
+      try {
+        // Hydrated: the boot marker replaces any timeout.
+        await hydrated.addInitScript(CLS_OBSERVER);
+        await gotoApp(hydrated, `/tools/${TOOL}/`);
+        await hydrated.evaluate(() => document.fonts.ready);
+        await hydrated.evaluate(
+          () =>
+            new Promise<void>((resolve) =>
+              requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+            ),
+        );
+        const after = await boxes(hydrated);
+        expect(before.h1).not.toBeNull();
+        expect(before.paragraph).not.toBeNull();
+        for (const key of ['h1', 'paragraph'] as const) {
+          const first = before[key];
+          const second = after[key];
+          expect(second, key).not.toBeNull();
+          if (!first || !second) continue;
+          expect(Math.abs(second.x - first.x), `${key} x`).toBeLessThanOrEqual(1);
+          expect(Math.abs(second.y - first.y), `${key} y`).toBeLessThanOrEqual(1);
+          expect(Math.abs(second.width - first.width), `${key} width`).toBeLessThanOrEqual(1);
+          expect(Math.abs(second.height - first.height), `${key} height`).toBeLessThanOrEqual(1);
+        }
 
-      expect(before.h1).not.toBeNull();
-      expect(before.paragraph).not.toBeNull();
-      for (const key of ['h1', 'paragraph'] as const) {
-        const first = before[key];
-        const second = after[key];
-        expect(second, key).not.toBeNull();
-        if (!first || !second) continue;
-        expect(Math.abs(second.x - first.x), `${key} x`).toBeLessThanOrEqual(1);
-        expect(Math.abs(second.y - first.y), `${key} y`).toBeLessThanOrEqual(1);
-        expect(Math.abs(second.width - first.width), `${key} width`).toBeLessThanOrEqual(1);
-        expect(Math.abs(second.height - first.height), `${key} height`).toBeLessThanOrEqual(1);
+        const cls = await hydrated.evaluate(() => (window as unknown as { __cls: number }).__cls);
+        expect(cls).toBeLessThanOrEqual(0.01);
+      } finally {
+        await hydratedContext.close();
       }
-
-      const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
-      expect(cls).toBeLessThanOrEqual(0.01);
     });
   });
 }

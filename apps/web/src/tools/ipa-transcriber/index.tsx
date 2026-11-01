@@ -198,16 +198,26 @@ export default function IpaTranscriberTool() {
         ) : (
           <div className="mb-3 rounded-control border border-border bg-surface-inset px-3 py-2">
             <p className="text-sm">{downloadNotice}</p>
-            {progress !== null ? (
-              <div className="mt-2 flex items-center gap-3">
-                <Progress
-                  className="h-2 flex-1"
-                  value={progress}
-                  aria-label="Pronunciation dictionary download"
-                />
-                <span className="font-mono text-xs text-muted-foreground">{`${Math.round(progress)}%`}</span>
-              </div>
-            ) : null}
+            {/*
+              The progress slot is always present, even when empty. Rendered
+              conditionally it sat *before* the Cancel button, so the moment the
+              first chunk reported, React reused that slot for the progress row
+              and rebuilt the button in a new element — Playwright on WebKit
+              caught the button detaching under the pointer, and a person
+              clicking at that instant would have lost the click too.
+            */}
+            <div className="mt-2 flex items-center gap-3">
+              {progress !== null ? (
+                <>
+                  <Progress
+                    className="h-2 flex-1"
+                    value={progress}
+                    aria-label="Pronunciation dictionary download"
+                  />
+                  <span className="font-mono text-xs text-muted-foreground">{`${Math.round(progress)}%`}</span>
+                </>
+              ) : null}
+            </div>
             <div className="mt-2">
               <Button type="button" variant="outline" size="sm" onClick={cancelDownload}>
                 Cancel
