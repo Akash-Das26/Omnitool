@@ -19,15 +19,24 @@
  *   node scripts/lighthouse.mjs --resume            skip routes already valid
  *   node scripts/lighthouse.mjs --routes /tools/x/,/tools/y/
  *   node scripts/lighthouse.mjs --only /tools/      path filter, writes subset/
+ *   node scripts/lighthouse.mjs --throttle applied  throttle through CDP, writes applied/
  *
  * Exit codes: 0 every route met its budget, 1 an error-level budget failed,
  * 3 at least one route was not measured validly (busy host, or a route the host
  * never settled for), so the sweep is NOT TESTED rather than passed or failed.
+ *
+ * A detached sweep loses its exit code, so run it through
+ * `bash scripts/lighthouse-sweep.sh`: that wrapper tees the log and writes the
+ * status to `reports/lighthouse/exit-code.txt`.
+ *
+ * Every summary states the form factor, the throttling method, the network and
+ * CPU profile, the Lighthouse version and the Chrome version, because a score
+ * without them is not evidence of anything in particular.
  */
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { availableParallelism, loadavg } from 'node:os';
@@ -59,10 +68,42 @@ const ONLY = argValue('--only');
 const ROUTES = argValue('--routes');
 /** Reuse routes whose stored result is valid for this commit and build. */
 const RESUME = ARGS.includes('--resume');
+/**
+ * How the network and CPU limits are applied. `simulated` (the default) is
+ * Lighthouse's mobile profile: the page loads as fast as the machine allows and
+ * the report estimates what a mid-range phone on 4G would have seen. `applied`
+ * sets the same profile through the DevTools protocol, so every response really
+ * waits 150 ms and the CPU really runs four times slower.
+ *
+ * The two answer different questions and are never mixed: `applied` writes to
+ * its own directory so a simulated figure cannot end up beside an applied one.
+ */
+const THROTTLE = (argValue('--throttle') ?? 'simulated').toLowerCase();
+if (THROTTLE !== 'simulated' && THROTTLE !== 'applied') {
+  throw new Error(`--throttle takes "simulated" or "applied", got “${THROTTLE}”`);
+}
+const THROTTLING_METHOD = THROTTLE === 'applied' ? 'devtools' : 'simulate';
 
 const FILTERED = Boolean(ONLY || ROUTES);
-const REPORT_DIR = resolve(FILTERED ? 'reports/lighthouse/subset' : 'reports/lighthouse');
+const REPORT_DIR = (() => {
+  const base =
+    THROTTLE === 'applied' ? resolve('reports/lighthouse/applied') : resolve('reports/lighthouse');
+  return FILTERED ? resolve(base, 'subset') : base;
+})();
 const RESULTS_DIR = resolve(REPORT_DIR, 'results');
+
+/**
+ * Read from the installed package rather than typed here, so upgrading
+ * Lighthouse cannot leave the summary and the docs claiming the old version.
+ */
+const LIGHTHOUSE_VERSION = (() => {
+  try {
+    return JSON.parse(readFileSync(resolve('node_modules/lighthouse/package.json'), 'utf8'))
+      .version;
+  } catch {
+    return 'unknown';
+  }
+})();
 
 /**
  * A loaded host produces meaningless scores: the same tree scored 90-100 on a
@@ -147,7 +188,11 @@ function selectedRoutes(all) {
       .map((part) => part.trim())
       .filter((part) => part !== '');
     if (wanted.length === 0) throw new Error('--routes needs at least one path');
-    routes = routes.filter((route) => wanted.some((part) => route.path.includes(part)));
+    // `/` selects the home route alone. As a plain substring it selected every
+    // route, which quietly measured the whole site instead of one page.
+    const matches = (route, part) =>
+      part === '/' ? route.path === '/' : route.path === part || route.path.includes(part);
+    routes = routes.filter((route) => wanted.some((part) => matches(route, part)));
   }
   return routes;
 }
@@ -275,6 +320,61 @@ function metric(values, id) {
 
 function score(value) {
   return typeof value === 'number' ? Math.round(value * 100) : 0;
+}
+
+/**
+ * What the numbers were measured under, read out of the report rather than
+ * assumed: a score means nothing without the profile that produced it.
+ */
+function measuredMethod(lhr) {
+  const settings = lhr.configSettings ?? {};
+  const throttling = settings.throttling ?? {};
+  const screen = settings.screenEmulation ?? null;
+  const chrome = /Chrome\/([\d.]+)/.exec(lhr.environment?.hostUserAgent ?? '')?.[1] ?? 'unknown';
+  return {
+    formFactor: settings.formFactor ?? 'unknown',
+    screenEmulation: screen
+      ? {
+          width: screen.width ?? null,
+          height: screen.height ?? null,
+          deviceScaleFactor: screen.deviceScaleFactor ?? null,
+        }
+      : null,
+    throttlingMethod: settings.throttlingMethod ?? 'unknown',
+    throttling: {
+      rttMs: throttling.rttMs ?? null,
+      throughputKbps: throttling.throughputKbps ?? null,
+      cpuSlowdownMultiplier: throttling.cpuSlowdownMultiplier ?? null,
+      requestLatencyMs: throttling.requestLatencyMs ?? null,
+      downloadThroughputKbps: throttling.downloadThroughputKbps ?? null,
+      uploadThroughputKbps: throttling.uploadThroughputKbps ?? null,
+    },
+    lighthouseVersion: lhr.lighthouseVersion ?? 'unknown',
+    chromeVersion: chrome,
+    benchmarkIndex: lhr.environment?.benchmarkIndex ?? null,
+  };
+}
+
+function describeMethod(method) {
+  if (!method) return 'Measurement: not recorded — no run produced a report.';
+  const throttle = method.throttling;
+  const applied = method.throttlingMethod === 'devtools';
+  const screen = method.screenEmulation;
+  return [
+    `Measurement: ${method.formFactor} form factor` +
+      (screen ? ` (${screen.width}×${screen.height} at DPR ${screen.deviceScaleFactor})` : ''),
+    applied
+      ? 'throttling applied through CDP (devtools)'
+      : method.throttlingMethod === 'simulate'
+        ? 'throttling simulated from a cold load (simulate)'
+        : `throttling ${method.throttlingMethod}`,
+    `network ${throttle.rttMs} ms RTT / ${throttle.throughputKbps} kbps down` +
+      (throttle.uploadThroughputKbps === null ? '' : ` / ${throttle.uploadThroughputKbps} kbps up`),
+    `CPU slowdown ×${throttle.cpuSlowdownMultiplier}`,
+    `Lighthouse ${method.lighthouseVersion}`,
+    `Chrome ${method.chromeVersion}`,
+    `benchmark index ${method.benchmarkIndex}`,
+  ].join(' · ');
 }
 
 function lcpElement(lhr) {
@@ -433,6 +533,11 @@ async function main() {
       `${routes.length} routes × ${RUNS} runs${RESUME ? ' · resuming' : ''}`,
   );
   console.log(`commit ${commit.slice(0, 12)} · build ${buildHash}`);
+  console.log(
+    `measurement: mobile form factor · throttling ` +
+      `${THROTTLING_METHOD === 'devtools' ? 'applied through CDP (devtools)' : 'simulated (simulate)'} · ` +
+      `Lighthouse ${LIGHTHOUSE_VERSION} · the Chrome version and the exact profile are printed with the summary`,
+  );
 
   // Wait for a quiet host rather than refusing outright: a sweep that starts
   // moments after a test run should wait, not throw away the session.
@@ -450,6 +555,7 @@ async function main() {
       buildHash,
       opening,
       failures: [],
+      method: null,
     });
     process.exitCode = EXIT_HOST_BUSY;
     return;
@@ -464,6 +570,8 @@ async function main() {
   const rows = [];
   const failures = [];
   let hostGaveUp = null;
+  let observedMethod = null;
+  let failPrinted = false;
 
   try {
     for (let index = 0; index < routes.length; index += 1) {
@@ -511,12 +619,14 @@ async function main() {
               output: ['json', 'html'],
               logLevel: 'error',
               onlyCategories: Object.keys(ASSERTIONS),
+              throttlingMethod: THROTTLING_METHOD,
             },
           );
           if (!lighthouseResult) {
             throw new Error(`Lighthouse returned no result for ${measuredRoute.path}`);
           }
           const { lhr, report } = lighthouseResult;
+          if (observedMethod === null) observedMethod = measuredMethod(lhr);
           const [json, html] = report;
           await writeFile(resolve(REPORT_DIR, `${route.name}-run${run}.report.json`), json);
           await writeFile(resolve(REPORT_DIR, `${route.name}-run${run}.report.html`), html);
@@ -614,11 +724,13 @@ async function main() {
     opening,
     failures,
     hostGaveUp,
+    method: observedMethod,
   });
 
   const errors = failures.filter((failure) => failure.level === 'error');
   for (const failure of failures) {
     const label = failure.level === 'error' ? 'FAIL' : 'warn';
+    if (failure.level === 'error') failPrinted = true;
     console.log(
       `${label}: ${failure.route} ${failure.category} median ${failure.score} < ${failure.min} (min ${failure.minimum})`,
     );
@@ -635,6 +747,9 @@ async function main() {
     return;
   }
   if (errors.length > 0) process.exitCode = 1;
+  // Whatever else changes above, a printed FAIL line must produce a non-zero
+  // status: it is what a script or a person reads, not the table.
+  if (failPrinted && process.exitCode === undefined) process.exitCode = 1;
 }
 
 function statusLabel(row) {
@@ -643,7 +758,16 @@ function statusLabel(row) {
   return 'not reached';
 }
 
-async function writeSummary({ rows, routes, commit, buildHash, opening, failures, hostGaveUp }) {
+async function writeSummary({
+  rows,
+  routes,
+  commit,
+  buildHash,
+  opening,
+  failures,
+  hostGaveUp,
+  method,
+}) {
   const valid = rows.filter((row) => row.status === 'valid');
   const overTarget = valid.filter((row) => row.lcpOverTarget);
   const missing = rows.filter((row) => row.status !== 'valid');
@@ -651,6 +775,8 @@ async function writeSummary({ rows, routes, commit, buildHash, opening, failures
   const header = [
     `Host: ${CORES} cores · load limit ${LOAD_LIMIT.toFixed(2)} (${LOAD_SHARE_OF_CORES * 100}%)` +
       (opening ? ` · host quiet after ${(opening.waitedMs / 1000).toFixed(0)} s` : ''),
+    '',
+    describeMethod(method),
     '',
     `Commit ${commit.slice(0, 12)} · build ${buildHash} · ${routes.length} routes × ${RUNS} runs` +
       `${RESUME ? ' · resumed' : ''}${FILTERED ? ' · filtered subset' : ''}. Budgets use the median; the minimum is reported next to it.`,
@@ -704,10 +830,12 @@ async function writeSummary({ rows, routes, commit, buildHash, opening, failures
     `${JSON.stringify(
       {
         host: { cores: CORES, loadLimit: LOAD_LIMIT },
+        method: method ?? null,
         commit,
         buildHash,
         runsPerRoute: RUNS,
         resumed: RESUME,
+        throttling: THROTTLE,
         valid: valid.length,
         notValid: missing.map((row) => ({
           route: row.route,

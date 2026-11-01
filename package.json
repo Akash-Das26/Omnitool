@@ -24,6 +24,7 @@
     "e2e": "playwright test",
     "check:budgets": "node scripts/check-build-budget.mjs",
     "lighthouse": "node scripts/lighthouse.mjs",
+    "lighthouse:sweep": "bash scripts/lighthouse-sweep.sh",
     "audit:summary": "node scripts/audit-summary.mjs",
     "features:progress": "node scripts/features-progress.mjs",
     "cheatsheet:generate": "node scripts/generate-tailwind-cheatsheet.mjs",
