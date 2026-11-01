@@ -1196,3 +1196,60 @@ Against the unchanged 2,000 ms bound that is a **93% margin**, not the 120 ms th
 **Next session should:** re-run the full Lighthouse sweep on a genuinely idle host (and consider whether the guard should keep or resume completed routes); take P2-69 and the two batch gates (P2-64, P2-67) from the owner; then continue the remaining P2 rows. Audit A2 is **not** requested here.
 
 **Human review:** [ ] diff read  [ ] approved
+
+### Session 027 — 2026-11-02 — a resumable Lighthouse sweep and the worker policy — agent
+
+**Goal:** make the sweep survive a busy host instead of discarding finished routes, write the Playwright worker policy down, and stop for review. No dependencies, no threshold changes.
+
+**What changed.**
+- **`scripts/lib/lighthouse-guard.mjs` (new).** The decision logic, apart from the browser: `createLoadGuard` (sample, `isBusy`, `waitForQuiet` with injected clock and sleep), `measureRoute` (the trip → wait → retry-from-run-1 state machine) and `resultIsReusable` (commit, build and run count). No I/O of its own, which is why it can be tested with a fake host.
+- **`scripts/lighthouse.mjs`.** Each finished route writes `reports/lighthouse/results/<route>.json` at once — three runs, the 1-minute load before and after each, medians, minima, median LCP, LCP element, commit and a build fingerprint over `dist`. A trip discards **that route's** runs, waits for 30 s of continuous quiet (5 s poll, 10 min cap) and measures the route again from run 1; three retries at most. `--resume` reuses only a valid result for the same commit and build and deletes a stale one. `--routes /a/,/b/` selects routes; `--only` still writes `subset/`. The summary lists every route as `valid`, `INVALID` or `not reached` with its load range, and the exit code is 0, 1 (budget) or 3 (any route not valid). Thresholds untouched.
+- **`playwright.config.ts`:** no value changed. The policy was already 50% of the cores locally, 2 on CI and heavy specs serial (`fullyParallel: false` in their own `*-heavy` project); `DEVELOPMENT.md` §5 now states it with the reasoning, because it was only discoverable by reading the config.
+
+**The guard demonstrated, twice.** Fourteen unit tests over a fake load source and clock (`scripts/lib/lighthouse-guard.test.mjs`, the new `scripts` Vitest project): trip at 4.01 but not at 3.99; 30 s of **continuous** quiet, with a busy sample restarting the window (45 s, not 35 s); give-up at the 10-minute cap; retry from run 1 with the tripped attempt's runs counted as discarded; a route never assembled from two attempts; the retry limit; an unsettled host; and reuse accepted only for the same commit, build and run count. One real bug was caught by the first test run: a run that tripped the *after*-sample was discarded but not counted in `discardedRuns` — fixed in the module, not in the test.
+
+Then the real sweep, which tripped twice and finished anyway:
+```
+/tools/regex-tester/: after run 3 of 3: 1-minute load 4.25 > 4.00 — discarded 3 run(s), waiting
+/tools/regex-tester/: host quiet after 35 s, retrying from run 1
+/tools/text-editor/: after run 3 of 3: 1-minute load 4.24 > 4.00 — discarded 3 run(s), waiting
+/tools/text-editor/: host quiet after 40 s, retrying from run 1
+```
+Under the previous script either sample would have thrown the whole sweep away. `--resume` was demonstrated end to end on `/tools/text-editor/`: the second pass printed `resumed`, reused the identical `measuredAt` (17:30:15, a minute before the second pass) and the same load range.
+
+**Full sweep (2026-11-01, resumed, quiet host):**
+
+| | Result |
+|---|---|
+| Routes | **43 of 43 valid** |
+| Performance medians | **98–100** (lowest `/tools/qr-genny/` 98; minimum run 97) |
+| Accessibility / best practices / SEO | 100 on every route |
+| Median LCP range | **1,358–2,488 ms**, none over the 2,500 ms target |
+| Home | **2,118 ms**, 99 performance, 31 ms TBT |
+| Highest load seen | **3.81** against 4.00 |
+| Routes retried | `regex-tester`, `text-editor` (3 runs discarded each) |
+
+No `FAIL` and no `warn` line was printed, and the summary reports 43 of 43 valid. The detached process's exit code was not captured, so that is stated as evidence rather than as "exit 0".
+
+**Verification:**
+- `pnpm lint`: pass, **291 files**, 0 errors, 0 warnings (design rules, URL schemes, ledger).
+- `pnpm typecheck`: pass in all five workspaces.
+- `pnpm test:coverage`: **1,123 passed in 71 files** (14 new), **96.32% statements / 90.69% branches / 98.82% functions / 97.58% lines**, thresholds unchanged.
+- `pnpm build`: exit 0, **43 routes** plus `404.html`. `pnpm check:budgets`: shell **142.7 kB gzip**, precache **126 files / 2502.6 kB**, **585** build files.
+- E2E was **not** re-run: no application, test-spec or config behaviour changed (the Playwright edit is documentation only), so the suite had nothing new to exercise. WebKit remains **NOT TESTED** (F-019).
+
+**Not done / uncertain:**
+- The sweep's LCP element is `not reported` on most routes; `lcp-breakdown-insight` returns no node for them, which predates this change. It is visible in the summary rather than hidden.
+- `--resume` refuses a result whose run count differs, so changing `RUNS` invalidates everything. Deliberate, but worth knowing.
+- A host that flaps can cost up to three 10-minute waits per route. Bounded, not cheap; the sweep now records why rather than dying.
+- Two earlier attempts to background the sweep were killed with their parent shell, which is why the log showed only a header. That was process plumbing, not the script; the sweep that counted was run as the background command itself.
+- Audit findings untouched: F-025, F-027 and F-028 still read "fix applied, awaiting independent verification".
+
+**Problems and risks found:**
+- **The old guard's all-or-nothing design was the real defect.** A correct refusal at route 12 destroyed eleven measured routes; the load numbers were right and the recovery was absent.
+- **A per-route wait can multiply.** Three retries × ten minutes is a long time to wait for a host that will not settle; the cap is deliberate but a stalled sweep is now possible where the old one failed fast.
+- **The `--routes` filter made a one-route measurement cheap** (about 45 s), which is what made the resume demonstration practical.
+
+**Next session should:** take P2-69's remaining question (the suite's worker count on a loaded host) now that the policy is written down, then the two batch gates (P2-64, P2-67). Audit A2 is **not** requested here.
+
+**Human review:** [ ] diff read  [ ] approved
