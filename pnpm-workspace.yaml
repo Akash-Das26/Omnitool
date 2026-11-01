@@ -5,3 +5,16 @@ minimumReleaseAgeExclude:
   - '@tanstack/react-router@1.170.45'
   - '@tanstack/router-core@1.171.38'
   - lucide-react@1.59.0
+  # Advisories GHSA-m5mm-p8h7-m29v and GHSA-f86p-h4j2-7qgj (AUDIT-LOG F-025).
+  - serialize-javascript@7.1.4
+  - seroval@1.7.6
+  - glob@14.0.3
+  - minimatch@11.0.3
+
+# pnpm 11 reads overrides from this file; a `pnpm` key in package.json is
+# ignored. Both packages are build-time only (workbox's own file matching) and
+# neither ships; the overrides clear the advisories in AUDIT-LOG F-025.
+overrides:
+  glob: ^14.0.2
+  minimatch: ^11.0.1
+  serialize-javascript: ^7.1.3
